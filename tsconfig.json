@@ -15,7 +15,6 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
-  },
-  "exclude": ["frontend"]
+    "noFallthroughCasesInSwitch": false  },
+  "exclude": ["frontend", "mongo-init.js", "node_modules"]
 }

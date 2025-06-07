@@ -16,13 +16,20 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:start": "docker-compose up -d mongodb",
+    "db:stop": "docker-compose stop mongodb",
+    "db:logs": "docker-compose logs -f mongodb",
+    "db:shell": "docker-compose exec mongodb mongosh"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/mongoose": "^11.0.3",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/serve-static": "^5.0.3",
+    "mongoose": "^8.15.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

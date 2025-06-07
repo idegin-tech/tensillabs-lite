@@ -4,6 +4,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Development files
+docker-compose.yml
+mongo-init.js
+.env.example
+
 # Runtime data
 pids
 *.pid
