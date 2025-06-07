@@ -49,6 +49,7 @@ export class WorkspaceMember {
     required: true,
     trim: true,
     maxlength: 50,
+    minlength: 2,
   })
   firstName: string;
 

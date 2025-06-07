@@ -12,6 +12,7 @@ export class Workspace {
     required: true,
     trim: true,
     maxlength: 100,
+    minlength: 2,
   })
   name: string;
 

@@ -24,9 +24,9 @@ async function bootstrap() {
   const sessionStore = connectMongo?.create({
     mongoUrl:
       process.env.MONGODB_URI || 'mongodb://localhost:27017/tensillabs-lite',
-    dbName: 'tensillabs-lite', // Explicitly set database name
-    collectionName: 'sessions', // Explicitly set collection name
-    touchAfter: 24 * 3600, // lazy session update
+    dbName: 'tensillabs-lite',
+    collectionName: 'sessions',
+    touchAfter: 24 * 3600,
   });
 
   console.log(
@@ -45,13 +45,24 @@ async function bootstrap() {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
       },
-      name: 'connect.sid', // Default session cookie name
+      name: 'connect.sid',
     }),
   );
 
   app.enableCors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Member-ID',
+      'X-Timezone',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+    ],
+    exposedHeaders: ['X-Member-ID', 'X-Timezone'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   });
   app.setGlobalPrefix('api/v1');
 

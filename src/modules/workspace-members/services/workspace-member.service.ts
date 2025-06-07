@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -7,6 +11,7 @@ import {
   Permission,
   MemberStatus,
 } from '../schemas/workspace-member.schema';
+import { InviteMemberDto } from '../dto/workspace-member.dto';
 
 @Injectable()
 export class WorkspaceMemberService {
@@ -92,5 +97,59 @@ export class WorkspaceMemberService {
     }
 
     return requiredPermissions.includes(member.permission);
+  }
+
+  async findById(
+    memberId: Types.ObjectId,
+  ): Promise<WorkspaceMemberDocument | null> {
+    return await this.workspaceMemberModel.findById(memberId).exec();
+  }
+
+  async findByUser(userId: Types.ObjectId): Promise<WorkspaceMemberDocument[]> {
+    return await this.workspaceMemberModel
+      .find({ user: userId, status: MemberStatus.ACTIVE })
+      .populate('workspace', 'name description logoURL bannerURL')
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async inviteMember(
+    inviteMemberDto: InviteMemberDto,
+    workspaceId: Types.ObjectId,
+    invitingMember: WorkspaceMemberDocument,
+  ): Promise<WorkspaceMemberDocument> {
+    const existingMember = await this.workspaceMemberModel.findOne({
+      primaryEmail: inviteMemberDto.primaryEmail,
+      workspace: workspaceId,
+    });
+
+    if (existingMember) {
+      throw new ConflictException(
+        'A member with this email already exists in the workspace',
+      );
+    }
+
+    if (
+      invitingMember.permission === Permission.MANAGER ||
+      invitingMember.permission === Permission.REGULAR
+    ) {
+      throw new BadRequestException(
+        'Insufficient permissions to invite members',
+      );
+    }
+
+    const workspaceMember = new this.workspaceMemberModel({
+      workspace: workspaceId,
+      firstName: inviteMemberDto.firstName,
+      lastName: inviteMemberDto.lastName,
+      middleName: inviteMemberDto.middleName || null,
+      primaryEmail: inviteMemberDto.primaryEmail,
+      permission: Permission.REGULAR,
+      status: MemberStatus.PENDING,
+      workPhone: inviteMemberDto.workPhone || null,
+      invitedBy: invitingMember.user,
+    });
+
+    return await workspaceMember.save();
   }
 }
