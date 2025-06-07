@@ -1,5 +1,3 @@
-# Fly.io deployment configuration for tensillabs-lite
-
 app = 'tensillabs-lite'
 primary_region = 'iad'
 

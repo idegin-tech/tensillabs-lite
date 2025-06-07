@@ -1,10 +1,7 @@
 @echo off
-REM Deployment script for Fly.io (Windows)
-REM This script helps automate the deployment process
 
 echo 🚀 Starting deployment to Fly.io...
 
-REM Check if flyctl is installed
 flyctl version >nul 2>&1
 if %errorlevel% neq 0 (
     echo ❌ flyctl is not installed. Please install it first:
@@ -12,7 +9,6 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-REM Check if user is logged in
 flyctl auth whoami >nul 2>&1
 if %errorlevel% neq 0 (
     echo ❌ You're not logged in to Fly.io. Please run:
@@ -20,7 +16,6 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-REM Build and deploy
 echo 📦 Building and deploying application...
 flyctl deploy
 
