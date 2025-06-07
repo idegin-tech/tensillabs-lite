@@ -1,5 +1,5 @@
 export const DATABASE_CONNECTION_NAME = 'Database';
-
+export const IS_DEV = process.env.NODE_ENV !== 'production';
 export const MONGODB_CONFIG = {
   CONNECTION_TIMEOUT: 30000,
   SERVER_SELECTION_TIMEOUT: 5000,

@@ -5,19 +5,25 @@ import { Connection } from 'mongoose';
 export const getDatabaseConfig = (
   configService: ConfigService,
 ): MongooseModuleOptions => {
-  const mongoUri = configService.get<string>(
-    'MONGODB_URI',
-    'mongodb://mongodb:27017/tensillabs-lite',
-  );
-
+  // Get MongoDB URI from environment variables
+  const mongoUri = configService.get<string>('MONGODB_URI');
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
 
+  // Default fallback for development
+  const defaultUri = 'mongodb://localhost:27017/tensillabs-lite';
+  const finalUri = mongoUri || defaultUri;
+
+  // Log connection (hide credentials for security)
+  console.log(
+    `Connecting to MongoDB: ${finalUri.replace(/\/\/.*@/, '//***:***@')}`,
+  );
+
   return {
-    uri: mongoUri,
-    retryAttempts: 3,
-    retryDelay: 1000,
+    uri: finalUri,
+    retryAttempts: isProduction ? 5 : 3,
+    retryDelay: isProduction ? 2000 : 1000,
     connectTimeoutMS: 30000,
-    serverSelectionTimeoutMS: 5000,
+    serverSelectionTimeoutMS: isProduction ? 10000 : 5000,
     heartbeatFrequencyMS: 10000,
     maxPoolSize: isProduction ? 10 : 5,
     minPoolSize: isProduction ? 2 : 1,
