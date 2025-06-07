@@ -29,11 +29,13 @@ export class User {
 
   @Prop({
     required: false,
+    default: null,
   })
   lastLoginAt: Date;
 
   @Prop({
     required: false,
+    default: null,
   })
   emailVerifiedAt: Date;
 }

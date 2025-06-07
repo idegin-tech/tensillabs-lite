@@ -24,17 +24,20 @@ export class UserSecrets {
   @Prop({
     required: false,
     select: false,
+    default: null,
   })
   passwordSalt: string;
 
   @Prop({
     required: false,
+    default: null,
   })
   passwordChangedAt: Date;
 
   @Prop({
     required: false,
     select: false,
+    default: null,
   })
   otpSecret: string;
 
@@ -54,38 +57,45 @@ export class UserSecrets {
 
   @Prop({
     required: false,
+    default: null,
   })
   otpExpiresAt: Date;
 
   @Prop({
     required: false,
+    default: null,
   })
   otpEnabledAt: Date;
 
   @Prop({
     required: false,
+    default: null,
   })
   lastOtpUsedAt: Date;
 
   @Prop({
     required: false,
     select: false,
+    default: null,
   })
   passwordResetToken: string;
 
   @Prop({
     required: false,
+    default: null,
   })
   passwordResetExpiresAt: Date;
 
   @Prop({
     required: false,
     select: false,
+    default: null,
   })
   emailVerificationToken: string;
 
   @Prop({
     required: false,
+    default: null,
   })
   emailVerificationExpiresAt: Date;
 
@@ -122,6 +132,7 @@ export class UserSecrets {
 
   @Prop({
     required: false,
+    default: null,
   })
   lockedUntil: Date;
 }

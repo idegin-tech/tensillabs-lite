@@ -5,6 +5,7 @@ import {
   WorkspaceMember,
   WorkspaceMemberDocument,
   Permission,
+  MemberStatus,
 } from '../schemas/workspace-member.schema';
 
 @Injectable()
@@ -26,13 +27,11 @@ export class WorkspaceMemberService {
       user: userId,
       workspace: workspaceId,
       firstName,
-      middleName: middleName || '',
+      middleName: middleName || null,
       lastName,
       primaryEmail: userEmail,
       permission: Permission.SUPER_ADMIN,
-      isActive: true,
-      joinedAt: new Date(),
-      acceptedAt: new Date(),
+      status: MemberStatus.ACTIVE,
       lastActiveAt: new Date(),
     });
 
@@ -52,7 +51,7 @@ export class WorkspaceMemberService {
     workspaceId: Types.ObjectId,
   ): Promise<WorkspaceMemberDocument[]> {
     return await this.workspaceMemberModel
-      .find({ workspace: workspaceId, isActive: true })
+      .find({ workspace: workspaceId, status: MemberStatus.ACTIVE })
       .populate('user', 'email timezone isEmailVerified')
       .sort({ createdAt: -1 })
       .exec();
@@ -72,7 +71,10 @@ export class WorkspaceMemberService {
     workspaceId: Types.ObjectId,
   ): Promise<boolean> {
     const result = await this.workspaceMemberModel
-      .updateOne({ user: userId, workspace: workspaceId }, { isActive: false })
+      .updateOne(
+        { user: userId, workspace: workspaceId },
+        { status: MemberStatus.SUSPENDED },
+      )
       .exec();
 
     return result.modifiedCount > 0;
@@ -85,7 +87,7 @@ export class WorkspaceMemberService {
   ): Promise<boolean> {
     const member = await this.findByUserAndWorkspace(userId, workspaceId);
 
-    if (!member || !member.isActive) {
+    if (!member || member.status !== MemberStatus.ACTIVE) {
       return false;
     }
 

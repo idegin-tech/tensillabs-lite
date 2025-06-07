@@ -10,6 +10,12 @@ export enum Permission {
   REGULAR = 'regular',
 }
 
+export enum MemberStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  SUSPENDED = 'suspended',
+}
+
 @Schema({
   timestamps: true,
   collection: 'workspace_members',
@@ -50,6 +56,7 @@ export class WorkspaceMember {
     required: false,
     trim: true,
     maxlength: 50,
+    default: null,
   })
   middleName: string;
 
@@ -71,6 +78,7 @@ export class WorkspaceMember {
     required: false,
     lowercase: true,
     trim: true,
+    default: null,
   })
   secondaryEmail: string;
 
@@ -86,59 +94,45 @@ export class WorkspaceMember {
     required: false,
     trim: true,
     maxlength: 500,
+    default: null,
   })
   bio: string;
 
   @Prop({
     required: false,
     trim: true,
+    default: null,
   })
-  phoneNumber: string;
+  workPhone: string;
 
   @Prop({
+    required: false,
+    trim: true,
+    default: null,
+  })
+  mobilePhone: string;
+
+  @Prop({
+    type: String,
+    enum: Object.values(MemberStatus),
     required: true,
-    default: true,
+    default: MemberStatus.ACTIVE,
   })
-  isActive: boolean;
+  status: MemberStatus;
 
   @Prop({
     required: false,
-  })
-  joinedAt: Date;
-
-  @Prop({
-    required: false,
+    default: null,
   })
   lastActiveAt: Date;
 
   @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
     required: false,
-    trim: true,
-    maxlength: 100,
-  })
-  jobTitle: string;
-
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 100,
-  })
-  department: string;
-
-  @Prop({
-    required: false,
+    default: null,
   })
   invitedBy: Types.ObjectId;
-
-  @Prop({
-    required: false,
-  })
-  invitedAt: Date;
-
-  @Prop({
-    required: false,
-  })
-  acceptedAt: Date;
 }
 
 export const WorkspaceMemberSchema =
@@ -148,5 +142,5 @@ WorkspaceMemberSchema.index({ user: 1, workspace: 1 }, { unique: true });
 WorkspaceMemberSchema.index({ workspace: 1 });
 WorkspaceMemberSchema.index({ user: 1 });
 WorkspaceMemberSchema.index({ permission: 1 });
-WorkspaceMemberSchema.index({ isActive: 1 });
+WorkspaceMemberSchema.index({ status: 1 });
 WorkspaceMemberSchema.index({ primaryEmail: 1 });

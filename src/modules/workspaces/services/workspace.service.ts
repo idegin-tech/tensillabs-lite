@@ -23,7 +23,6 @@ export class WorkspaceService {
     const existingWorkspace = await this.workspaceModel.findOne({
       name: workspaceData.name,
       createdBy: user._id,
-      isActive: true,
     });
 
     if (existingWorkspace) {
@@ -35,13 +34,6 @@ export class WorkspaceService {
     const workspace = new this.workspaceModel({
       ...workspaceData,
       createdBy: user._id,
-      isActive: true,
-      settings: {
-        allowInvites: true,
-        requireApproval: false,
-        defaultPermission: 'regular',
-        ...workspaceData.settings,
-      },
     });
 
     const savedWorkspace = await workspace.save();
@@ -56,19 +48,13 @@ export class WorkspaceService {
         memberInfo.middleName,
       );
 
-    if (
-      memberInfo.jobTitle ||
-      memberInfo.department ||
-      memberInfo.bio ||
-      memberInfo.phoneNumber
-    ) {
+    if (memberInfo.bio || memberInfo.workPhone || memberInfo.mobilePhone) {
       await this.workspaceMemberService.updateMember(
         workspaceMember._id as Types.ObjectId,
         {
-          jobTitle: memberInfo.jobTitle,
-          department: memberInfo.department,
           bio: memberInfo.bio,
-          phoneNumber: memberInfo.phoneNumber,
+          workPhone: memberInfo.workPhone,
+          mobilePhone: memberInfo.mobilePhone,
         },
       );
     }
@@ -96,7 +82,7 @@ export class WorkspaceService {
     userId: Types.ObjectId,
   ): Promise<WorkspaceDocument[]> {
     return await this.workspaceModel
-      .find({ createdBy: userId, isActive: true })
+      .find({ createdBy: userId })
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -110,11 +96,11 @@ export class WorkspaceService {
       .exec();
   }
 
-  async deactivateWorkspace(workspaceId: Types.ObjectId): Promise<boolean> {
+  async deleteWorkspace(workspaceId: Types.ObjectId): Promise<boolean> {
     const result = await this.workspaceModel
-      .updateOne({ _id: workspaceId }, { isActive: false })
+      .deleteOne({ _id: workspaceId })
       .exec();
 
-    return result.modifiedCount > 0;
+    return result.deletedCount > 0;
   }
 }
