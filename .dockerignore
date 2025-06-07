@@ -82,5 +82,5 @@ eslint.config.*
 # Jest config
 jest.config.*
 
-# Nest CLI
-nest-cli.json
+# Nest CLI config is needed for build
+# nest-cli.json
