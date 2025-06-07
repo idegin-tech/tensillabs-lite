@@ -17,7 +17,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-COPY . .
+# Copy TypeScript configuration files first
+COPY tsconfig*.json ./
+COPY nest-cli.json ./
+# Copy source code
+COPY src ./src
 # Build the NestJS application
 RUN npm run build
 

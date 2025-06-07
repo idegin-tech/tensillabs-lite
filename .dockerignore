@@ -79,9 +79,6 @@ README.md
 .prettierrc*
 eslint.config.*
 
-# TypeScript configs (not needed in production)
-tsconfig*.json
-
 # Jest config
 jest.config.*
 
