@@ -133,7 +133,6 @@ export class AuthService {
       throw new BadRequestException('Email already verified');
     }
 
-    // Generate new OTP
     const otp = await this.userSecretsService.generateAndSaveOTP(
       user._id as Types.ObjectId,
     );

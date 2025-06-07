@@ -16,5 +16,9 @@ primary_region = 'iad'
   cpu_kind = 'shared'
   cpus = 1
 
+[[mounts]]
+  source = "mongo_data"
+  destination = "/data/db"
+
 [env]
   NODE_ENV = 'production'

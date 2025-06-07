@@ -14,6 +14,7 @@ import {
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { ZodValidationPipe } from '../../lib/validation.pipe';
+import { createSuccessResponse } from '../../lib/response.interface';
 import {
   loginSchema,
   registerSchema,
@@ -43,30 +44,34 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto) {
     const user = await this.authService.register(registerDto);
 
-    return {
-      success: true,
-      message: 'User registered successfully. Please verify your email.',
-      user: {
-        id: user._id,
-        email: user.email,
-        timezone: user.timezone,
-        isEmailVerified: user.isEmailVerified,
+    return createSuccessResponse(
+      'User registered successfully. Please verify your email.',
+      {
+        user: {
+          id: user._id,
+          email: user.email,
+          timezone: user.timezone,
+          isEmailVerified: user.isEmailVerified,
+        },
       },
-    };
+    );
   }
 
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(verifyEmailSchema))
   async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
-    return await this.authService.verifyEmail(verifyEmailDto);
+    const result = await this.authService.verifyEmail(verifyEmailDto);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    return createSuccessResponse(result.message, { user: result.user });
   }
 
   @Post('resend-otp')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(resendOtpSchema))
   async resendOtp(@Body() resendOtpDto: ResendOtpDto) {
-    return await this.authService.resendOtp(resendOtpDto);
+    const result = await this.authService.resendOtp(resendOtpDto);
+    return createSuccessResponse(result.message);
   }
 
   @Post('login')
@@ -107,17 +112,17 @@ export class AuthController {
             '[DEBUG] Session saved successfully for user:',
             user.email,
           );
-          resolve({
-            success: true,
-            message: 'Login successful',
-            user: {
-              id: user._id,
-              email: user.email,
-              timezone: user.timezone,
-              lastLoginAt: user.lastLoginAt,
-              isEmailVerified: user.isEmailVerified,
-            },
-          });
+          resolve(
+            createSuccessResponse('Login successful', {
+              user: {
+                id: user._id,
+                email: user.email,
+                timezone: user.timezone,
+                lastLoginAt: user.lastLoginAt,
+                isEmailVerified: user.isEmailVerified,
+              },
+            }),
+          );
         }
       });
     });
@@ -127,27 +132,25 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Session() session: SessionData, @Req() req: Request) {
     if (!session.userId) {
-      return { success: false, message: 'No active session' };
+      return createSuccessResponse('No active session', null);
     }
 
     const user = await this.authService.findUserById(session.userId);
     if (!user) {
       session.destroy(() => {});
-      return { success: false, message: 'User not found' };
+      return createSuccessResponse('User not found', null);
     }
 
     if (!user.isEmailVerified) {
       session.destroy(() => {});
-      return { success: false, message: 'Email not verified' };
+      return createSuccessResponse('Email not verified', null);
     }
 
     if (req.session && typeof req.session.touch === 'function') {
       req.session.touch();
     }
 
-    return {
-      success: true,
-      message: 'Token refreshed successfully',
+    return createSuccessResponse('Token refreshed successfully', {
       user: {
         id: user._id,
         email: user.email,
@@ -155,15 +158,14 @@ export class AuthController {
         lastLoginAt: user.lastLoginAt,
         isEmailVerified: user.isEmailVerified,
       },
-    };
+    });
   }
 
   @Get('me')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   getCurrentUser(@CurrentUser() user: UserDocument) {
-    return {
-      success: true,
+    return createSuccessResponse('User data retrieved successfully', {
       user: {
         id: user._id,
         email: user.email,
@@ -172,21 +174,20 @@ export class AuthController {
         isEmailVerified: user.isEmailVerified,
         emailVerifiedAt: user.emailVerifiedAt,
       },
-    };
+    });
   }
 
   @Get('session-debug')
   @HttpCode(HttpStatus.OK)
   debugSession(@Session() session: SessionData) {
     console.log('[DEBUG] Session debug - Full session:', session);
-    return {
-      success: true,
+    return createSuccessResponse('Session data retrieved successfully', {
       session: {
         userId: session.userId,
         userEmail: session.userEmail,
         hasSession: !!session,
       },
-    };
+    });
   }
 
   @Post('logout')
@@ -202,7 +203,7 @@ export class AuthController {
       if (err) {
         return res
           .status(500)
-          .json({ success: false, message: 'Could not log out' });
+          .json(createSuccessResponse('Could not log out', null));
       }
 
       if (req.sessionStore && sessionId) {
@@ -214,7 +215,7 @@ export class AuthController {
       }
 
       res.clearCookie('connect.sid');
-      res.json({ success: true, message: 'Logged out successfully' });
+      res.json(createSuccessResponse('Logged out successfully'));
     });
   }
 }
