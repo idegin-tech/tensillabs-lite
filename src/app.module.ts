@@ -5,6 +5,7 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { DatabaseModule } from './database/database.module';
       envFilePath: '.env',
     }),
     DatabaseModule,
+    AuthModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'frontend', 'dist'),
       exclude: ['/api/v1*'],

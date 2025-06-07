@@ -8,7 +8,7 @@ yarn-error.log*
 docker-compose.yml
 mongo-init.js
 .env.example
-
+.env
 # Runtime data
 pids
 *.pid

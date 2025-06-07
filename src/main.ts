@@ -1,5 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import * as session from 'express-session';
+import * as cookieParser from 'cookie-parser';
+import MongoStore from 'connect-mongo';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -9,7 +12,31 @@ async function bootstrap() {
         : ['log', 'debug', 'error', 'verbose', 'warn'],
   });
 
-  app.enableCors();
+  app.use(cookieParser());
+
+  app.use(
+    session({
+      secret: String(process.env.SESSION_SECRET),
+      resave: false,
+      saveUninitialized: false,
+      store: MongoStore.create({
+        mongoUrl:
+          process.env.MONGODB_URI ||
+          'mongodb://localhost:27017/tensillabs-lite',
+      }),
+      cookie: {
+        maxAge: 5 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      },
+    }),
+  );
+
+  app.enableCors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  });
   app.setGlobalPrefix('api/v1');
 
   app.enableShutdownHooks();
