@@ -12,8 +12,6 @@ export class UserSecrets {
     type: Types.ObjectId,
     ref: 'User',
     required: true,
-    unique: true,
-    index: true,
   })
   user: Types.ObjectId;
 
@@ -53,6 +51,11 @@ export class UserSecrets {
     select: false,
   })
   otpBackupCodes: string[];
+
+  @Prop({
+    required: false,
+  })
+  otpExpiresAt: Date;
 
   @Prop({
     required: false,
@@ -125,7 +128,7 @@ export class UserSecrets {
 
 export const UserSecretsSchema = SchemaFactory.createForClass(UserSecrets);
 
-UserSecretsSchema.index({ user: 1 });
+UserSecretsSchema.index({ user: 1 }, { unique: true });
 UserSecretsSchema.index({ passwordResetToken: 1 });
 UserSecretsSchema.index({ emailVerificationToken: 1 });
 UserSecretsSchema.index({ 'refreshTokens.token': 1 });

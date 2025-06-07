@@ -4,22 +4,21 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import * as bcrypt from 'bcryptjs';
+import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { UserSecretsService } from '../users/services/user-secrets.service';
 import {
-  UserSecrets,
-  UserSecretsDocument,
-} from '../users/schemas/user-secrets.schema';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
-import { generateOTP } from '../../lib/random.lib';
+  LoginDto,
+  RegisterDto,
+  VerifyEmailDto,
+  ResendOtpDto,
+} from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(UserSecrets.name)
-    private userSecretsModel: Model<UserSecretsDocument>,
+    private userSecretsService: UserSecretsService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<UserDocument> {
@@ -30,47 +29,43 @@ export class AuthService {
       throw new BadRequestException('User already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(password.trim(), 12);
-    const otp = generateOTP();
-    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
     const user = new this.userModel({
       email,
       timezone,
-      otp,
-      otpExpiresAt,
-      otpVerified: false,
+      isEmailVerified: false,
     });
 
     const savedUser = await user.save();
 
-    const userSecrets = new this.userSecretsModel({
-      user: savedUser._id,
-      passwordHash: hashedPassword,
-    });
+    await this.userSecretsService.createUserSecrets(
+      savedUser._id as Types.ObjectId,
+      password,
+    );
 
-    await userSecrets.save();
+    await this.userSecretsService.generateAndSaveOTP(
+      savedUser._id as Types.ObjectId,
+    );
+
     return savedUser;
   }
 
   async login(loginDto: LoginDto): Promise<UserDocument> {
     const { email, password } = loginDto;
 
-    const user = await this.userModel.findOne({ email, isActive: true });
+    const user = await this.userModel.findOne({ email });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const userSecrets = await this.userSecretsModel
-      .findOne({ user: user._id })
-      .select('+passwordHash');
-    if (!userSecrets) {
-      throw new UnauthorizedException('Invalid credentials');
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException(
+        'Please verify your email before logging in',
+      );
     }
 
-    const isPasswordValid = await bcrypt.compare(
+    const isPasswordValid = await this.userSecretsService.verifyPassword(
+      user._id as Types.ObjectId,
       password.trim(),
-      userSecrets.passwordHash,
     );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
@@ -82,7 +77,82 @@ export class AuthService {
     return user;
   }
 
-  async findUserById(id: string): Promise<UserDocument | null> {
-    return this.userModel.findById(id);
+  async verifyEmail(
+    verifyEmailDto: VerifyEmailDto,
+  ): Promise<{ success: boolean; message: string; user?: any }> {
+    const { email, otp } = verifyEmailDto;
+
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    const isOtpValid = await this.userSecretsService.verifyOTP(
+      user._id as Types.ObjectId,
+      otp,
+    );
+
+    if (!isOtpValid) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerifiedAt = new Date();
+    await user.save();
+
+    await this.userSecretsService.clearOTP(user._id as Types.ObjectId);
+
+    return {
+      success: true,
+      message: 'Email verified successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        timezone: user.timezone,
+        isEmailVerified: user.isEmailVerified,
+        emailVerifiedAt: user.emailVerifiedAt,
+      },
+    };
+  }
+
+  async resendOtp(
+    resendOtpDto: ResendOtpDto,
+  ): Promise<{ success: boolean; message: string }> {
+    const { email } = resendOtpDto;
+
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    // Generate new OTP
+    const otp = await this.userSecretsService.generateAndSaveOTP(
+      user._id as Types.ObjectId,
+    );
+
+    // TODO: Send email with OTP (implementation depends on email service)
+    console.log(`New OTP for ${email}: ${otp}`);
+
+    return {
+      success: true,
+      message: 'OTP sent successfully',
+    };
+  }
+
+  async findUserById(userId: string): Promise<UserDocument | null> {
+    try {
+      const user = await this.userModel.findById(userId).exec();
+      return user;
+    } catch {
+      return null;
+    }
   }
 }

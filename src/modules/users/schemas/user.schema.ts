@@ -10,7 +10,6 @@ export type UserDocument = User & Document;
 export class User {
   @Prop({
     required: true,
-    unique: true,
     lowercase: true,
     trim: true,
   })
@@ -18,7 +17,7 @@ export class User {
 
   @Prop({
     required: true,
-    default: 'UTC',
+    default: 'Africa/Lagos',
   })
   timezone: string;
 
@@ -37,33 +36,10 @@ export class User {
     required: false,
   })
   emailVerifiedAt: Date;
-
-  @Prop({
-    required: false,
-    select: false,
-  })
-  otp: string;
-
-  @Prop({
-    required: false,
-  })
-  otpExpiresAt: Date;
-
-  @Prop({
-    required: true,
-    default: false,
-  })
-  otpVerified: boolean;
-
-  @Prop({
-    required: true,
-    default: true,
-  })
-  isActive: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-UserSchema.index({ email: 1 });
+UserSchema.index({ email: 1 }, { unique: true });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ createdAt: -1 });

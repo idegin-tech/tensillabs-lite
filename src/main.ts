@@ -2,9 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as session from 'express-session';
 import * as cookieParser from 'cookie-parser';
-// import * as MongoStore from 'connect-mongo';
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-require-imports
-const MongoStore = require('connect-mongo');
+import connectMongo from 'connect-mongo';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -16,23 +14,38 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  console.log('[DEBUG] Session configuration:', {
+    sessionSecret: process.env.SESSION_SECRET ? 'SET' : 'NOT SET',
+    mongoUri:
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/tensillabs-lite',
+    nodeEnv: process.env.NODE_ENV,
+  });
+
+  const sessionStore = connectMongo?.create({
+    mongoUrl:
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/tensillabs-lite',
+    dbName: 'tensillabs-lite', // Explicitly set database name
+    collectionName: 'sessions', // Explicitly set collection name
+    touchAfter: 24 * 3600, // lazy session update
+  });
+
+  console.log(
+    '[DEBUG] Session store created for database: tensillabs-lite, collection: sessions',
+  );
+
   app.use(
     session({
       secret: String(process.env.SESSION_SECRET),
       resave: false,
       saveUninitialized: false,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      store: MongoStore.create({
-        mongoUrl:
-          process.env.MONGODB_URI ||
-          'mongodb://localhost:27017/tensillabs-lite',
-      }),
+      store: sessionStore,
       cookie: {
-        maxAge: 5 * 24 * 60 * 60 * 1000,
+        maxAge: 5 * 24 * 60 * 60 * 1000, // 5 days
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
       },
+      name: 'connect.sid', // Default session cookie name
     }),
   );
 
