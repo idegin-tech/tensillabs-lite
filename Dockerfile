@@ -15,7 +15,7 @@ RUN npm ci --only=production && npm cache clean --force
 FROM base AS builder
 WORKDIR /app
 COPY package*.json ./
-COPY frontend/package*.json ./frontend/
+COPY frontend/package*.json frontend/package-lock.json ./frontend/
 RUN npm ci
 RUN cd frontend && npm ci
 
