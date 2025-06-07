@@ -13,7 +13,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY frontend ./frontend
-RUN cd frontend && npm ci
+RUN cd frontend && (test -f package-lock.json && npm ci || npm install)
 
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
