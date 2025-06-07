@@ -125,7 +125,7 @@ export class UserSecrets {
 
 export const UserSecretsSchema = SchemaFactory.createForClass(UserSecrets);
 
-UserSecretsSchema.index({ userId: 1 });
+UserSecretsSchema.index({ user: 1 });
 UserSecretsSchema.index({ passwordResetToken: 1 });
 UserSecretsSchema.index({ emailVerificationToken: 1 });
 UserSecretsSchema.index({ 'refreshTokens.token': 1 });

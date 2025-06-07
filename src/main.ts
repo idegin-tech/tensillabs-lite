@@ -2,7 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as session from 'express-session';
 import * as cookieParser from 'cookie-parser';
-import MongoStore from 'connect-mongo';
+// import * as MongoStore from 'connect-mongo';
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-require-imports
+const MongoStore = require('connect-mongo');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -19,6 +21,7 @@ async function bootstrap() {
       secret: String(process.env.SESSION_SECRET),
       resave: false,
       saveUninitialized: false,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       store: MongoStore.create({
         mongoUrl:
           process.env.MONGODB_URI ||
