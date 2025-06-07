@@ -5,11 +5,10 @@ import { Connection } from 'mongoose';
 export const getDatabaseConfig = (
   configService: ConfigService,
 ): MongooseModuleOptions => {
-  const mongoUri = configService.get<string>('MONGODB_URI');
-
-  if (!mongoUri) {
-    throw new Error('MONGODB_URI environment variable is not defined');
-  }
+  const mongoUri = configService.get<string>(
+    'MONGODB_URI',
+    'mongodb://mongodb:27017/tensillabs-lite',
+  );
 
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
 
