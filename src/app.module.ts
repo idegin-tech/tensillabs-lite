@@ -8,6 +8,10 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
+import { OptionsModule } from './modules/options/options.module';
+import { WorkspacesModule } from './modules/workspaces/workspaces.module';
+import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
+import { OptionsModule } from './modules/options/options.module';
 
 @Module({
   imports: [
@@ -19,6 +23,7 @@ import { WorkspaceMembersModule } from './modules/workspace-members/workspace-me
     AuthModule,
     WorkspacesModule,
     WorkspaceMembersModule,
+    OptionsModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'frontend', 'dist'),
       exclude: ['/api/v1*'],

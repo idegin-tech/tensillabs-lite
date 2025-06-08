@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import * as mongoosePaginate from 'mongoose-paginate-v2';
 
 export type WorkspaceMemberDocument = WorkspaceMember & Document;
 
@@ -122,6 +123,34 @@ export class WorkspaceMember {
   status: MemberStatus;
 
   @Prop({
+    type: Types.ObjectId,
+    ref: 'Role',
+    required: false,
+    default: null,
+  })
+  primaryRole: Types.ObjectId;
+
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'Role' }],
+    default: [],
+  })
+  secondaryRoles: Types.ObjectId[];
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Team',
+    required: false,
+    default: null,
+  })
+  primaryTeam: Types.ObjectId;
+
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'Team' }],
+    default: [],
+  })
+  secondaryTeams: Types.ObjectId[];
+
+  @Prop({
     required: false,
     default: null,
   })
@@ -145,3 +174,5 @@ WorkspaceMemberSchema.index({ user: 1 });
 WorkspaceMemberSchema.index({ permission: 1 });
 WorkspaceMemberSchema.index({ status: 1 });
 WorkspaceMemberSchema.index({ primaryEmail: 1 });
+
+WorkspaceMemberSchema.plugin(mongoosePaginate);

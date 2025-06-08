@@ -4,7 +4,13 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import {
+  Model,
+  Types,
+  PaginateModel,
+  FilterQuery,
+  PaginateResult,
+} from 'mongoose';
 import {
   WorkspaceMember,
   WorkspaceMemberDocument,
@@ -12,12 +18,14 @@ import {
   MemberStatus,
 } from '../schemas/workspace-member.schema';
 import { InviteMemberDto } from '../dto/workspace-member.dto';
+import { PaginationDto, extractPaginationOptions } from '../dto/pagination.dto';
 
 @Injectable()
 export class WorkspaceMemberService {
   constructor(
     @InjectModel(WorkspaceMember.name)
-    private workspaceMemberModel: Model<WorkspaceMemberDocument>,
+    private workspaceMemberModel: Model<WorkspaceMemberDocument> &
+      PaginateModel<WorkspaceMemberDocument>,
   ) {}
 
   async initializeWorkspaceOwner(
@@ -54,12 +62,32 @@ export class WorkspaceMemberService {
 
   async findByWorkspace(
     workspaceId: Types.ObjectId,
-  ): Promise<WorkspaceMemberDocument[]> {
-    return await this.workspaceMemberModel
-      .find({ workspace: workspaceId, status: MemberStatus.ACTIVE })
-      .populate('user', 'email timezone isEmailVerified')
-      .sort({ createdAt: -1 })
-      .exec();
+    pagination?: PaginationDto,
+  ): Promise<PaginateResult<WorkspaceMemberDocument>> {
+    if (!pagination) {
+      // Default pagination
+      pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
+    }
+
+    const { search, paginationOptions } = extractPaginationOptions(pagination);
+
+    const query: FilterQuery<WorkspaceMemberDocument> = {
+      workspace: workspaceId,
+      status: MemberStatus.ACTIVE,
+    };
+
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { primaryEmail: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    return await this.workspaceMemberModel.paginate(query, {
+      ...paginationOptions,
+      populate: { path: 'user', select: 'email timezone isEmailVerified' },
+    });
   }
 
   async updateMember(
@@ -69,34 +97,6 @@ export class WorkspaceMemberService {
     return await this.workspaceMemberModel
       .findByIdAndUpdate(memberId, updateData, { new: true })
       .exec();
-  }
-
-  async removeMember(
-    userId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<boolean> {
-    const result = await this.workspaceMemberModel
-      .updateOne(
-        { user: userId, workspace: workspaceId },
-        { status: MemberStatus.SUSPENDED },
-      )
-      .exec();
-
-    return result.modifiedCount > 0;
-  }
-
-  async checkPermission(
-    userId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-    requiredPermissions: Permission[],
-  ): Promise<boolean> {
-    const member = await this.findByUserAndWorkspace(userId, workspaceId);
-
-    if (!member || member.status !== MemberStatus.ACTIVE) {
-      return false;
-    }
-
-    return requiredPermissions.includes(member.permission);
   }
 
   async findById(

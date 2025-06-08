@@ -1,0 +1,114 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  UsePipes,
+  Req,
+  BadRequestException,
+} from '@nestjs/common';
+import { Request } from 'express';
+import { Types } from 'mongoose';
+import {
+  createTeamSchema,
+  updateTeamSchema,
+  toggleActiveSchema,
+  CreateTeamDto,
+  UpdateTeamDto,
+  ToggleActiveDto,
+} from './dto/team.dto';
+import { AuthGuard } from 'src/modules/auth/guards/auth.guard';
+import {
+  RequirePermission,
+  WorkspaceMemberGuard,
+} from 'src/modules/workspace-members/guards/workspace-member.guard';
+import { MemberPermissions } from 'src/modules/workspace-members/enums/member-permissions.enum';
+import { TeamService } from './services/team.service';
+import { ZodValidationPipe } from 'src/lib/validation.pipe';
+import { createSuccessResponse } from 'src/lib/response.interface';
+import {
+  PaginationDto,
+  paginationSchema,
+} from 'src/modules/workspace-members/dto/pagination.dto';
+
+@Controller('teams')
+@UseGuards(AuthGuard, WorkspaceMemberGuard)
+@RequirePermission(MemberPermissions.MANAGER)
+export class TeamController {
+  constructor(private readonly teamService: TeamService) {}
+
+  @Post()
+  @UsePipes(new ZodValidationPipe(createTeamSchema))
+  async create(
+    @Body() createTeamDto: CreateTeamDto,
+    @Req() req: Request & { workspaceMember: any; workspace: any },
+  ) {
+    const team = await this.teamService.create(
+      createTeamDto,
+      req.workspace._id,
+      req.workspaceMember._id,
+    );
+
+    return createSuccessResponse('Team created successfully', team);
+  }
+
+  @Get()
+  @UsePipes(new ZodValidationPipe(paginationSchema))
+  async findAll(
+    @Query() pagination: PaginationDto,
+    @Req() req: Request & { workspace: any },
+  ) {
+    const teams = await this.teamService.findAll(req.workspace._id, pagination);
+
+    return createSuccessResponse('Teams retrieved successfully', teams);
+  }
+
+  @Put(':id')
+  @UsePipes(new ZodValidationPipe(updateTeamSchema))
+  async update(@Param('id') id: string, @Body() updateTeamDto: UpdateTeamDto) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid team ID format');
+    }
+
+    const team = await this.teamService.update(
+      new Types.ObjectId(id),
+      updateTeamDto,
+    );
+
+    return createSuccessResponse('Team updated successfully', team);
+  }
+
+  @Patch(':id/trash')
+  async moveToTrash(@Param('id') id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid team ID format');
+    }
+
+    const team = await this.teamService.moveToTrash(new Types.ObjectId(id));
+
+    return createSuccessResponse('Team moved to trash successfully', team);
+  }
+
+  @Patch(':id/toggle-active')
+  @UsePipes(new ZodValidationPipe(toggleActiveSchema))
+  async toggleActive(
+    @Param('id') id: string,
+    @Body() toggleActiveDto: ToggleActiveDto,
+  ) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid team ID format');
+    }
+
+    const team = await this.teamService.toggleActive(
+      new Types.ObjectId(id),
+      toggleActiveDto.isActive,
+    );
+
+    return createSuccessResponse('Team status updated successfully', team);
+  }
+}

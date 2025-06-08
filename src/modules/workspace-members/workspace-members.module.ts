@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Reflector } from '@nestjs/core';
 import { WorkspaceMemberService } from './services/workspace-member.service';
 import { WorkspaceMemberController } from './workspace-member.controller';
 import { WorkspaceMemberGuard } from './guards/workspace-member.guard';
@@ -17,7 +18,7 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
     forwardRef(() => WorkspacesModule),
   ],
   controllers: [WorkspaceMemberController],
-  providers: [WorkspaceMemberService, WorkspaceMemberGuard],
+  providers: [WorkspaceMemberService, WorkspaceMemberGuard, Reflector],
   exports: [MongooseModule, WorkspaceMemberService],
 })
 export class WorkspaceMembersModule {}
