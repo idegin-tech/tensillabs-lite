@@ -9,6 +9,7 @@ import {
   WorkspaceMemberSchema,
 } from './schemas/workspace-member.schema';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -16,9 +17,10 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
       { name: WorkspaceMember.name, schema: WorkspaceMemberSchema },
     ]),
     forwardRef(() => WorkspacesModule),
+    AuthModule,
   ],
   controllers: [WorkspaceMemberController],
   providers: [WorkspaceMemberService, WorkspaceMemberGuard, Reflector],
-  exports: [MongooseModule, WorkspaceMemberService],
+  exports: [MongooseModule, WorkspaceMemberService, WorkspaceMemberGuard],
 })
 export class WorkspaceMembersModule {}

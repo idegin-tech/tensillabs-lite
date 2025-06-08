@@ -63,13 +63,57 @@ export class AuthService {
       );
     }
 
+    // Check if account is locked
+    const isLocked = await this.userSecretsService.isAccountLocked(
+      user._id as Types.ObjectId,
+    );
+
+    if (isLocked) {
+      const lockInfo = await this.userSecretsService.getAccountLockInfo(
+        user._id as Types.ObjectId,
+      );
+
+      if (lockInfo.lockedUntil) {
+        const remainingTime = Math.ceil(
+          (lockInfo.lockedUntil.getTime() - Date.now()) / (1000 * 60),
+        );
+        throw new UnauthorizedException(
+          `Account is temporarily locked. Please try again in ${remainingTime} minute(s).`,
+        );
+      }
+    }
+
     const isPasswordValid = await this.userSecretsService.verifyPassword(
       user._id as Types.ObjectId,
       password.trim(),
     );
+
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      // Increment failed login attempts
+      await this.userSecretsService.incrementFailedLoginAttempts(
+        user._id as Types.ObjectId,
+      );
+
+      // Check if account got locked after this attempt
+      const lockInfo = await this.userSecretsService.getAccountLockInfo(
+        user._id as Types.ObjectId,
+      );
+
+      if (lockInfo.isLocked) {
+        throw new UnauthorizedException(
+          'Too many failed login attempts. Account has been temporarily locked for 30 minutes.',
+        );
+      } else {
+        const remainingAttempts = 8 - lockInfo.failedAttempts;
+        throw new UnauthorizedException(
+          `Invalid credentials. ${remainingAttempts} attempt(s) remaining before account lock.`,
+        );
+      }
     }
+
+    await this.userSecretsService.resetFailedLoginAttempts(
+      user._id as Types.ObjectId,
+    );
 
     user.lastLoginAt = new Date();
     await user.save();
@@ -101,7 +145,6 @@ export class AuthService {
     }
 
     user.isEmailVerified = true;
-    user.emailVerifiedAt = new Date();
     await user.save();
 
     await this.userSecretsService.clearOTP(user._id as Types.ObjectId);
@@ -114,7 +157,6 @@ export class AuthService {
         email: user.email,
         timezone: user.timezone,
         isEmailVerified: user.isEmailVerified,
-        emailVerifiedAt: user.emailVerifiedAt,
       },
     };
   }

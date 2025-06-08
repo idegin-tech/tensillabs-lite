@@ -20,7 +20,7 @@ export class RoleService {
   constructor(
     @InjectModel(Role.name)
     private roleModel: Model<RoleDocument> & PaginateModel<RoleDocument>,
-  ) { }
+  ) {}
 
   async create(
     createRoleDto: CreateRoleDto,

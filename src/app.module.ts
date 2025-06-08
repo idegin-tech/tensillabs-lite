@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -6,12 +7,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { WorkspacesModule } from './modules/workspaces/workspaces.module';
-import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
 import { OptionsModule } from './modules/options/options.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
-import { OptionsModule } from './modules/options/options.module';
 
 @Module({
   imports: [

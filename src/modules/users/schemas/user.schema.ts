@@ -32,12 +32,6 @@ export class User {
     default: null,
   })
   lastLoginAt: Date;
-
-  @Prop({
-    required: false,
-    default: null,
-  })
-  emailVerifiedAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

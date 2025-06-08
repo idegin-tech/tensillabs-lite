@@ -63,66 +63,10 @@ export class UserSecrets {
 
   @Prop({
     required: false,
-    default: null,
-  })
-  otpEnabledAt: Date;
-
-  @Prop({
-    required: false,
-    default: null,
-  })
-  lastOtpUsedAt: Date;
-
-  @Prop({
-    required: false,
     select: false,
     default: null,
   })
   passwordResetToken: string;
-
-  @Prop({
-    required: false,
-    default: null,
-  })
-  passwordResetExpiresAt: Date;
-
-  @Prop({
-    required: false,
-    select: false,
-    default: null,
-  })
-  emailVerificationToken: string;
-
-  @Prop({
-    required: false,
-    default: null,
-  })
-  emailVerificationExpiresAt: Date;
-
-  @Prop({
-    type: [Object],
-    required: false,
-    default: [],
-  })
-  refreshTokens: Array<{
-    token: string;
-    expiresAt: Date;
-    deviceInfo?: string;
-    ipAddress?: string;
-    createdAt: Date;
-  }>;
-
-  @Prop({
-    type: [Object],
-    required: false,
-    default: [],
-  })
-  loginAttempts: Array<{
-    ipAddress: string;
-    userAgent: string;
-    success: boolean;
-    attemptedAt: Date;
-  }>;
 
   @Prop({
     required: false,

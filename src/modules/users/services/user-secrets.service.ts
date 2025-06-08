@@ -114,27 +114,88 @@ export class UserSecretsService {
     );
   }
 
-  async addLoginAttempt(
-    userId: Types.ObjectId,
-    ipAddress: string,
-    userAgent: string,
-    success: boolean,
-  ): Promise<void> {
+  async incrementFailedLoginAttempts(userId: Types.ObjectId): Promise<void> {
+    const userSecrets = await this.userSecretsModel.findOne({ user: userId });
+
+    if (!userSecrets) {
+      return;
+    }
+
+    const failedAttempts = userSecrets.failedLoginAttempts + 1;
+
+    if (failedAttempts >= 8) {
+      const lockUntil = new Date(Date.now() + 30 * 60 * 1000);
+
+      await this.userSecretsModel.updateOne(
+        { user: userId },
+        {
+          $set: {
+            failedLoginAttempts: 0,
+            lockedUntil: lockUntil,
+          },
+        },
+      );
+    } else {
+      await this.userSecretsModel.updateOne(
+        { user: userId },
+        {
+          $set: {
+            failedLoginAttempts: failedAttempts,
+          },
+        },
+      );
+    }
+  }
+
+  async resetFailedLoginAttempts(userId: Types.ObjectId): Promise<void> {
     await this.userSecretsModel.updateOne(
       { user: userId },
       {
-        $push: {
-          loginAttempts: {
-            ipAddress,
-            userAgent,
-            success,
-            attemptedAt: new Date(),
-          },
+        $set: {
+          failedLoginAttempts: 0,
         },
-        $inc: {
-          failedLoginAttempts: success ? -1 : 1,
+        $unset: {
+          lockedUntil: 1,
         },
       },
     );
+  }
+
+  async isAccountLocked(userId: Types.ObjectId): Promise<boolean> {
+    const userSecrets = await this.userSecretsModel.findOne({ user: userId });
+
+    if (!userSecrets || !userSecrets.lockedUntil) {
+      return false;
+    }
+
+    if (userSecrets.lockedUntil < new Date()) {
+      await this.resetFailedLoginAttempts(userId);
+      return false;
+    }
+
+    return true;
+  }
+
+  async getAccountLockInfo(userId: Types.ObjectId): Promise<{
+    isLocked: boolean;
+    lockedUntil?: Date;
+    failedAttempts: number;
+  }> {
+    const userSecrets = await this.userSecretsModel.findOne({ user: userId });
+
+    if (!userSecrets) {
+      return {
+        isLocked: false,
+        failedAttempts: 0,
+      };
+    }
+
+    const isLocked = await this.isAccountLocked(userId);
+
+    return {
+      isLocked,
+      lockedUntil: userSecrets.lockedUntil || undefined,
+      failedAttempts: userSecrets.failedLoginAttempts,
+    };
   }
 }

@@ -21,7 +21,7 @@ export class ClientService {
   constructor(
     @InjectModel(Client.name)
     private clientModel: Model<ClientDocument> & PaginateModel<ClientDocument>,
-  ) { }
+  ) {}
 
   async create(
     createClientDto: CreateClientDto,
@@ -75,7 +75,9 @@ export class ClientService {
   }
 
   async update(
-    id: Types.ObjectId, updateClientDto: UpdateClientDto, _id: any,
+    id: Types.ObjectId,
+    updateClientDto: UpdateClientDto,
+    _id: any,
   ): Promise<ClientDocument> {
     const updateData: Record<string, any> = { ...updateClientDto };
 

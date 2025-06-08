@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import {
   Controller,
   Post,
@@ -172,7 +173,6 @@ export class AuthController {
         timezone: user.timezone,
         lastLoginAt: user.lastLoginAt,
         isEmailVerified: user.isEmailVerified,
-        emailVerifiedAt: user.emailVerifiedAt,
       },
     });
   }
