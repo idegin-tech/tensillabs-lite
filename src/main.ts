@@ -16,22 +16,16 @@ async function bootstrap() {
 
   console.log('[DEBUG] Session configuration:', {
     sessionSecret: process.env.SESSION_SECRET ? 'SET' : 'NOT SET',
-    mongoUri:
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/tensillabs-lite',
+    mongoUri: process.env.MONGODB_URI,
     nodeEnv: process.env.NODE_ENV,
   });
 
   const sessionStore = connectMongo?.create({
-    mongoUrl:
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/tensillabs-lite',
+    mongoUrl: process.env.MONGODB_URI,
     dbName: 'tensillabs-lite',
     collectionName: 'sessions',
     touchAfter: 24 * 3600,
   });
-
-  console.log(
-    '[DEBUG] Session store created for database: tensillabs-lite, collection: sessions',
-  );
 
   app.use(
     session({
@@ -40,7 +34,7 @@ async function bootstrap() {
       saveUninitialized: false,
       store: sessionStore,
       cookie: {
-        maxAge: 5 * 24 * 60 * 60 * 1000, // 5 days
+        maxAge: 5 * 24 * 60 * 60 * 1000,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',

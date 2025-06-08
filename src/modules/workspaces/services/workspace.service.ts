@@ -18,10 +18,8 @@ export class WorkspaceService {
     createWorkspaceDto: CreateWorkspaceDto,
     user: UserDocument,
   ): Promise<{ workspace: WorkspaceDocument; member: any }> {
-    const { memberInfo, ...workspaceData } = createWorkspaceDto;
-
     const existingWorkspace = await this.workspaceModel.findOne({
-      name: workspaceData.name,
+      name: createWorkspaceDto.name,
       createdBy: user._id,
     });
 
@@ -32,32 +30,26 @@ export class WorkspaceService {
     }
 
     const workspace = new this.workspaceModel({
-      ...workspaceData,
+      ...createWorkspaceDto,
       createdBy: user._id,
     });
 
     const savedWorkspace = await workspace.save();
+
+    // Extract first and last name from email for workspace member
+    const emailLocalPart = user.email.split('@')[0];
+    const nameParts = emailLocalPart.split(/[._-]/);
+    const firstName = nameParts[0] || 'User';
+    const lastName = nameParts[1] || emailLocalPart;
 
     const workspaceMember =
       await this.workspaceMemberService.initializeWorkspaceOwner(
         user._id as Types.ObjectId,
         savedWorkspace._id as Types.ObjectId,
         user.email,
-        memberInfo.firstName,
-        memberInfo.lastName,
-        memberInfo.middleName,
+        firstName,
+        lastName,
       );
-
-    if (memberInfo.bio || memberInfo.workPhone || memberInfo.mobilePhone) {
-      await this.workspaceMemberService.updateMember(
-        workspaceMember._id as Types.ObjectId,
-        {
-          bio: memberInfo.bio,
-          workPhone: memberInfo.workPhone,
-          mobilePhone: memberInfo.mobilePhone,
-        },
-      );
-    }
 
     return {
       workspace: savedWorkspace,
