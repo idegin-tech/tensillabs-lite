@@ -1,8 +1,12 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as session from 'express-session';
 import * as cookieParser from 'cookie-parser';
-import connectMongo from 'connect-mongo';
+import * as MongoDBStore from 'connect-mongodb-session';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -12,24 +16,40 @@ async function bootstrap() {
         : ['log', 'debug', 'error', 'verbose', 'warn'],
   });
 
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   app.use(cookieParser());
 
   console.log('[DEBUG] Session configuration:', {
     sessionSecret: process.env.SESSION_SECRET ? 'SET' : 'NOT SET',
-    mongoUri: process.env.MONGODB_URI,
+    mongoUri: process.env.MONGODB_URI ? 'SET' : 'NOT SET',
     nodeEnv: process.env.NODE_ENV,
   });
 
-  const sessionStore = connectMongo?.create({
-    mongoUrl: process.env.MONGODB_URI,
-    dbName: 'tensillabs-lite',
-    collectionName: 'sessions',
-    touchAfter: 24 * 3600,
+  const MongoStore = MongoDBStore(session);
+  
+  const sessionStore = new MongoStore({
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/tensillabs-lite',
+    databaseName: 'tensillabs-lite',
+    collection: 'sessions',
+  });
+
+  sessionStore.on('error', (error) => {
+    console.error('[SESSION STORE ERROR]:', error);
+  });
+
+  sessionStore.on('connected', () => {
+    console.log('[SESSION STORE] Connected to MongoDB successfully');
+  });
+
+  sessionStore.on('disconnected', () => {
+    console.log('[SESSION STORE] Disconnected from MongoDB');
   });
 
   app.use(
     session({
-      secret: String(process.env.SESSION_SECRET),
+      secret: String(process.env.SESSION_SECRET || 'fallback-secret'),
       resave: false,
       saveUninitialized: false,
       store: sessionStore,
