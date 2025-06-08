@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import * as session from 'express-session';
 import * as cookieParser from 'cookie-parser';
 import * as MongoDBStore from 'connect-mongodb-session';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -19,6 +20,8 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
 
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cookieParser());
 
   console.log('[DEBUG] Session configuration:', {
@@ -28,7 +31,7 @@ async function bootstrap() {
   });
 
   const MongoStore = MongoDBStore(session);
-  
+
   const sessionStore = new MongoStore({
     uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/tensillabs-lite',
     databaseName: 'tensillabs-lite',

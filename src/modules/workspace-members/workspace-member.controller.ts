@@ -5,18 +5,14 @@ import {
   Get,
   Post,
   Body,
-  Param,
   Query,
   UseGuards,
   UsePipes,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Types } from 'mongoose';
 import { AuthGuard } from '../auth/guards/auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserDocument } from '../users/schemas/user.schema';
 import { WorkspaceMemberService } from './services/workspace-member.service';
 import {
   WorkspaceMemberGuard,
@@ -30,6 +26,8 @@ import {
   InviteMemberDto,
 } from './dto/workspace-member.dto';
 import { paginationSchema, PaginationDto } from './dto/pagination.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { UserDocument } from '../users/schemas/user.schema';
 
 @Controller('workspace-members')
 @UseGuards(AuthGuard)
@@ -38,10 +36,17 @@ export class WorkspaceMemberController {
     private readonly workspaceMemberService: WorkspaceMemberService,
   ) {}
 
-  @Get('me/all')
-  async getMyWorkspaceMembers(@CurrentUser() user: UserDocument) {
-    const members = await this.workspaceMemberService.findByUser(
-      user._id as Types.ObjectId,
+  @Get('workspace/all')
+  @UseGuards(WorkspaceMemberGuard)
+  @RequirePermission(MemberPermissions.MANAGER)
+  @UsePipes(new ZodValidationPipe(paginationSchema))
+  async getWorkspaceMembers(
+    @Query() pagination: PaginationDto,
+    @Req() req: Request & { workspaceMember: any; workspace: any },
+  ) {
+    const members = await this.workspaceMemberService.findByWorkspace(
+      req.workspace._id,
+      pagination,
     );
 
     return createSuccessResponse(
@@ -50,26 +55,20 @@ export class WorkspaceMemberController {
     );
   }
 
-  @Get('workspace/:workspaceId')
-  @UseGuards(WorkspaceMemberGuard)
-  @RequirePermission(MemberPermissions.MANAGER)
-  @UsePipes(new ZodValidationPipe(paginationSchema))
-  async getWorkspaceMembers(
-    @Param('workspaceId') workspaceId: string,
-    @Query() pagination: PaginationDto,
+  @Get('workspaces/me')
+  async getMyMemberships(
+    @Query(new ZodValidationPipe(paginationSchema)) pagination: PaginationDto,
+    @CurrentUser() user: UserDocument,
   ) {
-    if (!Types.ObjectId.isValid(workspaceId)) {
-      throw new BadRequestException('Invalid workspace ID format');
-    }
-
-    const members = await this.workspaceMemberService.findByWorkspace(
-      new Types.ObjectId(workspaceId),
+    console.log('my-memberships WAS CALLED', user._id);
+    const memberships = await this.workspaceMemberService.findByUserId(
+      user._id as Types.ObjectId,
       pagination,
     );
 
     return createSuccessResponse(
-      'Workspace members retrieved successfully',
-      members,
+      'User memberships retrieved successfully',
+      memberships,
     );
   }
 

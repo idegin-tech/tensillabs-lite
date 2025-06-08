@@ -1,17 +1,20 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, PaginateModel } from 'mongoose';
 import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
 import { CreateWorkspaceDto } from '../dto/workspace.dto';
 import { WorkspaceMemberService } from 'src/modules/workspace-members/services/workspace-member.service';
+import { WalletService } from 'src/modules/billing/wallets/services/wallet.service';
 import { UserDocument } from 'src/modules/users/schemas/user.schema';
 
 @Injectable()
 export class WorkspaceService {
   constructor(
     @InjectModel(Workspace.name)
-    private workspaceModel: Model<WorkspaceDocument>,
+    private workspaceModel: Model<WorkspaceDocument> &
+      PaginateModel<WorkspaceDocument>,
     private workspaceMemberService: WorkspaceMemberService,
+    private walletService: WalletService,
   ) {}
 
   async createWorkspace(
@@ -36,20 +39,18 @@ export class WorkspaceService {
 
     const savedWorkspace = await workspace.save();
 
-    // Extract first and last name from email for workspace member
-    const emailLocalPart = user.email.split('@')[0];
-    const nameParts = emailLocalPart.split(/[._-]/);
-    const firstName = nameParts[0] || 'User';
-    const lastName = nameParts[1] || emailLocalPart;
-
     const workspaceMember =
       await this.workspaceMemberService.initializeWorkspaceOwner(
         user._id as Types.ObjectId,
         savedWorkspace._id as Types.ObjectId,
         user.email,
-        firstName,
-        lastName,
+        'Admin',
+        savedWorkspace.name,
       );
+
+    await this.walletService.initializeWallet(
+      savedWorkspace._id as Types.ObjectId,
+    );
 
     return {
       workspace: savedWorkspace,

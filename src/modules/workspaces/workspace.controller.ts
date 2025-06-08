@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  UsePipes,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -22,9 +21,9 @@ export class WorkspaceController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ZodValidationPipe(createWorkspaceSchema))
   async createWorkspace(
-    @Body() createWorkspaceDto: CreateWorkspaceDto,
+    @Body(new ZodValidationPipe(createWorkspaceSchema))
+    createWorkspaceDto: CreateWorkspaceDto,
     @CurrentUser() user: UserDocument,
   ) {
     const result = await this.workspaceService.createWorkspace(

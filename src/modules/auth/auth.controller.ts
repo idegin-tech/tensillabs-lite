@@ -83,24 +83,10 @@ export class AuthController {
     @Session() session: SessionData,
     @Req() req: Request,
   ) {
-    console.log('[DEBUG] Login attempt for:', loginDto.email);
-    console.log('[DEBUG] Session ID:', req.sessionID);
-    console.log('[DEBUG] Session before login:', {
-      userId: session.userId,
-      userEmail: session.userEmail,
-      sessionExists: !!session,
-    });
-
     const user = await this.authService.login(loginDto);
 
     session.userId = String(user._id);
     session.userEmail = user.email;
-
-    console.log('[DEBUG] Session after setting data:', {
-      userId: session.userId,
-      userEmail: session.userEmail,
-      sessionID: req.sessionID,
-    });
 
     return new Promise((resolve, reject) => {
       req.session.save((err) => {
@@ -109,10 +95,6 @@ export class AuthController {
           // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
           reject(err);
         } else {
-          console.log(
-            '[DEBUG] Session saved successfully for user:',
-            user.email,
-          );
           resolve(
             createSuccessResponse('Login successful', {
               user: {

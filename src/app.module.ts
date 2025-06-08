@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { OptionsModule } from './modules/options/options.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { WorkspaceMembersModule } from './modules/workspace-members/workspace-me
     WorkspacesModule,
     WorkspaceMembersModule,
     OptionsModule,
+    BillingModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'frontend', 'dist'),
       exclude: ['/api/v1*'],

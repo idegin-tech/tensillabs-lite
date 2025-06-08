@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Injectable,
   BadRequestException,
@@ -10,6 +15,7 @@ import {
   PaginateModel,
   FilterQuery,
   PaginateResult,
+  PipelineStage,
 } from 'mongoose';
 import {
   WorkspaceMember,
@@ -65,7 +71,6 @@ export class WorkspaceMemberService {
     pagination?: PaginationDto,
   ): Promise<PaginateResult<WorkspaceMemberDocument>> {
     if (!pagination) {
-      // Default pagination
       pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
     }
 
@@ -84,8 +89,11 @@ export class WorkspaceMemberService {
       ];
     }
 
+    const restPaginationOptions = { ...paginationOptions };
+    delete restPaginationOptions.populate;
+
     return await this.workspaceMemberModel.paginate(query, {
-      ...paginationOptions,
+      ...restPaginationOptions,
       populate: { path: 'user', select: 'email timezone isEmailVerified' },
     });
   }
@@ -105,12 +113,82 @@ export class WorkspaceMemberService {
     return await this.workspaceMemberModel.findById(memberId).exec();
   }
 
-  async findByUser(userId: Types.ObjectId): Promise<WorkspaceMemberDocument[]> {
-    return await this.workspaceMemberModel
-      .find({ user: userId, status: MemberStatus.ACTIVE })
-      .populate('workspace', 'name description logoURL bannerURL')
-      .sort({ createdAt: -1 })
-      .exec();
+  async findByUserId(
+    userId: Types.ObjectId,
+    pagination?: PaginationDto,
+  ): Promise<PaginateResult<WorkspaceMemberDocument>> {
+    if (!pagination) {
+      pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
+    }
+
+    const { search, paginationOptions } = extractPaginationOptions(pagination);
+
+    const query: FilterQuery<WorkspaceMemberDocument> = {
+      user: userId,
+      status: MemberStatus.ACTIVE,
+    };
+
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { primaryEmail: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const restPaginationOptions = { ...paginationOptions };
+    delete restPaginationOptions.populate;
+
+    return await this.workspaceMemberModel.paginate(query, {
+      ...restPaginationOptions,
+      populate: {
+        path: 'workspace',
+        select:
+          'name description logoURL bannerURL createdBy createdAt updatedAt',
+      },
+    });
+  }
+
+  async findByInvitedBy(
+    invitedByUserId: Types.ObjectId,
+    pagination?: PaginationDto,
+  ): Promise<PaginateResult<WorkspaceMemberDocument>> {
+    if (!pagination) {
+      pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
+    }
+
+    const { search, paginationOptions } = extractPaginationOptions(pagination);
+
+    const query: FilterQuery<WorkspaceMemberDocument> = {
+      invitedBy: invitedByUserId,
+      status: MemberStatus.ACTIVE,
+    };
+
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { primaryEmail: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const restPaginationOptions = { ...paginationOptions };
+    delete restPaginationOptions.populate;
+
+    return await this.workspaceMemberModel.paginate(query, {
+      ...restPaginationOptions,
+      populate: [
+        {
+          path: 'workspace',
+          select:
+            'name description logoURL bannerURL createdBy createdAt updatedAt',
+        },
+        {
+          path: 'user',
+          select: 'email timezone isEmailVerified',
+        },
+      ],
+    });
   }
 
   async inviteMember(

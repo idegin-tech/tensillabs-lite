@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import * as mongoosePaginate from 'mongoose-paginate-v2';
 
 export type WorkspaceDocument = Workspace & Document;
 
@@ -51,3 +52,5 @@ export const WorkspaceSchema = SchemaFactory.createForClass(Workspace);
 WorkspaceSchema.index({ createdBy: 1 });
 WorkspaceSchema.index({ name: 1 });
 WorkspaceSchema.index({ createdAt: -1 });
+
+WorkspaceSchema.plugin(mongoosePaginate);
