@@ -16,6 +16,7 @@ import clsx from "clsx";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
+import PWAInstallButton from "@/components/pwa-install-button";
 import {
   TwitterIcon,
   GithubIcon,
@@ -95,6 +96,9 @@ export const Navbar = () => {
           <ThemeSwitch />
         </NavbarItem>
         <NavbarItem className="hidden lg:flex">{searchInput}</NavbarItem>
+        <NavbarItem className="hidden sm:flex">
+          <PWAInstallButton />
+        </NavbarItem>
         <NavbarItem className="hidden md:flex">
           <Button
             isExternal
