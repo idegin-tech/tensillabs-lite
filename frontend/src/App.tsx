@@ -1,13 +1,21 @@
-import { Route, Routes } from "react-router-dom";
-import PWAUpdateNotification from "./components/pwa-update-notification";
-import HomePage from "./pages/home/HomePage";
+import PWAUpdateNotification from './components/pwa-update-notification';
+import AppLoading from './components/AppLoading';
+import HomeRoutes from './pages/home/routes';
+import AppRoutes from './pages/apps/routes';
+import { useAuth } from './context/auth.context';
 
 function App() {
+  const {
+    state: { user, loading },
+  } = useAuth();
+
+  if (loading) {
+    return <AppLoading />;
+  }
+
   return (
     <>
-      <Routes>
-        <Route element={<HomePage />} path="/" />
-      </Routes>
+      {!user ? <HomeRoutes /> : <AppRoutes />}
       <PWAUpdateNotification />
     </>
   );

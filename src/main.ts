@@ -74,11 +74,12 @@ async function bootstrap() {
       'Authorization',
       'X-Member-ID',
       'X-Timezone',
+      'X-User-DateTime',
       'Accept',
       'Origin',
       'X-Requested-With',
     ],
-    exposedHeaders: ['X-Member-ID', 'X-Timezone'],
+    exposedHeaders: ['X-Member-ID', 'X-Timezone', 'X-User-DateTime'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   });
   app.setGlobalPrefix('api/v1');

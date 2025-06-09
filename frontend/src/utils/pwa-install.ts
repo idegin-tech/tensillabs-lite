@@ -31,10 +31,13 @@ export const PWAInstallHandler = {
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
+
       deferredPrompt = null;
+
       return outcome === 'accepted';
     } catch (error) {
       console.error('Install prompt failed:', error);
+
       return false;
     }
   },
@@ -44,19 +47,23 @@ export const PWAInstallHandler = {
   },
 
   isStandalone(): boolean {
-    return window.matchMedia('(display-mode: standalone)').matches ||
-           (window.navigator as any).standalone === true;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
+    );
   },
 
   showInstallButton() {
     const event = new CustomEvent('pwa-install-available');
+
     window.dispatchEvent(event);
   },
 
   hideInstallButton() {
     const event = new CustomEvent('pwa-install-completed');
+
     window.dispatchEvent(event);
-  }
+  },
 };
 
 export default PWAInstallHandler;

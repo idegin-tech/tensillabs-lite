@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@heroui/button';
+
 import PWAInstallHandler from '../utils/pwa-install';
 
 export const PWAInstallButton: React.FC = () => {
@@ -18,8 +19,14 @@ export const PWAInstallButton: React.FC = () => {
     setCanInstall(PWAInstallHandler.canInstall());
 
     return () => {
-      window.removeEventListener('pwa-install-available', handleInstallAvailable);
-      window.removeEventListener('pwa-install-completed', handleInstallCompleted);
+      window.removeEventListener(
+        'pwa-install-available',
+        handleInstallAvailable,
+      );
+      window.removeEventListener(
+        'pwa-install-completed',
+        handleInstallCompleted,
+      );
     };
   }, []);
 
@@ -38,12 +45,12 @@ export const PWAInstallButton: React.FC = () => {
 
   return (
     <Button
-      color="primary"
-      variant="ghost"
-      size="sm"
-      onPress={handleInstall}
-      isLoading={isInstalling}
       className="text-sm"
+      color="primary"
+      isLoading={isInstalling}
+      size="sm"
+      variant="ghost"
+      onPress={handleInstall}
     >
       Install App
     </Button>

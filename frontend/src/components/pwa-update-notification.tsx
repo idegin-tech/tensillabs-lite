@@ -39,18 +39,18 @@ export const PWAUpdateNotification: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <Button
-            size="sm"
-            color="primary"
-            onPress={handleUpdate}
             className="flex-1"
+            color="primary"
+            size="sm"
+            onPress={handleUpdate}
           >
             Update
           </Button>
           <Button
+            className="flex-1"
             size="sm"
             variant="ghost"
             onPress={handleDismiss}
-            className="flex-1"
           >
             Later
           </Button>

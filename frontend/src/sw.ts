@@ -8,12 +8,14 @@ if ('serviceWorker' in navigator) {
   wb.addEventListener('installed', (event) => {
     if (event.isUpdate) {
       const updateEvent = new CustomEvent('sw-update-available');
+
       window.dispatchEvent(updateEvent);
     }
   });
 
   wb.addEventListener('waiting', () => {
     const updateEvent = new CustomEvent('sw-update-available');
+
     window.dispatchEvent(updateEvent);
   });
 
