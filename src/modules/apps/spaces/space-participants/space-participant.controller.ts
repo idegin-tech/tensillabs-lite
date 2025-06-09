@@ -20,6 +20,7 @@ import {
   RequirePermission,
 } from '../../../workspace-members/guards/workspace-member.guard';
 import { MemberPermissions } from '../../../workspace-members/enums/member-permissions.enum';
+import { SpaceParticipationGuard } from '../guards/space-participation.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
 import {
@@ -30,7 +31,7 @@ import {
 } from './dto/space-participant.dto';
 
 @Controller('spaces/:spaceId/participants')
-@UseGuards(AuthGuard, WorkspaceMemberGuard)
+@UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
 @RequirePermission(MemberPermissions.REGULAR)
 export class SpaceParticipantController {
   constructor(
@@ -42,7 +43,12 @@ export class SpaceParticipantController {
     @Param('spaceId') spaceId: string,
     @Body(new ZodValidationPipe(inviteParticipantSchema))
     inviteParticipantDto: InviteParticipantDto,
-    @Req() req: Request & { workspaceMember: any; workspace: any },
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+    },
   ) {
     if (!Types.ObjectId.isValid(spaceId)) {
       throw new BadRequestException('Invalid space ID format');
@@ -66,7 +72,12 @@ export class SpaceParticipantController {
     @Param('participantId') participantId: string,
     @Body(new ZodValidationPipe(updateParticipantSchema))
     updateParticipantDto: UpdateParticipantDto,
-    @Req() req: Request & { workspaceMember: any; workspace: any },
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+    },
   ) {
     if (!Types.ObjectId.isValid(participantId)) {
       throw new BadRequestException('Invalid participant ID format');
@@ -88,7 +99,12 @@ export class SpaceParticipantController {
   @Get()
   async getSpaceParticipants(
     @Param('spaceId') spaceId: string,
-    @Req() req: Request & { workspaceMember: any; workspace: any },
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+    },
   ) {
     if (!Types.ObjectId.isValid(spaceId)) {
       throw new BadRequestException('Invalid space ID format');
@@ -98,7 +114,6 @@ export class SpaceParticipantController {
       await this.spaceParticipantService.getSpaceParticipants(
         new Types.ObjectId(spaceId),
         req.workspace._id,
-        req.workspaceMember._id,
       );
 
     return createSuccessResponse(

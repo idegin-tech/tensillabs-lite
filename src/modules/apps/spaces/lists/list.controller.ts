@@ -17,10 +17,11 @@ import {
   RequirePermission,
 } from '../../../workspace-members/guards/workspace-member.guard';
 import { MemberPermissions } from '../../../workspace-members/enums/member-permissions.enum';
+import { SpaceParticipationGuard } from '../guards/space-participation.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 
 @Controller('spaces/:spaceId/lists')
-@UseGuards(AuthGuard, WorkspaceMemberGuard)
+@UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
 @RequirePermission(MemberPermissions.REGULAR)
 export class ListController {
   constructor(private readonly listService: ListService) {}
@@ -28,7 +29,12 @@ export class ListController {
   @Get()
   async getListsBySpace(
     @Param('spaceId') spaceId: string,
-    @Req() req: Request & { workspaceMember: any; workspace: any },
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+    },
   ) {
     if (!Types.ObjectId.isValid(spaceId)) {
       throw new BadRequestException('Invalid space ID format');
@@ -37,7 +43,6 @@ export class ListController {
     const lists = await this.listService.getListsBySpace(
       new Types.ObjectId(spaceId),
       req.workspace._id,
-      req.workspaceMember._id,
     );
 
     return createSuccessResponse('Lists retrieved successfully', lists);

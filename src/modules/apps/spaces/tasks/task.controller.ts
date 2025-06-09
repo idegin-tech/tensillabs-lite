@@ -4,8 +4,11 @@ import {
   Controller,
   Post,
   Get,
+  Put,
+  Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Req,
   BadRequestException,
@@ -19,41 +22,88 @@ import {
   RequirePermission,
 } from '../../../workspace-members/guards/workspace-member.guard';
 import { MemberPermissions } from '../../../workspace-members/enums/member-permissions.enum';
+import { SpaceParticipationGuard } from '../guards/space-participation.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
-import { createTaskSchema, CreateTaskDto } from './dto/task.dto';
+import {
+  syncTasksSchema,
+  SyncTasksDto,
+  updateTaskSchema,
+  UpdateTaskDto,
+  getTasksByListQuerySchema,
+  GetTasksByListQueryDto,
+} from './dto/task.dto';
 
 @Controller('lists/:listId/tasks')
-@UseGuards(AuthGuard, WorkspaceMemberGuard)
+@UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
 @RequirePermission(MemberPermissions.REGULAR)
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
-  @Post()
-  async create(
+  @Post('sync')
+  async syncTasks(
     @Param('listId') listId: string,
-    @Body(new ZodValidationPipe(createTaskSchema))
-    createTaskDto: CreateTaskDto,
-    @Req() req: Request & { workspaceMember: any; workspace: any },
+    @Body(new ZodValidationPipe(syncTasksSchema))
+    syncTasksDto: SyncTasksDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
   ) {
-    if (!Types.ObjectId.isValid(listId)) {
-      throw new BadRequestException('Invalid list ID format');
-    }
-
-    const task = await this.taskService.create(
+    const result = await this.taskService.syncTasks(
       new Types.ObjectId(listId),
-      createTaskDto,
+      syncTasksDto,
       req.workspace._id,
       req.workspaceMember._id,
+      req.space._id,
     );
 
-    return createSuccessResponse('Task created successfully', task);
+    return createSuccessResponse('Tasks synced successfully', result);
+  }
+
+  @Put(':taskId')
+  async updateTask(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @Body(new ZodValidationPipe(updateTaskSchema))
+    updateTaskDto: UpdateTaskDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
+  ) {
+    if (!Types.ObjectId.isValid(taskId)) {
+      throw new BadRequestException('Invalid task ID format');
+    }
+
+    const task = await this.taskService.updateTask(
+      new Types.ObjectId(listId),
+      new Types.ObjectId(taskId),
+      updateTaskDto,
+      req.workspace._id,
+    );
+
+    return createSuccessResponse('Task updated successfully', task);
   }
 
   @Get()
   async getTasksByList(
     @Param('listId') listId: string,
-    @Req() req: Request & { workspaceMember: any; workspace: any },
+    @Query(new ZodValidationPipe(getTasksByListQuerySchema))
+    queryParams: GetTasksByListQueryDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
   ) {
     if (!Types.ObjectId.isValid(listId)) {
       throw new BadRequestException('Invalid list ID format');
@@ -62,9 +112,39 @@ export class TaskController {
     const tasks = await this.taskService.getTasksByList(
       new Types.ObjectId(listId),
       req.workspace._id,
-      req.workspaceMember._id,
+      queryParams,
+      queryParams.meMode ? req.workspaceMember._id : undefined,
     );
 
     return createSuccessResponse('Tasks retrieved successfully', tasks);
+  }
+
+  @Delete(':taskId')
+  async deleteTask(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
+  ) {
+    if (!Types.ObjectId.isValid(listId)) {
+      throw new BadRequestException('Invalid list ID format');
+    }
+
+    if (!Types.ObjectId.isValid(taskId)) {
+      throw new BadRequestException('Invalid task ID format');
+    }
+
+    const task = await this.taskService.deleteTask(
+      new Types.ObjectId(listId),
+      new Types.ObjectId(taskId),
+      req.workspace._id,
+    );
+
+    return createSuccessResponse('Task deleted successfully', task);
   }
 }

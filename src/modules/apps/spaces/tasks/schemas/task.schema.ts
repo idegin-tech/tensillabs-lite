@@ -31,6 +31,13 @@ export class Task {
   name: string;
 
   @Prop({
+    required: true,
+    trim: true,
+    unique: true,
+  })
+  task_id: string;
+
+  @Prop({
     type: String,
     enum: Object.values(TaskPriority),
     required: false,
@@ -60,7 +67,7 @@ export class Task {
   };
 
   @Prop({
-    type: [{ type: Types.ObjectId, ref: 'SpaceParticipant' }],
+    type: [{ type: Types.ObjectId, ref: 'WorkspaceMember' }],
     required: false,
     default: [],
   })
@@ -119,3 +126,4 @@ TaskSchema.index({ status: 1 });
 TaskSchema.index({ priority: 1 });
 TaskSchema.index({ isDeleted: 1 });
 TaskSchema.index({ assignee: 1 });
+TaskSchema.index({ task_id: 1 });

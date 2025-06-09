@@ -144,10 +144,7 @@ export class SpaceParticipantService {
   async getSpaceParticipants(
     spaceId: Types.ObjectId,
     workspaceId: Types.ObjectId,
-    currentMemberId: Types.ObjectId,
   ): Promise<SpaceParticipantDocument[]> {
-    await this.verifySpaceParticipation(spaceId, currentMemberId, workspaceId);
-
     return await this.spaceParticipantModel
       .find({
         space: spaceId,
@@ -156,26 +153,5 @@ export class SpaceParticipantService {
       })
       .populate('member', 'firstName lastName primaryEmail')
       .exec();
-  }
-
-  private async verifySpaceParticipation(
-    spaceId: Types.ObjectId,
-    memberId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<void> {
-    const participant = await this.spaceParticipantModel
-      .findOne({
-        space: spaceId,
-        member: memberId,
-        workspace: workspaceId,
-        status: ParticipantStatus.ACTIVE,
-      })
-      .exec();
-
-    if (!participant) {
-      throw new ForbiddenException(
-        'Access denied: Not a participant of this space',
-      );
-    }
   }
 }
