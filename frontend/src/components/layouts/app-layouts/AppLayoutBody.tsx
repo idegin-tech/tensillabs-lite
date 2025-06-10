@@ -22,7 +22,7 @@ export default function AppLayoutBody({ children }: { children: React.ReactNode 
     return (
         <>
             <div className="flex flex-col flex-1 min-w-0">
-                <header className="h-12 border-b border-divider flex items-center justify-between px-6 bg-content1/50 backdrop-blur-sm">
+                <header className="h-12 border-b border-divider flex items-center justify-between px-3 bg-content1/50 backdrop-blur-sm">
                     <div className="flex items-center gap-4">
                         <Button
                             isIconOnly
@@ -65,7 +65,6 @@ export default function AppLayoutBody({ children }: { children: React.ReactNode 
 
                     <div className="flex-1 max-w-2xl mx-8">
                         <Input
-
                             classNames={{
                                 base: "w-full",
                                 mainWrapper: "h-full",

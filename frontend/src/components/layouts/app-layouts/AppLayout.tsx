@@ -63,7 +63,7 @@ export default function AppLayout({ children }: Props) {
       <aside
         className={`
           fixed lg:static top-0 left-0 h-screen border-r border-divider transition-all duration-300 ease-in-out z-50 bg-content1
-          ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-80'} w-80
+          ${sidebarCollapsed ? 'lg:w-12' : 'lg:w-80'} w-80
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
