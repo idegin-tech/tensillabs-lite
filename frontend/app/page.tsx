@@ -1,35 +1,82 @@
 'use client'
 
-import React, { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { useState } from 'react'
+import { TbBuilding, TbBrandGoogle, TbBrandWindows, TbEye, TbEyeOff } from 'react-icons/tb'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
-import { TbLock, TbMail, TbBrandGoogle, TbBrandWindows, TbEye, TbEyeOff, TbBuilding } from 'react-icons/tb'
-import { APP_CONFIG } from '@/config/app.config'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { toast } from 'sonner'
 import Link from 'next/link'
 import AuthLayout from '@/components/auth/AuthLayout'
+import { useAuthActions } from '@/hooks/use-next-auth'
+import { APP_CONFIG } from '@/config/app.config'
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+  password: z
+    .string()
+    .min(1, 'Password is required')
+    .min(6, 'Password must be at least 6 characters'),
+  rememberMe: z.boolean(),
+})
+
+type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
+  const { login, isLoading, error, clearError } = useAuthActions()
   const [showPassword, setShowPassword] = useState(false)
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false
+
+  const form = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
   })
+  const onSubmit = async (values: LoginForm) => {
+    console.log('[LOGIN_PAGE] Form submission started with values:', {
+      email: values.email,
+      hasPassword: !!values.password,
+      rememberMe: values.rememberMe
+    });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
-  }
+    try {
+      clearError()
+      console.log('[LOGIN_PAGE] Calling login function...');
+      const result = await login({
+        email: values.email,
+        password: values.password,
+      })
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
-    e.preventDefault()
-    console.log('Login form submitted:', formData)
+      console.log('[LOGIN_PAGE] Login function result:', result);
+
+      if (result.success) {
+        console.log('[LOGIN_PAGE] Login successful, showing success toast');
+        toast.success('Login successful! Redirecting...', {
+          description: 'Welcome back to TensilLabs',
+        })
+      } else {
+        console.log('[LOGIN_PAGE] Login failed, showing error toast');
+        toast.error('Login failed', {
+          description: result.error || 'Invalid credentials. Please try again.',
+        })
+      }
+    } catch (error) {
+      console.error('[LOGIN_PAGE] Login error caught:', error);
+      toast.error('Login failed', {
+        description: 'An unexpected error occurred. Please try again.',
+      })
+    }
   }
 
   return (
@@ -52,7 +99,6 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Social login buttons */}
           <div className="grid grid-cols-2 gap-3">
             <Button variant="outline" className="w-full h-11 border-border/50 hover:bg-accent/50 transition-colors">
               <TbBrandGoogle className="h-5 w-5 mr-2 text-red-500" />
@@ -64,7 +110,6 @@ export default function LoginPage() {
             </Button>
           </div>
 
-          {/* Separator */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <Separator className="w-full" />
@@ -72,89 +117,108 @@ export default function LoginPage() {
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-card px-2 text-muted-foreground">or continue with email</span>
             </div>
-          </div>
-
-          {/* Login form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email field */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
-              <div className="relative">
-                <TbMail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  className="pl-10 h-11 border-border/50 focus:border-primary transition-colors"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+          </div>          {error && (
+            <div className="rounded-md bg-destructive/15 p-3">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
+          )}          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">              <FormField<LoginForm>
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-foreground font-medium">Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter your email"
+                        className="h-11"
+                        value={field.value as string}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {/* Password field */}
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
-              <div className="relative">
-                <TbLock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  className="pl-10 pr-10 h-11 border-border/50 focus:border-primary transition-colors"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <TbEyeOff className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-                  ) : (
-                    <TbEye className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-                  )}
-                </Button>
-              </div>
-            </div>
+              <FormField<LoginForm>
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-foreground font-medium">Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Enter your password"
+                          className="h-11 pr-10"
+                          value={field.value as string}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <TbEyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <TbEye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {/* Remember me and forgot password */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <input
-                  id="rememberMe"
+              <div className="flex items-center justify-between">
+                <FormField<LoginForm>
+                  control={form.control}
                   name="rememberMe"
-                  type="checkbox"
-                  className="rounded border-border/50 text-primary focus:ring-primary/20"
-                  checked={formData.rememberMe}
-                  onChange={handleInputChange}
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value as boolean}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-normal text-muted-foreground">
+                          Remember me
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
                 />
-                <Label htmlFor="rememberMe" className="text-sm text-muted-foreground">
-                  Remember me
-                </Label>
-              </div>
-              <Button variant="link" className="p-0 h-auto text-primary text-sm hover:text-primary/80 transition-colors">
-                Forgot password?
+                <Link 
+                  href="/forgot-password" 
+                  className="text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div><Button 
+                type="submit" 
+                className="w-full h-11 bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-200"
+                isLoading={isLoading}
+              >
+                Sign in
               </Button>
-            </div>
+            </form>
+          </Form>
 
-            {/* Submit button */}
-            <Button 
-              type="submit" 
-              className="w-full h-11 bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              Sign in
-            </Button>
-          </form>
-
-          {/* Sign up link */}
           <div className="text-center">
             <span className="text-muted-foreground text-sm">
               Don't have an account?

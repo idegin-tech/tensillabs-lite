@@ -1,12 +1,11 @@
+import { APP_CONFIG } from "@/config/app.config"
+
 export const API_CONFIG = {
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1',
+  baseURL: APP_CONFIG.apiUrl,
   timeout: 30000,
   withCredentials: true,
 } as const
 
-export const APP_CONFIG = {
-  appURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
-} as const
 
 class ApiError extends Error {
   status: number

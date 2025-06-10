@@ -1,12 +1,4 @@
-export const API_CONFIG = {
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1',
-  timeout: 30000,
-  withCredentials: true,
-} as const
-
-export const APP_CONFIG = {
-  appURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
-} as const
+import { API_CONFIG } from "./api"
 
 class ApiError extends Error {
   status: number

@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuth, useAuthActions } from '@/hooks/use-next-auth'
 import AppLogo from '@/components/AppLogo'
 import SectionError from '@/components/SectionError'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,7 @@ interface Workspace {
 }
 
 export default function WorkspacesPage() {
+    const { logout } = useAuthActions()
     const [workspaces, setWorkspaces] = useState<Workspace[]>([])
     const [filteredWorkspaces, setFilteredWorkspaces] = useState<Workspace[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -52,11 +54,10 @@ export default function WorkspacesPage() {
             name: 'Product Strategy',
             lastAccessed: '1 week ago',
             memberCount: 6,
-            description: 'Product roadmap and strategic planning'
-        }
+            description: 'Product roadmap and strategic planning'        }
     ]
 
-    const fetchWorkspaces = async () => {
+    const fetchWorkspaces = React.useCallback(async () => {
         setIsLoading(true)
         setError(null)
 
@@ -69,11 +70,11 @@ export default function WorkspacesPage() {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [])
 
     useEffect(() => {
         fetchWorkspaces()
-    }, [])
+    }, [fetchWorkspaces])
 
     useEffect(() => {
         const filtered = workspaces.filter(workspace =>
