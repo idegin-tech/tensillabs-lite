@@ -1,7 +1,7 @@
 import PWAUpdateNotification from './components/pwa-update-notification';
 import AppLoading from './components/AppLoading';
 import HomeRoutes from './pages/home/routes';
-import AppRoutes from './pages/apps/routes';
+import AppRoutes from './pages/apps/AppsRoutes';
 import { useAuth } from './context/auth.context';
 import { AppLayoutProvider } from './components/layouts/app-layouts/AppLayoutContext';
 

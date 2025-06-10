@@ -1,62 +1,21 @@
-import { useLocation, useParams } from 'react-router-dom';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
 import { Avatar } from '@heroui/avatar';
 import {
   TbX,
 } from 'react-icons/tb';
-import {
-  PiCheckCircleDuotone,
-  PiSquaresFourDuotone,
-  PiUsersDuotone,
-  PiGearDuotone
-} from "react-icons/pi";
 import AppToggler from './AppToggler';
 import { useAppLayout } from './AppLayoutContext';
-import EachNavLink from './EachNavLink';
 
-interface NavItem {
-  icon: React.ReactNode;
-  label: string;
-  href: string;
-  hasNotification?: boolean;
-}
 
 type Props = {
   children: React.ReactNode;
+  sideNavContent: React.ReactNode;
+
 }
 
-export default function AppLayout({ children }: Props) {
+export default function AppLayout({ children, sideNavContent }: Props) {
   const { sidebarCollapsed, mobileMenuOpen, toggleMobileMenu } = useAppLayout();
-  const location = useLocation();
-  const { member_id } = useParams();
-  const navItems: NavItem[] = [
-    {
-      icon: <PiSquaresFourDuotone className="text-xl" />,
-      label: 'Dashboard',
-      href: `/workspaces/${member_id}/apps/dashboard`,
-    },
-    {
-      icon: <PiCheckCircleDuotone className="text-xl" />,
-      label: 'Tasks',
-      href: `/workspaces/${member_id}/apps/tasks`,
-      hasNotification: true,
-    },
-    {
-      icon: <PiUsersDuotone className="text-xl" />,
-      label: 'Team',
-      href: `/workspaces/${member_id}/apps/team`,
-    },
-    {
-      icon: <PiGearDuotone className="text-xl" />,
-      label: 'Admin',
-      href: `/workspaces/${member_id}/apps/admin`,
-    },
-  ];
-
-  const isActiveRoute = (href: string) => {
-    return location.pathname === href;
-  };
 
   return (
     <div className="h-screen bg-background flex overflow-hidden select-none">
@@ -96,14 +55,7 @@ export default function AppLayout({ children }: Props) {
             </div>
 
             <nav className="flex-1 p-2 flex flex-col gap-2 overflow-y-auto">
-              {navItems.map((item, index) => (
-                <EachNavLink
-                  key={index}
-                  item={item}
-                  to={item.href}
-                  isActiveRoute={isActiveRoute}
-                />
-              ))}
+              {sideNavContent}
             </nav>
 
             <div className=" border-t border-divider">

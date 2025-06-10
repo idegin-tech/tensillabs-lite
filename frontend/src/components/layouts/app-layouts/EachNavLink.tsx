@@ -1,61 +1,46 @@
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 type Props = {
-    to: string;
-    item: any;
-    isActiveRoute: (href: string) => boolean;
+    icon: React.ReactNode;
+    activeIcon: React.ReactNode;
+    label: string;
+    href: string;
+    hasNotification?: boolean;
+    isActiveRoute?: boolean;
 }
 
-export default function EachNavLink({ item, to, isActiveRoute }: Props) {
+export default function EachNavLink({ isActiveRoute, href, icon, label, hasNotification, activeIcon }: Props) {
+    const navigate = useNavigate();
+
     return (
         <>
-            <Link
-                to={to}>
+            <div className="relative">
                 <div className="relative">
-                    {item.hasNotification ? (
-                        <div className="relative">
-                            <Button
-                                variant={isActiveRoute(to) ? "flat" : "bordered"}
-                                className={`
+                    <Button
+                        onClick={() => navigate(href)}
+                        variant={isActiveRoute ? "flat" : "bordered"}
+                        className={`
                             w-full justify-start gap-3 p-2 h-auto transition-all duration-200
-                            ${isActiveRoute(to)
-                                        ? 'bg-primary/20 text-primary border border-primary/30 p-1.5'
-                                        : 'text-default-600 hover:text-primary hover:bg-primary/10'
-                                    }
+                            ${isActiveRoute
+                                ? 'bg-primary/20 text-primary border border-primary/30'
+                                : 'text-default-600 hover:text-foreground hover:bg-content2 border border-transparent'
+                            }
                             `}
-                            >
-                                <div className="flex items-center gap-3 flex-1">
-                                    {item.icon}
-                                    <span className="font-medium">{item.label}</span>
-                                </div>
-                            </Button>
-                            <Chip
-                                size='sm'
-                                color="primary"
-                                className="absolute top-3 right-2 p-0 h-3 min-w-3"
-                            />
+                    >
+                        <div className="flex items-center gap-2 flex-1">
+                            <span className='text-lg'>{isActiveRoute ? activeIcon : icon}</span>
+                            <span className="font-medium">{label}</span>
                         </div>
-                    ) : (
-                        <Button
-                            variant={isActiveRoute(to) ? "flat" : "light"}
-                            className={`
-                          w-full justify-start gap-3 p-2 h-auto transition-all duration-200
-                          ${isActiveRoute(to)
-                                    ? 'bg-primary/20 text-primary border border-primary/30'
-                                    : 'text-default-600 hover:text-primary hover:bg-primary/10'
-                                }
-                        `}
-                        >
-                            <div className="flex items-center gap-3 flex-1">
-                                {item.icon}
-                                <span className="font-medium">{item.label}</span>
-                            </div>
-                        </Button>
-                    )}
+                    </Button>
+                    {hasNotification && <Chip
+                        size='sm'
+                        color="primary"
+                        className="absolute top-4 right-3 p-0 h-2 min-w-2"
+                    />}
                 </div>
-            </Link>
+            </div>
         </>
     )
 }
