@@ -5,6 +5,7 @@ import { ToastProvider } from '@heroui/toast';
 import { useHref, useNavigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
 import { queryClient } from './config/query-client';
 
@@ -19,11 +20,13 @@ export function Provider({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <HeroUIProvider navigate={navigate} useHref={useHref}>
-        <ToastProvider />
-        {children}
-        <ReactQueryDevtools initialIsOpen={false} />
-      </HeroUIProvider>
+      <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
+        <HeroUIProvider navigate={navigate} useHref={useHref}>
+          <ToastProvider />
+          {children}
+          <ReactQueryDevtools initialIsOpen={false} />
+        </HeroUIProvider>
+      </NextThemesProvider>
     </QueryClientProvider>
   );
 }
