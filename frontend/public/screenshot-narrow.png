@@ -1,0 +1,6 @@
+<svg width="375" height="812" viewBox="0 0 375 812" xmlns="http://www.w3.org/2000/svg">
+  <rect width="375" height="812" fill="#f8f9fa"/>
+  <rect x="20" y="60" width="335" height="692" fill="#ffffff" stroke="#e9ecef" stroke-width="2" rx="8"/>
+  <text x="187.5" y="406" dominant-baseline="central" text-anchor="middle" fill="#6c757d" font-family="Arial, sans-serif" font-size="24" font-weight="bold">TensilLabs</text>
+  <text x="187.5" y="446" dominant-baseline="central" text-anchor="middle" fill="#6c757d" font-family="Arial, sans-serif" font-size="16">Mobile View</text>
+</svg>

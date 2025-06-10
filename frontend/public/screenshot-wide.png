@@ -1,0 +1,5 @@
+<svg width="1280" height="800" viewBox="0 0 1280 800" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="800" fill="#f8f9fa"/>
+  <rect x="40" y="40" width="1200" height="720" fill="#ffffff" stroke="#e9ecef" stroke-width="2" rx="8"/>
+  <text x="640" y="400" dominant-baseline="central" text-anchor="middle" fill="#6c757d" font-family="Arial, sans-serif" font-size="48" font-weight="bold">TensilLabs Dashboard</text>
+</svg>
