@@ -4,8 +4,9 @@ import { Input } from '@heroui/input';
 import { Card, CardBody } from '@heroui/card';
 import { Avatar } from '@heroui/avatar';
 import { Button } from '@heroui/button';
-import { TbSearch, TbPlus, TbUsers, TbBuilding } from 'react-icons/tb';
+import { TbSearch, TbPlus, TbBuilding } from 'react-icons/tb';
 import { useInView } from 'react-intersection-observer';
+import { Link } from 'react-router-dom';
 
 import AppLogo from '../../components/AppLogo';
 import ErrorComponent from '../../components/ErrorComponent';
@@ -49,7 +50,7 @@ export default function HomePage() {
       fetchNextPage();
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
-  
+
   const allWorkspaces = useMemo(() => {
     return data?.pages.flatMap((page) => page.payload.docs) || [];
   }, [data]);
@@ -180,60 +181,59 @@ export default function HomePage() {
           <h2 className="text-2xl font-semibold text-foreground">
             Your Workspaces ({totalCount})
           </h2>
-          <Button 
-            color="primary" 
+          <Button
+            color="primary"
             endContent={<TbPlus className="text-xl" />}
             onPress={() => setIsCreateModalOpen(true)}
           >
             Create Workspace
           </Button>
-        </div>        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {allWorkspaces.map((membershipData) => {
             const workspace = membershipData.workspace;
             const member = membershipData;
             const color = getWorkspaceColor(workspace._id);
-            const initials = getWorkspaceInitials(workspace.name);
+            const initials = getWorkspaceInitials(workspace.name);            return (
+              <Link to={`/workspaces/${workspace._id}/apps/tasks`}>
+                <Card
+                  key={`${workspace._id}-${member._id}`}
+                  isPressable
+                  className='w-full border border-divider hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 cursor-pointer group bg-background/80 backdrop-blur-sm'
+                >
+                  <CardBody className="p-6">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-start gap-4">
+                        <div className="relative flex-shrink-0">
+                          {workspace.logoURL ? (
+                            <Avatar
+                              className="ring-2 ring-divider group-hover:ring-primary/30 transition-all w-16 h-16"
+                              src={workspace.logoURL}
+                            />
+                          ) : (
+                            <div
+                              className="w-16 h-16 rounded-xl flex items-center justify-center ring-2 ring-divider group-hover:ring-primary/30 transition-all shadow-sm text-white font-bold text-lg"
+                              style={{ backgroundColor: color }}
+                            >
+                              {initials}
+                            </div>
+                          )}
+                        </div>
 
-            return (
-              <Card
-                key={`${workspace._id}-${member._id}`}
-                isPressable
-                className="border border-divider hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 cursor-pointer group bg-background/80 backdrop-blur-sm"
-              >
-                <CardBody className="p-6">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="relative flex-shrink-0">
-                        {workspace.logoURL ? (
-                          <Avatar
-                            className="ring-2 ring-divider group-hover:ring-primary/30 transition-all w-16 h-16"
-                            src={workspace.logoURL}
-                          />
-                        ) : (
-                          <div
-                            className="w-16 h-16 rounded-xl flex items-center justify-center ring-2 ring-divider group-hover:ring-primary/30 transition-all shadow-sm text-white font-bold text-lg"
-                            style={{ backgroundColor: color }}
-                          >
-                            {initials}
-                          </div>
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors leading-tight line-clamp-1">
+                            {workspace.name}
+                          </h3>
+                          <p className="text-default-600 text-sm leading-relaxed line-clamp-2 mb-3">
+                            {workspace.description || 'No description provided'}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors leading-tight line-clamp-1">
-                          {workspace.name}
-                        </h3>
-                        <p className="text-default-600 text-sm leading-relaxed line-clamp-2 mb-3">
-                          {workspace.description || 'No description provided'}
-                        </p>
-                        
-                        
-                      </div>
                     </div>
-
-                  </div>
-                </CardBody>
-              </Card>
+                  </CardBody>
+                </Card>
+              </Link>
             );
           })}
         </div>
@@ -278,11 +278,11 @@ export default function HomePage() {
             >
               Create Your First Workspace
             </Button>
-          </div>        )}
+          </div>)}
 
-        <CreateWorkspaceModal 
-          isOpen={isCreateModalOpen} 
-          onClose={() => setIsCreateModalOpen(false)} 
+        <CreateWorkspaceModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
         />
       </div>
     </div>

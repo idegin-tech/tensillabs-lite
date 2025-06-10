@@ -1,0 +1,29 @@
+
+import AppLayout from '@/components/layouts/app-layouts/AppLayout';
+import { useParams } from 'react-router-dom';
+
+export default function AdminAppPage() {
+  const { member_id } = useParams();
+  
+  return (
+    <>
+    <AppLayout>
+      <div className="space-y-6">
+      <div className="bg-content1 rounded-lg p-6 border border-divider">
+        <h1 className="text-2xl font-bold text-foreground mb-2">Admin Application</h1>
+        <p className="text-foreground-600">
+          Administrative tools for workspace: {member_id}
+        </p>
+      </div>
+      
+      <div className="bg-content1 rounded-lg p-6 border border-divider">
+        <h2 className="text-lg font-semibold mb-4">Admin Features</h2>
+        <p className="text-foreground-600">
+          This is the Admin application page. Here you can manage workspace settings, user permissions, and administrative tasks.
+        </p>
+      </div>
+    </div>
+    </AppLayout>
+    </>
+  )
+}

@@ -3,6 +3,7 @@ import AppLoading from './components/AppLoading';
 import HomeRoutes from './pages/home/routes';
 import AppRoutes from './pages/apps/routes';
 import { useAuth } from './context/auth.context';
+import { AppLayoutProvider } from './components/layouts/app-layouts/AppLayoutContext';
 
 function App() {
   const {
@@ -15,8 +16,10 @@ function App() {
 
   return (
     <>
-      {!user ? <HomeRoutes /> : <AppRoutes />}
+      <AppLayoutProvider>
+        {!user ? <HomeRoutes /> : <AppRoutes />}
       <PWAUpdateNotification />
+      </AppLayoutProvider>
     </>
   );
 }
