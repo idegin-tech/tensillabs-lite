@@ -6,7 +6,6 @@ import { TbHome } from 'react-icons/tb';
 import {
     PiCheckCircleDuotone,
     PiGearDuotone,
-    PiBrainDuotone,
     PiFolderDuotone,
     PiChatCircleDuotone,
     PiSparkleDuotone
@@ -22,7 +21,7 @@ interface AppItem {
 export default function AppToggler() {
     const { member_id } = useParams();
     const location = useLocation();
-    const iconSize = 25;
+    const iconSize = 16;
 
     const appItems: AppItem[] = [
         {
@@ -60,10 +59,11 @@ export default function AppToggler() {
     };
 
     return (
-        <div className="w-16 border-r border-divider h-full pb-4 flex flex-col items-center gap-3 bg-content2/50 z-50">
-            <div className="mb-2 h-16 flex items-center justify-center border-b border-divider w-full">
+        <div className="w-12 border-r border-divider h-full pb-4 flex flex-col items-center bg-content2/50 z-50">
+            <div className="mb-2 h-12 flex items-center justify-center border-b border-divider w-full">
                 <Tooltip content="Home" placement="right">
                     <Button
+                        size='sm'
                         isIconOnly
                         variant="bordered"
                         className="border-divider text-default-600 hover:text-primary hover:bg-primary/10 transition-all duration-200"
@@ -72,7 +72,7 @@ export default function AppToggler() {
                     </Button>
                 </Tooltip>
             </div>
-            
+
             <div className="flex flex-col gap-3">
                 {appItems.map((app, index) => (
                     <Tooltip key={index} content={app.label} placement="right">
@@ -86,10 +86,11 @@ export default function AppToggler() {
                                     className="z-10"
                                 >
                                     <Button
+                                        size='sm'
                                         isIconOnly
                                         variant={isActiveApp(app.href) ? "flat" : "bordered"}
                                         className={`
-                                            relative group transition-all duration-200 h-12 w-12 border-divider
+                                            relative group transition-all duration-200  border-divider
                                             ${isActiveApp(app.href)
                                                 ? 'bg-primary/20 text-primary border-2 border-primary/30 shadow-lg'
                                                 : 'text-default-600 hover:text-primary hover:bg-primary/10 hover:scale-105'
@@ -101,10 +102,11 @@ export default function AppToggler() {
                                 </Badge>
                             ) : (
                                 <Button
+                                    size="sm"
                                     isIconOnly
                                     variant={isActiveApp(app.href) ? "flat" : "bordered"}
                                     className={`
-                                        relative group transition-all duration-200 h-12 w-12 border-divider
+                                        relative group transition-all duration-200  border-divider
                                         ${isActiveApp(app.href)
                                             ? 'bg-primary/20 text-primary border-2 border-primary/30 shadow-lg'
                                             : 'text-default-600 hover:text-primary hover:bg-primary/10 hover:scale-105'

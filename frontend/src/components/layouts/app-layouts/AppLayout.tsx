@@ -1,4 +1,4 @@
-import { useLocation, useParams, Link as RouterLink } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
 import { Avatar } from '@heroui/avatar';
@@ -12,8 +12,7 @@ import {
   PiGearDuotone
 } from "react-icons/pi";
 import AppToggler from './AppToggler';
-import { AppLayoutProvider, useAppLayout } from './AppLayoutContext';
-import AppLayoutBody from './AppLayoutBody';
+import { useAppLayout } from './AppLayoutContext';
 import EachNavLink from './EachNavLink';
 
 interface NavItem {
@@ -75,7 +74,7 @@ export default function AppLayout({ children }: Props) {
             ${sidebarCollapsed ? 'lg:hidden' : 'flex'}
             ${mobileMenuOpen ? 'flex' : 'hidden lg:flex'}
           `}>
-            <div className="flex items-center gap-3 p-4 h-16 border-b border-divider">
+            <div className="flex items-center gap-3 p-4 h-12 border-b border-divider">
               <Avatar
                 size="sm"
                 className="bg-gradient-to-br from-primary to-secondary text-white font-semibold shadow-lg"

@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
 import { Card, CardBody } from '@heroui/card';

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/modal';
 import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
@@ -90,7 +89,7 @@ export default function CreateWorkspaceModal({
       backdrop="blur"
     >
       <ModalContent>
-        {(onClose) => (
+        {() => (
           <>
             <ModalHeader className="flex flex-col gap-1">
               Create New Workspace
