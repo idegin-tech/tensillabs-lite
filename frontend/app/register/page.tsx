@@ -6,31 +6,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { TbLock, TbMail, TbBrandGoogle, TbBrandWindows, TbEye, TbEyeOff, TbBuilding } from 'react-icons/tb'
+import { TbMail, TbLock, TbBrandGoogle, TbBrandWindows, TbEye, TbEyeOff, TbBuilding } from 'react-icons/tb'
 import { APP_CONFIG } from '@/config/app.config'
-import Link from 'next/link'
 import AuthLayout from '@/components/auth/AuthLayout'
+import Link from 'next/link'
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false
+    confirmPassword: ''
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target
+    const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }))
   }
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    console.log('Login form submitted:', formData)
+    console.log('Registration form submitted:', formData)
   }
+
+  const passwordsMatch = formData.password === formData.confirmPassword
+  const isFormValid = formData.email && formData.password && formData.confirmPassword && passwordsMatch
 
   return (
     <AuthLayout>
@@ -44,10 +47,10 @@ export default function LoginPage() {
           </div>
           
           <CardTitle className="text-2xl font-bold text-foreground">
-            Welcome back
+            Create your account
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Sign in to your account to continue
+            Join thousands of teams using {APP_CONFIG.appName} to manage their work
           </CardDescription>
         </CardHeader>
 
@@ -74,18 +77,18 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Login form */}
+          {/* Registration form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email field */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
+              <Label htmlFor="email" className="text-foreground font-medium">Email address</Label>
               <div className="relative">
                 <TbMail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="Enter your email address"
                   className="pl-10 h-11 border-border/50 focus:border-primary transition-colors"
                   value={formData.email}
                   onChange={handleInputChange}
@@ -103,7 +106,7 @@ export default function LoginPage() {
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
+                  placeholder="Create a strong password"
                   className="pl-10 pr-10 h-11 border-border/50 focus:border-primary transition-colors"
                   value={formData.password}
                   onChange={handleInputChange}
@@ -123,46 +126,84 @@ export default function LoginPage() {
                   )}
                 </Button>
               </div>
+              <div className="text-xs text-muted-foreground">
+                Use at least 8 characters with a mix of letters, numbers & symbols
+              </div>
             </div>
 
-            {/* Remember me and forgot password */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <input
-                  id="rememberMe"
-                  name="rememberMe"
-                  type="checkbox"
-                  className="rounded border-border/50 text-primary focus:ring-primary/20"
-                  checked={formData.rememberMe}
+            {/* Confirm password field */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-foreground font-medium">Confirm password</Label>
+              <div className="relative">
+                <TbLock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Confirm your password"
+                  className={`pl-10 pr-10 h-11 border-border/50 focus:border-primary transition-colors ${
+                    formData.confirmPassword && !passwordsMatch ? 'border-destructive focus:border-destructive' : ''
+                  }`}
+                  value={formData.confirmPassword}
                   onChange={handleInputChange}
+                  required
                 />
-                <Label htmlFor="rememberMe" className="text-sm text-muted-foreground">
-                  Remember me
-                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <TbEyeOff className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                  ) : (
+                    <TbEye className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                  )}
+                </Button>
               </div>
-              <Button variant="link" className="p-0 h-auto text-primary text-sm hover:text-primary/80 transition-colors">
-                Forgot password?
-              </Button>
+              {formData.confirmPassword && !passwordsMatch && (
+                <div className="text-xs text-destructive">
+                  Passwords do not match
+                </div>
+              )}
             </div>
 
             {/* Submit button */}
             <Button 
               type="submit" 
-              className="w-full h-11 bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-200"
+              className={`w-full h-11 transition-all duration-200 ${
+                isFormValid 
+                  ? 'bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl' 
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
+              }`}
+              disabled={!isFormValid}
             >
-              Sign in
+              Create account
             </Button>
           </form>
 
-          {/* Sign up link */}
+          {/* Sign in link */}
           <div className="text-center">
             <span className="text-muted-foreground text-sm">
-              Don't have an account?
+              Already have an account?
             </span>{' '}
-            <Link href="/register" className="text-primary text-sm font-medium hover:text-primary/80 transition-colors">
-              Sign up
+            <Link href="/" className="text-primary text-sm font-medium hover:text-primary/80 transition-colors">
+              Sign in
             </Link>
           </div>
+
+          {/* Terms and privacy */}
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            By creating an account, you agree to our{' '}
+            <Button variant="link" className="p-0 h-auto text-xs text-primary hover:text-primary/80 transition-colors">
+              Terms of Service
+            </Button>{' '}
+            and{' '}
+            <Button variant="link" className="p-0 h-auto text-xs text-primary hover:text-primary/80 transition-colors">
+              Privacy Policy
+            </Button>
+          </p>
         </CardContent>
       </Card>
     </AuthLayout>
