@@ -21,7 +21,7 @@ interface AppItem {
 export default function AppToggler() {
     const { member_id } = useParams();
     const location = useLocation();
-    const iconSize = 16;
+    const iconSize = 19;
 
     const appItems: AppItem[] = [
         {
@@ -77,13 +77,13 @@ export default function AppToggler() {
                 {appItems.map((app, index) => (
                     <Tooltip key={index} content={app.label} placement="right">
                         <div className="relative">
-                            {app.hasNotification ? (
                                 <Badge
                                     content=""
                                     color="danger"
                                     size="sm"
                                     placement="top-right"
                                     className="z-10"
+                                    isInvisible={app.hasNotification}
                                 >
                                     <Button
                                         size='sm'
@@ -100,22 +100,6 @@ export default function AppToggler() {
                                         {app.icon}
                                     </Button>
                                 </Badge>
-                            ) : (
-                                <Button
-                                    size="sm"
-                                    isIconOnly
-                                    variant={isActiveApp(app.href) ? "flat" : "bordered"}
-                                    className={`
-                                        relative group transition-all duration-200  border-divider
-                                        ${isActiveApp(app.href)
-                                            ? 'bg-primary/20 text-primary border-2 border-primary/30 shadow-lg'
-                                            : 'text-default-600 hover:text-primary hover:bg-primary/10 hover:scale-105'
-                                        }
-                                    `}
-                                >
-                                    {app.icon}
-                                </Button>
-                            )}
                         </div>
                     </Tooltip>
                 ))}
