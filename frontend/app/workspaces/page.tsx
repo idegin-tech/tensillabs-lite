@@ -1,14 +1,15 @@
 'use client'
 
-import { useAuth, useAuthActions } from '@/hooks/use-next-auth'
+import { useAuthActions } from '@/hooks/use-next-auth'
 import AppLogo from '@/components/AppLogo'
-import SectionError from '@/components/SectionError'
+import SectionPlaceholder from '@/components/placeholders/SectionPlaceholder'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import React, { useState, useEffect } from 'react'
-import { TbSearch, TbBuilding, TbClock, TbUsers, TbPlus, TbDots } from 'react-icons/tb'
+import { TbSearch, TbBuilding, TbClock, TbUsers, TbPlus, TbAlertTriangle, TbRefresh } from 'react-icons/tb'
+import Link from 'next/link'
 
 interface Workspace {
     id: string
@@ -54,7 +55,8 @@ export default function WorkspacesPage() {
             name: 'Product Strategy',
             lastAccessed: '1 week ago',
             memberCount: 6,
-            description: 'Product roadmap and strategic planning'        }
+            description: 'Product roadmap and strategic planning'
+        }
     ]
 
     const fetchWorkspaces = React.useCallback(async () => {
@@ -116,16 +118,25 @@ export default function WorkspacesPage() {
                         </div>
 
                         {error ? (
-                            <SectionError
-                                title="Failed to load workspaces"
-                                message="We couldn't load your workspaces. Please check your connection and try again."
-                                onRetry={handleRetry}
+                            <SectionPlaceholder
+                                variant="error"
+                                icon={TbAlertTriangle}
+                                heading="Failed to load workspaces"
+                                subHeading="We couldn't load your workspaces. Please check your connection and try again."
+                                ctaButton={{
+                                    label: "Try Again",
+                                    onClick: handleRetry,
+                                    variant: "outline",
+                                    icon: TbRefresh
+                                }}
+                                fullWidth
                             />
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {isLoading ? (
-                                    Array.from({ length: 4 }).map((_, index) => (                                        <Card key={index}>
-                                            <CardContent className="p-6">
+                                    Array.from({ length: 4 }).map((_, index) => (
+                                        <Card key={index}>
+                                            <CardContent>
                                                 <div className="flex items-center space-x-4">
                                                     <Skeleton className="h-12 w-12 rounded-lg" />
                                                     <div className="flex-1 space-y-2">
@@ -142,54 +153,56 @@ export default function WorkspacesPage() {
                                         </Card>
                                     ))
                                 ) : filteredWorkspaces.length > 0 ? (
-                                    filteredWorkspaces.map((workspace) => (                                        <Card key={workspace.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer group hover:border-primary">
-                                            <CardContent className="p-6">
-                                                <div className="flex items-center space-x-4">
-                                                    <div className="bg-primary/10 rounded-lg p-3 group-hover:bg-primary/20 transition-colors">
-                                                        <TbBuilding className="h-6 w-6 text-primary" />
-                                                    </div>
+                                    filteredWorkspaces.map((workspace) => (
+                                        <Link key={workspace.id} href={`/workspaces/${workspace.id}`}>
+                                            <Card  className="hover:shadow-lg transition-all duration-200 cursor-pointer group hover:border-primary">
+                                                <CardContent>
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className="bg-primary/10 rounded-lg p-3 group-hover:bg-primary/20 transition-colors">
+                                                            <TbBuilding className="h-6 w-6 text-primary" />
+                                                        </div>
 
-                                                    <div className="flex-1 min-w-0">
-                                                        <h3 className="font-semibold text-foreground text-lg truncate">
-                                                            {workspace.name}
-                                                        </h3>
-                                                        <p className="text-muted-foreground text-sm truncate">
-                                                            {workspace.description}
-                                                        </p>
-                                                        <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
-                                                            <div className="flex items-center space-x-1">
-                                                                <TbClock className="h-3 w-3" />
-                                                                <span>{workspace.lastAccessed}</span>
-                                                            </div>
-                                                            <div className="flex items-center space-x-1">
-                                                                <TbUsers className="h-3 w-3" />
-                                                                <span>{workspace.memberCount} members</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="font-semibold text-foreground text-lg truncate">
+                                                                {workspace.name}
+                                                            </h3>
+                                                            <p className="text-muted-foreground text-sm truncate">
+                                                                {workspace.description}
+                                                            </p>
+                                                            <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+                                                                <div className="flex items-center space-x-1">
+                                                                    <TbClock className="h-3 w-3" />
+                                                                    <span>{workspace.lastAccessed}</span>
+                                                                </div>
+                                                                <div className="flex items-center space-x-1">
+                                                                    <TbUsers className="h-3 w-3" />
+                                                                    <span>{workspace.memberCount} members</span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-
-                                                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <TbDots className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    <div className="col-span-2 text-center py-12">
-                                        <div className="bg-muted/50 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
-                                            <TbSearch className="h-8 w-8 text-muted-foreground" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-foreground mb-2">No workspaces found</h3>
-                                        <p className="text-muted-foreground">
-                                            {searchQuery ? `No workspaces match "${searchQuery}"` : 'You don\'t have any workspaces yet'}
-                                        </p>
-                                        {!searchQuery && (
-                                            <Button className="mt-4">
-                                                <TbPlus className="h-4 w-4 mr-2" />
-                                                Create Your First Workspace
-                                            </Button>
-                                        )}
+                                                </CardContent>
+                                            </Card>
+                                        </Link>
+                                    ))) : (
+                                    <div className="col-span-2">
+                                        <SectionPlaceholder
+                                            variant={searchQuery ? "default" : "empty"}
+                                            icon={searchQuery ? TbSearch : TbBuilding}
+                                            heading={searchQuery ? "No workspaces found" : "No workspaces yet"}
+                                            subHeading={
+                                                searchQuery
+                                                    ? `No workspaces match "${searchQuery}". Try adjusting your search terms.`
+                                                    : "Get started by creating your first workspace. Organize your projects and collaborate with your team."
+                                            }
+                                            ctaButton={!searchQuery ? {
+                                                label: "Create Your First Workspace",
+                                                onClick: () => console.log('Create workspace'),
+                                                variant: "default",
+                                                icon: TbPlus
+                                            } : undefined}
+                                            fullWidth
+                                        />
                                     </div>
                                 )}
                             </div>

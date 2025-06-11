@@ -18,7 +18,7 @@ export default function QueryProvider({ children }: QueryProviderProps) {
       {process.env.NEXT_PUBLIC_NODE_ENV !== 'production' && (
         <ReactQueryDevtools 
           initialIsOpen={false} 
-          buttonPosition="bottom-left"
+          buttonPosition="top-right"
         />
       )}
     </QueryClientProvider>

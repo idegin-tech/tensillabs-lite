@@ -7,6 +7,7 @@ import AuthProvider from './auth/AuthProvider'
 import { useServiceWorker, useOfflineStatus } from '@/hooks/use-pwa'
 import { Button } from '@/components/ui/button'
 import { TbRefresh, TbWifiOff } from 'react-icons/tb'
+import { Next13ProgressBar } from 'next13-progressbar';
 
 export default function Providers({children}:{children: React.ReactNode}) {
   const { needRefresh, updateServiceWorker } = useServiceWorker()
@@ -14,6 +15,7 @@ export default function Providers({children}:{children: React.ReactNode}) {
 
   return (
     <AuthProvider>
+      <Next13ProgressBar height="4px" color="var(--color-secondary)" options={{ showSpinner: true }} showOnShallow />
       <QueryProvider>
         {children}
         <PWAInstallPrompt />
