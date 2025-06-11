@@ -7,7 +7,7 @@ export default function page() {
       <div>
         {new Array(30).fill(0).map(() => {
           return <h1 className='text-5xl font-bold text-center my-10 text-muted-foreground'>
-            Tasks
+            AI App
           </h1>
         })}
       </div>
