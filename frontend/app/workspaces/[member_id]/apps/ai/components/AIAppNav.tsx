@@ -7,44 +7,44 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import {
-  TbHome,
-  TbBell,
-  TbClock,
-  TbTrash,
+  TbBrain,
+  TbFolderOpen,
+  TbSettings,
+  TbMessageCircle,
 } from "react-icons/tb"
 import Link from 'next/link'
 
-export default function AIAappNav() {
-  const tasksNavSections = [
+export default function AIAppNav() {
+  const aiNavSections = [
     {
-      title: "Main",
+      title: "AI Assistant",
       items: [
         {
-          title: "Home",
+          title: "New Chat",
           url: "#",
-          icon: TbHome,
+          icon: TbMessageCircle,
         },
         {
-          title: "Notifications",
+          title: "Knowledge",
           url: "#",
-          icon: TbBell,
+          icon: TbBrain,
         },
         {
-          title: "Timesheet",
+          title: "Folders",
           url: "#",
-          icon: TbClock,
+          icon: TbFolderOpen,
         },
         {
-          title: "Trash",
+          title: "Settings",
           url: "#",
-          icon: TbTrash,
+          icon: TbSettings,
         },
       ]
     },
   ]
   return (
     <>
-      {tasksNavSections.map((section) => (
+      {aiNavSections.map((section) => (
         <SidebarGroup key={section.title}>
           {section.title && <SidebarGroupLabel>{section.title}</SidebarGroupLabel>}
           <SidebarMenu>
