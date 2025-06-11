@@ -23,8 +23,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { NavMain } from "./nav-main"
-import { NavProjects } from "./nav-projects"
+// import { NavProjects } from "./nav-projects"
 import { NavSecondary } from "./nav-secondary"
 import { NavUser } from "./nav-user"
 import AppToggler from "./AppToggler"
@@ -153,7 +152,12 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ 
+  navContent,
+  ...props 
+}: React.ComponentProps<typeof Sidebar> & {
+  navContent?: React.ReactNode;
+}) {
   return (
     <Sidebar variant="inset" {...props} className="flex select-none">
       <AppToggler/>
@@ -176,8 +180,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        {navContent}
+        {/* <NavProjects projects={data.projects} /> */}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

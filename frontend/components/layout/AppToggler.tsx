@@ -1,5 +1,4 @@
 import React from 'react'
-import { Button } from '../ui/button'
 import {
     PiHouseLineDuotone,
     PiCheckCircleDuotone,
@@ -18,8 +17,13 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator"
 import Link from 'next/link';
+import useCommon from '@/hooks/use-common';
+import { usePathname } from 'next/navigation';
 
 export default function AppToggler() {
+    const { getPathToApp } = useCommon();
+    const pathname = usePathname();
+
     return (
         <>
             <div className="h-screen bg-popover border-r w-14 z-50">
@@ -29,12 +33,16 @@ export default function AppToggler() {
                     </EachAppToggler>
                 </Link>
                 <Separator />
-                <EachAppToggler tooltipText="Tasks">
-                    <PiCheckCircleDuotone />
-                </EachAppToggler>
-                <EachAppToggler tooltipText="AI">
-                    <PiSparkleDuotone />
-                </EachAppToggler>
+                <Link href={`${getPathToApp('tasks')}`}>
+                    <EachAppToggler tooltipText="Tasks" isActive={pathname.includes('/apps/tasks')}>
+                        <PiCheckCircleDuotone />
+                    </EachAppToggler>
+                </Link>
+                <Link href={`${getPathToApp('ai')}`}>
+                    <EachAppToggler tooltipText="AI" isActive={pathname.includes('/apps/ai')}>
+                        <PiSparkleDuotone />
+                    </EachAppToggler>
+                </Link>
                 <Separator />
                 <EachAppToggler tooltipText="Chat">
                     <PiChatCircleDuotone />
@@ -49,9 +57,11 @@ export default function AppToggler() {
                     <PiUserDuotone />
                 </EachAppToggler>
                 <Separator />
-                <EachAppToggler tooltipText="Admin" isActive>
-                    <PiKeyDuotone />
-                </EachAppToggler>
+                <Link href={`${getPathToApp('admin')}`}>
+                    <EachAppToggler tooltipText="Admin" isActive={pathname.includes('/apps/admin')}>
+                        <PiKeyDuotone />
+                    </EachAppToggler>
+                </Link>
             </div>
         </>
     )

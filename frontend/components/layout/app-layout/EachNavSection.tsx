@@ -1,4 +1,4 @@
-"use client"
+import React from 'react'
 
 import {
   Folder,
@@ -24,28 +24,22 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { PiHouseLineDuotone } from 'react-icons/pi'
 
-export function NavProjects({
-  projects,
-}: {
-  projects: {
-    name: string
-    url: string
-    icon: LucideIcon
-  }[]
-}) {
-  const { isMobile } = useSidebar()
+type Props = {}
 
+export default function EachNavSection({}: Props) {
+    const { isMobile } = useSidebar()
   return (
+    <>
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Projects</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((item) => (
-          <SidebarMenuItem key={item.name}>
+          <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
-                <item.icon />
-                <span>{item.name}</span>
+              <a href={''}>
+                <PiHouseLineDuotone />
+                <span>{'item.name'}</span>
               </a>
             </SidebarMenuButton>
             <DropdownMenu>
@@ -76,8 +70,8 @@ export function NavProjects({
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
-        ))}
       </SidebarMenu>
     </SidebarGroup>
+    </>
   )
 }

@@ -154,7 +154,7 @@ export default function WorkspacesPage() {
                                     ))
                                 ) : filteredWorkspaces.length > 0 ? (
                                     filteredWorkspaces.map((workspace) => (
-                                        <Link key={workspace.id} href={`/workspaces/${workspace.id}`}>
+                                        <Link key={workspace.id} href={`/workspaces/${workspace.id}/apps/tasks`}>
                                             <Card  className="hover:shadow-lg transition-all duration-200 cursor-pointer group hover:border-primary">
                                                 <CardContent>
                                                     <div className="flex items-center space-x-4">
