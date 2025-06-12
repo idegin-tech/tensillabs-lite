@@ -1,8 +1,37 @@
 import * as React from "react"
+import { useDebouncedCallback } from "use-debounce"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+interface InputProps extends Omit<React.ComponentProps<"input">, "onChange"> {
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  debounceMs?: number
+  onDebouncedChange?: (value: string) => void
+}
+
+function Input({ 
+  className, 
+  type, 
+  onChange, 
+  debounceMs, 
+  onDebouncedChange,
+  ...props 
+}: InputProps) {
+  const debouncedCallback = useDebouncedCallback(
+    (value: string) => {
+      onDebouncedChange?.(value)
+    },
+    debounceMs || 0
+  )
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange?.(e)
+    
+    if (debounceMs && onDebouncedChange) {
+      debouncedCallback(e.target.value)
+    }
+  }
+
   return (
     <input
       type={type}
@@ -13,6 +42,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className
       )}
+      onChange={handleChange}
       {...props}
     />
   )
