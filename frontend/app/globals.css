@@ -41,9 +41,15 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  --height-app-body: var(--app-body);
 }
 
 :root {
+
+  --app-body: calc(100dvh - 3rem - 16px);
+
+
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

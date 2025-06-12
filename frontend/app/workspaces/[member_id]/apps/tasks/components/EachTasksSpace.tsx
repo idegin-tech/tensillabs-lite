@@ -8,13 +8,12 @@ import { usePathname } from 'next/navigation'
 
 type Props = {
     _id: string;
-    isActive?: boolean;
     name: string;
     color: string;
     Icon: React.ReactNode;
 }
 
-export default function EachSpace({ isActive, color, Icon, name, _id }: Props) {
+export default function EachTasksSpace({ color, Icon, name, _id }: Props) {
     const [isHovered, setIsHovered] = React.useState(false);
     const [showList, setShowList] = React.useState(false);
     const { getPathToApp } = useCommon();
@@ -53,15 +52,16 @@ export default function EachSpace({ isActive, color, Icon, name, _id }: Props) {
                     <TbPlus className="h-4 w-4" />
                     <span className="sr-only">Add list</span>
                 </SidebarMenuAction>
-            </SidebarMenuItem>
-            <div className={cn('pl-2 border-l border-border ml-2 overflow-hidden transition-all duration-300 ease-in-out space-y-1', {
-                'max-h-0': !showList,
-                'max-h-[500px]': showList
-            })}>
+            </SidebarMenuItem>            <div
+                className={cn('pl-2 border-l border-border ml-2 overflow-hidden transition-all duration-300 ease-in-out space-y-1', {
+                    'max-h-0': !showList,
+                    'max-h-[500px]': showList
+                })}
+            >
                 {new Array(6).fill(null).map((_, i) => {
                     const listUrl = `${getPathToApp('tasks')}/spaces/${_id}/lists/${i + 1}`;
                     const isListActive = pathname === listUrl;
-                    
+
                     return (
                         <SidebarMenuItem key={i}>
                             <SidebarMenuButton asChild isActive={isListActive} size="sm">
