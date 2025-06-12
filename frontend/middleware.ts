@@ -1,22 +1,22 @@
-import { auth } from '@/lib/auth'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export default auth((req) => {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const isLoggedIn = !!req.auth
 
   if (pathname.startsWith('/workspaces') || pathname.startsWith('/dashboard')) {
-    if (!isLoggedIn) {
+    const hasAuthCookie = req.cookies.get('connect.sid')
+    
+    if (!hasAuthCookie) {
       return NextResponse.redirect(new URL('/', req.url))
     }
   }
 
-  if (pathname === '/' && isLoggedIn) {
+  if (pathname === '/' && req.cookies.get('connect.sid')) {
     return NextResponse.redirect(new URL('/workspaces', req.url))
   }
 
   return NextResponse.next()
-})
+}
 
 export const config = {
   matcher: [

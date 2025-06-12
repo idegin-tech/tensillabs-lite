@@ -8,6 +8,7 @@ import {
   LogOut,
   Sparkles,
 } from "lucide-react"
+import { useAuthActions } from "@/hooks/use-auth"
 
 import {
   Avatar,
@@ -30,7 +31,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-export function NavUser({
+export function NavMemberInfo({
   user,
 }: {
   user: {
@@ -40,6 +41,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { logout } = useAuthActions()
 
   return (
     <SidebarMenu>
@@ -101,8 +103,7 @@ export function NavUser({
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuSeparator />            <DropdownMenuItem onClick={() => logout()}>
               <LogOut />
               Log out
             </DropdownMenuItem>

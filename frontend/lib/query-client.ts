@@ -2,7 +2,7 @@
 
 import { QueryClient } from '@tanstack/react-query'
 
-const isProduction = process.env.NEXT_PUBLIC_NODE_ENV === 'production'
+const isProduction = process.env.NODE_ENV === 'production'
 
 function makeQueryClient() {
   return new QueryClient({
@@ -22,6 +22,7 @@ function makeQueryClient() {
         refetchOnReconnect: 'always',
         refetchOnMount: true,
         networkMode: 'online',
+        throwOnError: false,
       },
       mutations: {
         retry: (failureCount, error: any) => {
@@ -31,8 +32,8 @@ function makeQueryClient() {
           if (error?.status >= 500) return failureCount < 1
           return failureCount < 2
         },
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-        networkMode: 'online',
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),        networkMode: 'online',
+        throwOnError: false,
       },
     },
   })

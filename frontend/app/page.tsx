@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner'
 import Link from 'next/link'
 import AuthLayout from '@/components/auth/AuthLayout'
-import { useAuthActions } from '@/hooks/use-next-auth'
+import { useAuthActions } from '@/hooks/use-auth'
 import { APP_CONFIG } from '@/config/app.config'
 
 const loginSchema = z.object({
@@ -34,7 +34,6 @@ type LoginForm = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const { login, isLoading, error, clearError } = useAuthActions()
   const [showPassword, setShowPassword] = useState(false)
-
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -43,6 +42,7 @@ export default function LoginPage() {
       rememberMe: false,
     },
   })
+
   const onSubmit = async (values: LoginForm) => {
     console.log('[LOGIN_PAGE] Form submission started with values:', {
       email: values.email,

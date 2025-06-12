@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/sidebar"
 // import { NavProjects } from "./nav-projects"
 import { NavSecondary } from "./nav-secondary"
-import { NavUser } from "./nav-user"
+import { NavMemberInfo } from "./app-layout/NavMemberInfo"
 import AppToggler from "./AppToggler"
 
 const data = {
@@ -185,7 +185,7 @@ export function AppSidebar({
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavMemberInfo user={data.user} />
       </SidebarFooter>
       </div>
     </Sidebar>

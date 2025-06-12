@@ -1,6 +1,7 @@
-import { API_CONFIG } from "./api"
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { APP_CONFIG } from '@/config/app.config'
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number
   data?: any
 
@@ -12,94 +13,73 @@ class ApiError extends Error {
   }
 }
 
-let requestId = 0
+class ApiClient {
+  private axiosInstance: AxiosInstance
+  private requestId = 0
 
-export async function apiRequest<T = any>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_CONFIG.baseURL}${endpoint}`
-  const currentRequestId = ++requestId
-  
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout)
-  
-  const config: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Request-ID': currentRequestId.toString(),
-      ...options.headers,
-    },
-    credentials: 'include',
-    signal: controller.signal,
-    ...options,
-  }
+  constructor() {
+    this.axiosInstance = axios.create({
+      baseURL: APP_CONFIG.apiUrl,
+      timeout: 30000,
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
 
-  try {
-    const response = await fetch(url, config)
-    clearTimeout(timeoutId)
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new ApiError(
-        errorData.message || `HTTP error! status: ${response.status}`,
-        response.status,
-        errorData
-      )
-    }
+    this.axiosInstance.interceptors.request.use(
+      (config) => {
+        config.headers['X-Request-ID'] = (++this.requestId).toString()
+        return config
+      },
+      (error) => Promise.reject(error)
+    )
 
-    const contentType = response.headers.get('content-type')
-    if (contentType && contentType.includes('application/json')) {
-      return await response.json()
-    }
-    
-    return response as T
-  } catch (error) {
-    clearTimeout(timeoutId)
-    
-    if (error instanceof ApiError) {
-      throw error
-    }
-    
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new ApiError('Request timeout', 408, { timeout: true })
-    }
-    
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Network error',
-      0,
-      error
+    this.axiosInstance.interceptors.response.use(
+      (response: AxiosResponse) => response,
+      (error) => {
+        if (error.response) {
+          const apiError = new ApiError(
+            error.response.data?.message || `HTTP error! status: ${error.response.status}`,
+            error.response.status,
+            error.response.data
+          )
+          return Promise.reject(apiError)
+        } else if (error.request) {
+          const apiError = new ApiError('Network error', 0, error.request)
+          return Promise.reject(apiError)
+        } else {
+          const apiError = new ApiError('Request setup error', 0, error.message)
+          return Promise.reject(apiError)
+        }
+      }
     )
   }
+
+  async get<T = any>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.axiosInstance.get<T>(endpoint, config)
+    return response.data
+  }
+
+  async post<T = any>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.axiosInstance.post<T>(endpoint, data, config)
+    return response.data
+  }
+
+  async put<T = any>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.axiosInstance.put<T>(endpoint, data, config)
+    return response.data
+  }
+
+  async patch<T = any>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.axiosInstance.patch<T>(endpoint, data, config)
+    return response.data
+  }
+
+  async delete<T = any>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.axiosInstance.delete<T>(endpoint, config)
+    return response.data
+  }
 }
 
-export const api = {
-  get: <T = any>(endpoint: string, options?: RequestInit) => 
-    apiRequest<T>(endpoint, { method: 'GET', ...options }),
-  
-  post: <T = any>(endpoint: string, data?: any, options?: RequestInit) => 
-    apiRequest<T>(endpoint, { 
-      method: 'POST', 
-      body: data ? JSON.stringify(data) : undefined,
-      ...options 
-    }),
-  
-  put: <T = any>(endpoint: string, data?: any, options?: RequestInit) => 
-    apiRequest<T>(endpoint, { 
-      method: 'PUT', 
-      body: data ? JSON.stringify(data) : undefined,
-      ...options 
-    }),
-  
-  patch: <T = any>(endpoint: string, data?: any, options?: RequestInit) => 
-    apiRequest<T>(endpoint, { 
-      method: 'PATCH', 
-      body: data ? JSON.stringify(data) : undefined,
-      ...options 
-    }),
-  
-  delete: <T = any>(endpoint: string, options?: RequestInit) => 
-    apiRequest<T>(endpoint, { method: 'DELETE', ...options }),
-}
-
-export { ApiError }
+export const api = new ApiClient()

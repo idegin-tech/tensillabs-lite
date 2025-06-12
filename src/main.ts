@@ -67,7 +67,11 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL,
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:3001',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001'
+    ],
     credentials: true,
     allowedHeaders: [
       'Content-Type',
@@ -75,6 +79,7 @@ async function bootstrap() {
       'X-Member-ID',
       'X-Timezone',
       'X-User-DateTime',
+      'X-Request-ID',
       'Accept',
       'Origin',
       'X-Requested-With',

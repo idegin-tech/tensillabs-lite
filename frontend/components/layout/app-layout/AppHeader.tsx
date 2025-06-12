@@ -33,7 +33,7 @@ export default function AppHeader() {
 
                     <WorkspaceSearch/>
 
-                    <div className='min-w-[200px]'>
+                    <div className='min-w-[100px]'>
                         {/* Leave here empty for now */}
                     </div>
                 </div>
