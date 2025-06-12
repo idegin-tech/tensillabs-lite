@@ -13,7 +13,7 @@ import { Search, MoreHorizontal, ChevronLeft, ChevronRight, Users, Filter } from
 import AppBody from "@/components/layout/app-layout/AppBody"
 import { TbUser } from "react-icons/tb"
 
-// Mock user data
+
 const mockUsers = [
   {
     id: 1,
@@ -134,7 +134,6 @@ export default function UsersListPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
-  // Filter and search users
   const filteredUsers = useMemo(() => {
     return mockUsers.filter((user) => {
       const matchesSearch =
@@ -148,12 +147,10 @@ export default function UsersListPage() {
     })
   }, [searchTerm, statusFilter])
 
-  // Pagination
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage)
 
-  // Reset to first page when filters change
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
     setCurrentPage(1)
