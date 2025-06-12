@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { useApiInfiniteQuery } from './use-api'
 import { WorkspaceMembershipsResponse, GetMembershipsParams } from '@/types/workspace.types'
 
-export function useWorkspaceMemberships(params: GetMembershipsParams = {}) {
+export function useWorkspaceMember(params: GetMembershipsParams = {}) {
   const { search = '', limit = 10, sortBy = '-createdAt' } = params
 
   const queryKey = ['workspace-memberships', search, limit.toString(), sortBy]

@@ -44,12 +44,6 @@ export default function LoginPage() {
   })
 
   const onSubmit = async (values: LoginForm) => {
-    console.log('[LOGIN_PAGE] Form submission started with values:', {
-      email: values.email,
-      hasPassword: !!values.password,
-      rememberMe: values.rememberMe
-    });
-
     try {
       clearError()
       console.log('[LOGIN_PAGE] Calling login function...');
@@ -58,21 +52,16 @@ export default function LoginPage() {
         password: values.password,
       })
 
-      console.log('[LOGIN_PAGE] Login function result:', result);
-
       if (result.success) {
-        console.log('[LOGIN_PAGE] Login successful, showing success toast');
         toast.success('Login successful! Redirecting...', {
           description: 'Welcome back to TensilLabs',
         })
       } else {
-        console.log('[LOGIN_PAGE] Login failed, showing error toast');
         toast.error('Login failed', {
           description: result.error || 'Invalid credentials. Please try again.',
         })
       }
     } catch (error) {
-      console.error('[LOGIN_PAGE] Login error caught:', error);
       toast.error('Login failed', {
         description: 'An unexpected error occurred. Please try again.',
       })

@@ -1,3 +1,4 @@
+'use client'
 import React from 'react'
 import {
   SidebarGroup,
@@ -13,8 +14,11 @@ import {
   TbTrash,
 } from "react-icons/tb"
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export default function TasksAppNav() {
+  const pathname = usePathname()
+
   const tasksNavSections = [
     {
       title: "Main",
@@ -46,18 +50,20 @@ export default function TasksAppNav() {
     <>
       {tasksNavSections.map((section) => (
         <SidebarGroup key={section.title}>
-          {section.title && <SidebarGroupLabel>{section.title}</SidebarGroupLabel>}
-          <SidebarMenu>
-            {section.items.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <Link href={item.url}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+          {section.title && <SidebarGroupLabel>{section.title}</SidebarGroupLabel>}          <SidebarMenu>
+            {section.items.map((item) => {
+              const isActive = pathname === item.url
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive}>
+                    <Link href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
           </SidebarMenu>
         </SidebarGroup>
       ))}

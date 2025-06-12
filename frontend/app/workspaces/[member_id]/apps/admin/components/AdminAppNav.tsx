@@ -1,3 +1,4 @@
+'use client'
 import React from 'react'
 import {
   SidebarGroup,
@@ -17,35 +18,40 @@ import {
   TbSettings,
 } from "react-icons/tb"
 import Link from 'next/link'
+import useCommon from '@/hooks/use-common'
+import { usePathname } from 'next/navigation'
 
 export default function AuthAppNav() {
+  const {getPathToApp} = useCommon();
+  const pathname = usePathname()
+
   const adminNavSections = [
     {
       title: "Organization",
       items: [
         {
           title: "Overview",
-          url: "#",
+          url: `${getPathToApp('admin')}`,
           icon: TbDashboard,
         },
         {
           title: "Offices",
-          url: "#",
+          url: `${getPathToApp('admin')}/offices`,
           icon: TbBuilding,
         },
         {
           title: "Clients",
-          url: "#",
+          url: `${getPathToApp('admin')}/clients`,
           icon: TbUserCheck,
         },
         {
           title: "Billing",
-          url: "#", 
+          url: `${getPathToApp('admin')}/billing`,
           icon: TbCreditCard,
         },
         {
           title: "Settings",
-          url: "#",
+          url: `${getPathToApp('admin')}/settings`,
           icon: TbSettings,
         },
       ]
@@ -55,40 +61,42 @@ export default function AuthAppNav() {
       items: [
         {
           title: "Users",
-          url: "#",
+          url: `${getPathToApp('admin')}/users`,
           icon: TbUsers,
         },
         {
           title: "Roles",
-          url: "#",
+          url: `${getPathToApp('admin')}/roles`,
           icon: TbShield,
         },
         {
           title: "Teams",
-          url: "#",
+          url: `${getPathToApp('admin')}/teams`,
           icon: TbUsersGroup,
         },
       ]
     },
-    
-  ]
 
+  ]
   return (
     <>
       {adminNavSections.map((section) => (
         <SidebarGroup key={section.title}>
           {section.title && <SidebarGroupLabel>{section.title}</SidebarGroupLabel>}
           <SidebarMenu>
-            {section.items.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <Link href={item.url}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {section.items.map((item) => {
+              const isActive = pathname === item.url
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive}>
+                    <Link href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
           </SidebarMenu>
         </SidebarGroup>
       ))}

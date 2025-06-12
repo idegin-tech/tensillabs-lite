@@ -4,11 +4,7 @@ import React from 'react'
 export default function page() {
   return (
     <AppBody>
-      <div>
-        <h1 className='text-5xl font-bold text-center my-10 text-muted-foreground'>
-            Tasks
-          </h1>
-      </div>
+      <div>page</div>
     </AppBody>
   )
 }
