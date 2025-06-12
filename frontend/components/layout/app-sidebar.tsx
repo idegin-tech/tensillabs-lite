@@ -23,7 +23,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-// import { NavProjects } from "./nav-projects"
+import { NavProjects } from "./nav-projects"
 import { NavSecondary } from "./nav-secondary"
 import { NavMemberInfo } from "./app-layout/NavMemberInfo"
 import AppToggler from "./AppToggler"

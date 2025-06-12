@@ -15,7 +15,7 @@ export default function AppBody(
   return (
     <>
       <AppHeader />
-      <main className={cn("flex flex-1 flex-col gap-4 pt-0 max-h-[calc(100vh-3rem-16px)] overflow-y-auto", withoutPadding ? "p-0" : "p-4")}>
+      <main className={cn("flex flex-1 flex-col gap-4 pt-0 max-h-[calc(100vh-3rem-16px)] overflow-y-auto select-none", withoutPadding ? "p-0" : "p-4")}>
         {children}
       </main>
     </>
