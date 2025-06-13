@@ -18,6 +18,7 @@ import {
   TbBulb
 } from 'react-icons/tb'
 import { cn } from '@/lib/utils'
+import { useTasksApp } from '../contexts/tasks-app.context'
 
 interface Space {
   id: string
@@ -214,6 +215,7 @@ function SpaceCardSkeleton() {
 }
 
 export default function TaskHomePage() {
+  const { updateState } = useTasksApp()
   const [isLoading, setIsLoading] = useState(false)
   const [spaces] = useState<Space[]>(mockSpaces)
 
@@ -228,7 +230,7 @@ export default function TaskHomePage() {
               Organize your work into focused spaces for better collaboration
             </p>
           </div>
-          <Button className="shadow-sm">
+          <Button className="shadow-sm" onClick={() => updateState({ showCreateSpace: true })}>
             <TbPlus className="h-4 w-4 mr-2" />
             Create Space
           </Button>

@@ -5,7 +5,7 @@ import { TbCircle, TbClock, TbAlertTriangle, TbCircleCheck } from 'react-icons/t
 import { TaskStatus } from '@/types/tasks.types'
 import { mockTasks } from './_mock_tasks'
 import TasksListOptions from './TasksListOptions'
-import { TaskListProvider } from '../../context/task-list.context'
+
 
 export default function TasksListView() {
     const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +41,7 @@ export default function TasksListView() {
     ]
     
     return (
-        <TaskListProvider>
+        <>
             <div>
                 <TasksListOptions />
                 <div className='grid grid-cols-1 gap-6 pb-60 h-[calc(100dvh-9.5rem)] overflow-y-auto relative'>
@@ -66,6 +66,6 @@ export default function TasksListView() {
                     </div>
                 </div>
             </div>
-        </TaskListProvider>
+        </>
     )
 }
