@@ -13,11 +13,6 @@ import {
   TbBell,
   TbClock,
   TbTrash,
-  TbTarget,
-  TbBulb,
-  TbPalette,
-  TbCalendar,
-  TbCode,
 } from "react-icons/tb"
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'

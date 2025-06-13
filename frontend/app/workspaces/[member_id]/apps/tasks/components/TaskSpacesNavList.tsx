@@ -14,8 +14,10 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useTasksApp } from '../contexts/tasks-app.context';
 
 export default function TaskSpacesNavList() {
+    const { updateState} = useTasksApp();
     const mockSpaces = [
         {
             _id: 'marketing-campaign',
@@ -55,7 +57,7 @@ export default function TaskSpacesNavList() {
                     <span>Spaces</span>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button className='text-muted-foreground hover:text-foreground transition-colors cursor-pointer'>
+                            <button className='text-muted-foreground hover:text-foreground transition-colors cursor-pointer' onClick={() => updateState({ showCreateSpace: true })}>
                                 <TbPlus className="h-4 w-4" />
                                 <span className="sr-only">Add space</span>
                             </button>
