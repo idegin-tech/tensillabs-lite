@@ -126,3 +126,165 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom styles for TanStack React Table */
+.table-container {
+  position: relative;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.table-container table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+}
+
+.table-container th,
+.table-container td {
+  position: relative;
+}
+
+/* Resize handle styles */
+.table-container .resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  background: transparent;
+  transition: background-color 0.2s;
+}
+
+.table-container .resizer:hover {
+  background: hsl(var(--primary) / 0.3);
+}
+
+.table-container .resizer.isResizing {
+  background: hsl(var(--primary));
+}
+
+/* Sticky column shadows for better visual separation */
+.table-container th[style*="position: sticky"],
+.table-container td[style*="position: sticky"] {
+  z-index: 1;
+  background-color: hsl(var(--muted) / 0.8);
+  backdrop-filter: blur(8px);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.table-container th[style*="position: sticky"]:hover,
+.table-container td[style*="position: sticky"]:hover {
+  background-color: hsl(var(--muted) / 0.9);
+}
+
+/* Add a subtle border to indicate sticky columns */
+.table-container th[style*="position: sticky"][style*="left:"] {
+  border-right: 1px solid hsl(var(--border) / 0.6);
+}
+
+.table-container td[style*="position: sticky"][style*="left:"] {
+  border-right: 1px solid hsl(var(--border) / 0.6);
+}
+
+.table-container th[style*="position: sticky"][style*="right:"] {
+  border-left: 1px solid hsl(var(--border) / 0.6);
+}
+
+.table-container td[style*="position: sticky"][style*="right:"] {
+  border-left: 1px solid hsl(var(--border) / 0.6);
+}
+
+/* Shadcn Table with TanStack React Table integration */
+[data-slot="table-container"] {
+  position: relative;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+[data-slot="table"] {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+}
+
+[data-slot="table-head"],
+[data-slot="table-cell"] {
+  position: relative;
+}
+
+/* Resize handle styles for shadcn tables */
+[data-slot="table-head"] .resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  background: transparent;
+  transition: background-color 0.2s;
+}
+
+[data-slot="table-head"] .resizer:hover {
+  background: hsl(var(--primary));
+}
+
+[data-slot="table-head"] .resizer.isResizing {
+  background: hsl(var(--primary));
+}
+
+/* Sticky column shadows for shadcn tables */
+[data-slot="table-head"][style*="position: sticky"],
+[data-slot="table-cell"][style*="position: sticky"] {
+  z-index: 1;
+  background-color: hsl(var(--muted) / 0.8);
+  backdrop-filter: blur(8px);
+  transition: background-color 0.2s ease-in-out;
+}
+
+[data-slot="table-head"][style*="position: sticky"]:hover,
+[data-slot="table-cell"][style*="position: sticky"]:hover {
+  background-color: hsl(var(--muted) / 0.9);
+}
+
+/* Add a subtle border to indicate sticky columns for shadcn tables */
+[data-slot="table-head"][style*="position: sticky"][style*="left:"] {
+  border-right: 1px solid hsl(var(--border) / 0.6);
+}
+
+[data-slot="table-cell"][style*="position: sticky"][style*="left:"] {
+  border-right: 1px solid hsl(var(--border) / 0.6);
+}
+
+[data-slot="table-head"][style*="position: sticky"][style*="right:"] {
+  border-left: 1px solid hsl(var(--border) / 0.6);
+}
+
+[data-slot="table-cell"][style*="position: sticky"][style*="right:"] {
+  border-left: 1px solid hsl(var(--border) / 0.6);
+}
+
+/* Progress bar container in table cells */
+.table-container .progress-container,
+[data-slot="table-cell"] .progress-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.table-container .progress-container > *,
+[data-slot="table-cell"] .progress-container > * {
+  flex-shrink: 0;
+}
+
+.table-container .progress-container .progress,
+[data-slot="table-cell"] .progress-container .progress {
+  flex: 1;
+  min-width: 60px;
+}

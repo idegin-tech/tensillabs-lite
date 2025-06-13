@@ -3,10 +3,8 @@ import AppBody from '@/components/layout/app-layout/AppBody'
 import SectionPlaceholder from '@/components/placeholders/SectionPlaceholder'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
 import React, { useState } from 'react'
 import { 
   TbFolder, 
@@ -116,13 +114,13 @@ function SpaceCard({ space }: { space: Space }) {
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className={cn(
-              "p-3 rounded-xl text-white shadow-sm group-hover:scale-110 transition-transform duration-300",
+              "p-2 rounded-xl text-white shadow-sm",
               space.color
             )}>
-              <IconComponent className="h-5 w-5" />
+              <IconComponent className="h-7 w-7" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
+              <h3 className="font-semibold text-lg text-foreground transition-colors">
                 {space.name}
               </h3>
               <p className="text-sm text-muted-foreground">
@@ -164,16 +162,6 @@ function SpaceCard({ space }: { space: Space }) {
           </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium text-foreground">{space.completionProgress}%</span>
-            </div>
-            <Progress 
-              value={space.completionProgress} 
-              className="h-2"
-            />
-          </div>
         </div>
       </CardContent>
     </Card>
@@ -231,7 +219,8 @@ export default function TaskHomePage() {
 
   return (
     <AppBody>
-      <div className="space-y-8">
+      <div className='container mx-auto'>
+        <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Spaces</h1>
@@ -274,6 +263,7 @@ export default function TaskHomePage() {
             />
           </div>
         )}
+      </div>
       </div>
     </AppBody>
   )

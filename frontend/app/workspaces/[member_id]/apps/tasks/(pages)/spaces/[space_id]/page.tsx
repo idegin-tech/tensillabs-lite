@@ -2,10 +2,11 @@ import AppBody from '@/components/layout/app-layout/AppBody'
 import React from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TbLayoutDashboard, TbSettings, TbTagFilled, TbTrash, TbUsers } from 'react-icons/tb'
+import SpaceParticipants from '../components/tabs/SpaceParticipants';
+import SpaceTrash from '../components/tabs/SpaceTrash';
+import SpaceSettings from '../components/tabs/SpaceSettings';
 import SpaceOverviewTab from './tabs/SpaceOverviewTab';
-import SpaceParticipants from './tabs/SpaceParticipants';
-import SpaceTrash from './tabs/SpaceTrash';
-import SpaceSettings from './tabs/SpaceSettings';
+
 
 export default function page() {
     const contentClassName = 'p-0 min-h-[calc(100dvh-6.5rem-4rem)] overflow-y-auto';
