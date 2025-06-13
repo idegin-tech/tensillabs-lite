@@ -50,11 +50,11 @@ export default function EachTaskGroup({
             </div>
             <div
                 className={cn(
-                    'transition-all duration-300 ease-in-out',
+                    'transition-all duration-300 ease-in-out mb-16',
                     isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                 )}
             >
-                <div className='p-4'>
+                <div className='px-3'>
                     {isLoading ? (
                         <TablePlaceholder rows={3} columns={6} showHeader={true} />
                     ) : (

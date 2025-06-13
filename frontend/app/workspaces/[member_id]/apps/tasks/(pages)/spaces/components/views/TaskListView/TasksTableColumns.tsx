@@ -135,7 +135,7 @@ export const createColumns = (): ColumnDef<Task>[] => [{
         return (
             <div className="flex items-center gap-2">
                 <TbCalendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{formatTimeframe(timeframe)}</span>
+                <span className="text-sm">35 July 2023</span>
             </div>
         )
     },
@@ -212,7 +212,7 @@ export const createColumns = (): ColumnDef<Task>[] => [{
         return (
             <div className="flex items-center gap-2">
                 <TbCalendarEvent className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{new Date(updatedAt).toLocaleDateString()}</span>
+                <span className="text-sm">Updated It</span>
             </div>
         )
     },

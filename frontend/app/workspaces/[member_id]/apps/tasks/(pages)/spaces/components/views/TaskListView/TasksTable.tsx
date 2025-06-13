@@ -13,7 +13,7 @@ import {
     VisibilityState,
     RowSelectionState,
 } from "@tanstack/react-table"
-import { TbArrowLeft, TbArrowRight, TbX, TbRefresh, TbArrowsSort, TbDots } from 'react-icons/tb'
+import { TbArrowLeft, TbArrowRight, TbX, TbDots } from 'react-icons/tb'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Task } from '@/types/tasks.types'
 import { createColumns } from './TasksTableColumns'
+import { useTaskList } from '../../context/task-list.context'
 
 const getCommonPinningStyles = (column: Column<Task>): CSSProperties => {
     const isPinned = column.getIsPinned()
@@ -63,25 +64,27 @@ interface TasksTableProps {
 export default function TasksTable({ tasks }: TasksTableProps) {
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-
+    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});    
+    
+    const { state, updateState } = useTaskList()
     const columns = useMemo(() => createColumns(), [])
     const table = useReactTable({
         data: tasks,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),        getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: setColumnVisibility,
+        onColumnVisibilityChange: (updater) => {
+            const newVisibility = typeof updater === 'function' ? updater(state.visibleColumns) : updater
+            updateState({ visibleColumns: newVisibility })
+        },
         onRowSelectionChange: setRowSelection,
         state: {
             sorting,
             columnFilters,
-            columnVisibility,
+            columnVisibility: state.visibleColumns,
             rowSelection,
         },
         defaultColumn: {
@@ -98,63 +101,12 @@ export default function TasksTable({ tasks }: TasksTableProps) {
         enableColumnResizing: true,
         enableRowSelection: true,
         debugTable: false,
-        debugHeaders: false,
-        debugColumns: false,
-    })
-
-    const randomizeColumns = () => {
-        table.setColumnOrder(
-            [...table.getAllLeafColumns().map(d => d.id)].sort(() => Math.random() - 0.5)
-        )
-    }
+        debugHeaders: false,        debugColumns: false,
+    });
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap gap-4 items-start">
-                <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Column Visibility</h4>
-                    <div className="border rounded-md p-2 max-h-32 overflow-y-auto">
-                        <div className="space-y-1">
-                            <label className="flex items-center space-x-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    checked={table.getIsAllColumnsVisible()}
-                                    onChange={table.getToggleAllColumnsVisibilityHandler()}
-                                    className="rounded"
-                                />
-                                <span>Toggle All</span>
-                            </label>
-                            {table.getAllLeafColumns().map(column => (
-                                <label key={column.id} className="flex items-center space-x-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        checked={column.getIsVisible()}
-                                        onChange={column.getToggleVisibilityHandler()}
-                                        className="rounded"
-                                    />
-                                    <span className="capitalize">{column.id}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Actions</h4>
-                    <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm">
-                            <TbRefresh className="h-4 w-4 mr-1" />
-                            Refresh
-                        </Button>
-                        <Button onClick={randomizeColumns} variant="outline" size="sm">
-                            <TbArrowsSort className="h-4 w-4 mr-1" />
-                            Shuffle Columns
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="rounded-md border overflow-x-auto bg-background">
+            <div className="rounded-md overflow-x-auto bg-background">
                 <Table
                     style={{
                         width: table.getTotalSize(),

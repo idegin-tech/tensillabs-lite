@@ -5,6 +5,7 @@ import { TbCircle, TbClock, TbAlertTriangle, TbCircleCheck } from 'react-icons/t
 import { TaskStatus } from '@/types/tasks.types'
 import { mockTasks } from './_mock_tasks'
 import TasksListOptions from './TasksListOptions'
+import { TaskListProvider } from '../../context/task-list.context'
 
 export default function TasksListView() {
     const [isLoading, setIsLoading] = useState(false);
@@ -36,34 +37,35 @@ export default function TasksListView() {
             status: TaskStatus.COMPLETED,
             description: 'Tasks that have been finished',
             icon: TbCircleCheck,
-            color: 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-        }
+            color: 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'        }
     ]
-
+    
     return (
-        <div>
-            <TasksListOptions />
-            <div className='grid grid-cols-1 gap-6 pb-60 h-[calc(100dvh-9.5rem)] overflow-y-auto relative'>
-                <div className="space-y-1 px-3 pt-6">
-                    <h1 className="text-2xl font-bold text-foreground">Task List</h1>
-                    <p className="text-muted-foreground">
-                        Manage and track your tasks organized by status
-                    </p>
-                </div>
-                <div className='space-y-4 grid grid-cols-1'>
-                    {taskGroups.map((group) => (
-                        <EachTaskGroup
-                            key={group.status}
-                            title={group.title}
-                            status={group.status}
-                            tasks={mockTasks}
-                            isLoading={isLoading}
-                            icon={group.icon}
-                            color={group.color}
-                        />
-                    ))}
+        <TaskListProvider>
+            <div>
+                <TasksListOptions />
+                <div className='grid grid-cols-1 gap-6 pb-60 h-[calc(100dvh-9.5rem)] overflow-y-auto relative'>
+                    <div className="space-y-1 px-3 pt-6">
+                        <h1 className="text-2xl font-bold text-foreground">Task List</h1>
+                        <p className="text-muted-foreground">
+                            Manage and track your tasks organized by status
+                        </p>
+                    </div>
+                    <div className='grid grid-cols-1'>
+                        {taskGroups.map((group) => (
+                            <EachTaskGroup
+                                key={group.status}
+                                title={group.title}
+                                status={group.status}
+                                tasks={mockTasks}
+                                isLoading={isLoading}
+                                icon={group.icon}
+                                color={group.color}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
-        </div>
+        </TaskListProvider>
     )
 }
