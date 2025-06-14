@@ -4,16 +4,19 @@ import TasksAppNav from './components/TasksAppNav'
 import { TaskListProvider } from './contexts/task-list.context'
 import { TasksAppProvider } from './contexts/tasks-app.context'
 import CreateSpacePopup from './components/CreateSpacePopup'
+import { TasksSpaceProvider } from './contexts/tasks-space.context'
 
 export default function layout({ children }: { children: React.ReactNode }) {
   return (
     <TasksAppProvider>
-      <TaskListProvider>
-        <CreateSpacePopup/>
-        <AppLayout navContent={<TasksAppNav />}>
-          {children}
-        </AppLayout>
-      </TaskListProvider>
+      <TasksSpaceProvider>
+        <TaskListProvider>
+          <CreateSpacePopup />
+          <AppLayout navContent={<TasksAppNav />}>
+            {children}
+          </AppLayout>
+        </TaskListProvider>
+      </TasksSpaceProvider>
     </TasksAppProvider>
   )
 }

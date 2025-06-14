@@ -1,4 +1,4 @@
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from '@/components/ui/sidebar'
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar'
 import React from 'react';
 import {
     TbTarget,
@@ -14,11 +14,23 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Skeleton } from '@/components/ui/skeleton'
 import { useTasksApp } from '../contexts/tasks-app.context';
+
+function SpaceSkeleton() {
+    return (
+        <SidebarMenuItem>
+            <SidebarMenuButton className="flex items-center w-full">
+                <Skeleton className="h-6 w-6 rounded-sm mr-1" />
+                <Skeleton className="h-4 flex-1" />
+            </SidebarMenuButton>
+        </SidebarMenuItem>
+    )
+}
 
 export default function TaskSpacesNavList() {
     const { state, updateState } = useTasksApp();
-    const { spaces } = state;
+    const { spaces, isLoading } = state;
 
     return (
         <>
@@ -38,15 +50,21 @@ export default function TaskSpacesNavList() {
                     </Tooltip>
                 </SidebarGroupLabel>
                 <SidebarMenu>
-                    {spaces.map((space) => (
-                        <EachTasksSpace
-                            key={space._id}
-                            _id={space._id}
-                            color={space.color}
-                            Icon={space.icon}
-                            name={space.name}
-                        />
-                    ))}
+                    {isLoading ? (
+                        Array.from({ length: 3 }).map((_, i) => (
+                            <SpaceSkeleton key={i} />
+                        ))
+                    ) : (
+                        spaces.map((space) => (
+                            <EachTasksSpace
+                                key={space._id}
+                                _id={space._id}
+                                color={space.color}
+                                Icon={space.icon}
+                                name={space.name}
+                            />
+                        ))
+                    )}
                 </SidebarMenu>
             </SidebarGroup>
         </>

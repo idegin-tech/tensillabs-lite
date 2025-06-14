@@ -7,10 +7,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import React, { useEffect } from 'react'
-import { 
-  TbUsers, 
-  TbList, 
-  TbPlus, 
+import {
+  TbUsers,
+  TbList,
+  TbPlus,
   TbAlertCircle,
   TbRefresh,
   TbFolderX
@@ -34,7 +34,7 @@ function SpaceCard({ space }: { space: Space }) {
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div 
+            <div
               className="h-12 w-12 rounded-lg text-white shadow-sm flex items-center justify-center"
               style={{ backgroundColor: colorClass }}
             >
@@ -45,9 +45,9 @@ function SpaceCard({ space }: { space: Space }) {
               <h3 className="font-semibold text-lg text-foreground transition-colors">
                 {space.name}
               </h3>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {space.description || 'No description provided'}
-                </p>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {space.description || 'No description provided'}
+              </p>
             </div>
           </div>
         </div>        <div className="space-y-4">
@@ -205,53 +205,53 @@ export default function TaskHomePage() {
     <AppBody>
       <div className='container mx-auto'>
         <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Spaces</h1>
-            <p className="text-muted-foreground mt-1">
-              Organize your work into focused spaces for better collaboration
-            </p>
-          </div>
-          <Button className="shadow-sm" onClick={() => updateState({ showCreateSpace: true })}>
-            <TbPlus className="h-4 w-4 mr-2" />
-            Create Space
-          </Button>
-        </div>
-
-        {spaces.length > 0 ? (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {spaces.map((space) => (
-                <SpaceCard key={space._id} space={space} />
-              ))}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Spaces</h1>
+              <p className="text-muted-foreground mt-1">
+                Organize your work into focused spaces for better collaboration
+              </p>
             </div>
-            
-            {hasNextPage && (
-              <div ref={ref} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {isFetchingNextPage && Array.from({ length: 2 }).map((_, i) => (
-                  <SpaceCardSkeleton key={`loading-${i}`} />
+            <Button className="shadow-sm" onClick={() => updateState({ showCreateSpace: true })}>
+              <TbPlus className="h-4 w-4 mr-2" />
+              Create Space
+            </Button>
+          </div>
+
+          {spaces.length > 0 ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {spaces.map((space) => (
+                  <SpaceCard key={space._id} space={space} />
                 ))}
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="py-12">
-            <SectionPlaceholder
-              variant="empty"
-              icon={TbFolderX}
-              heading="No spaces yet"
-              subHeading="Get started by creating your first space. Organize your tasks and collaborate with your team more effectively."
-              ctaButton={{
-                label: "Create Your First Space",
-                onClick: () => updateState({ showCreateSpace: true }),
-                variant: "default",
-                icon: TbPlus
-              }}
-              fullWidth
-            />
-          </div>
-        )}
-      </div>
+
+              {hasNextPage && (
+                <div ref={ref} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {isFetchingNextPage && Array.from({ length: 2 }).map((_, i) => (
+                    <SpaceCardSkeleton key={`loading-${i}`} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="py-12">
+              <SectionPlaceholder
+                variant="empty"
+                icon={TbFolderX}
+                heading="No spaces yet"
+                subHeading="Get started by creating your first space. Organize your tasks and collaborate with your team more effectively."
+                ctaButton={{
+                  label: "Create Your First Space",
+                  onClick: () => updateState({ showCreateSpace: true }),
+                  variant: "default",
+                  icon: TbPlus
+                }}
+                fullWidth
+              />
+            </div>
+          )}
+        </div>
       </div>
     </AppBody>
   )

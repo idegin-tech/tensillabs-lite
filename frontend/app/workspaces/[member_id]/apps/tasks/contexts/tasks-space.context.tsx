@@ -13,7 +13,7 @@ import type {
 const TasksSpaceContext = createContext<TasksSpaceContextType | undefined>(undefined)
 
 export function TasksSpaceProvider({ children }: { children: ReactNode }) {
-    const { member_id } = useCommon()
+    const { member_id } = useCommon();
     const params = useParams()
     const spaceId = params.space_id as string
     

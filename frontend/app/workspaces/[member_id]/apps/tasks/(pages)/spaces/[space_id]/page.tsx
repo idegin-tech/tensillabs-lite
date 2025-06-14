@@ -8,7 +8,7 @@ import SpaceParticipants from '../components/tabs/SpaceParticipants';
 import SpaceTrash from '../components/tabs/SpaceTrash';
 import SpaceSettings from '../components/tabs/SpaceSettings';
 import SpaceOverviewTab from './tabs/SpaceOverviewTab';
-import { TasksSpaceProvider, useTasksSpace } from '../../../contexts/tasks-space.context';
+import { useTasksSpace } from '../../../contexts/tasks-space.context';
 import CreateListPopup from '../../../components/CreateListPopup';
 
 function SpaceHeader() {
@@ -69,7 +69,7 @@ function SpaceHeader() {
 
 export default function SpaceDetailsPage() {
     const contentClassName = 'p-0 min-h-[calc(100dvh-6.5rem-4rem)] overflow-y-auto';    return (
-        <TasksSpaceProvider>
+        <>
             <CreateListPopup />
             <AppBody withoutPadding>
                 <div className='flex flex-col h-full'>
@@ -116,6 +116,6 @@ export default function SpaceDetailsPage() {
                     </Tabs>
                 </div>
             </AppBody>
-        </TasksSpaceProvider>
+        </>
     )
 }
