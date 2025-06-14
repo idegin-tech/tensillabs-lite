@@ -90,7 +90,7 @@ const EachAppToggler = (
                 <button
                     onClick={onClick}
                     disabled={isDisabled}
-                    className={cn('bg-card w-full h-12 flex justify-center items-center transition-colors text-xl', {
+                    className={cn('w-full h-12 flex justify-center items-center transition-colors text-xl', {
                         "bg-background": isActive,
                         "text-muted-foreground hover:bg-accent hover:text-accent-foreground": !isActive
                     })}

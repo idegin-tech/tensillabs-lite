@@ -21,6 +21,7 @@ import {
 } from '../../../workspace-members/guards/workspace-member.guard';
 import { MemberPermissions } from '../../../workspace-members/enums/member-permissions.enum';
 import { SpaceParticipationGuard } from '../guards/space-participation.guard';
+import { SpaceAdminGuard } from '../guards/space-admin.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
 import {
@@ -39,6 +40,7 @@ export class SpaceParticipantController {
   ) {}
 
   @Post()
+  @UseGuards(SpaceAdminGuard)
   async inviteParticipant(
     @Param('spaceId') spaceId: string,
     @Body(new ZodValidationPipe(inviteParticipantSchema))
@@ -58,7 +60,6 @@ export class SpaceParticipantController {
       new Types.ObjectId(spaceId),
       inviteParticipantDto,
       req.workspace._id,
-      req.workspaceMember._id,
     );
 
     return createSuccessResponse(
@@ -68,6 +69,7 @@ export class SpaceParticipantController {
   }
 
   @Put(':participantId')
+  @UseGuards(SpaceAdminGuard)
   async updateParticipant(
     @Param('participantId') participantId: string,
     @Body(new ZodValidationPipe(updateParticipantSchema))
@@ -87,7 +89,6 @@ export class SpaceParticipantController {
       new Types.ObjectId(participantId),
       updateParticipantDto,
       req.workspace._id,
-      req.workspaceMember._id,
     );
 
     return createSuccessResponse(

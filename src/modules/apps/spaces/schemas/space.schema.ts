@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import * as mongoosePaginate from 'mongoose-paginate-v2';
 
 export type SpaceDocument = Space & Document;
 
@@ -14,6 +15,13 @@ export class Space {
     maxlength: 100,
   })
   name: string;
+
+  @Prop({
+    required: false,
+    trim: true,
+    maxlength: 500,
+  })
+  description?: string;
 
   @Prop({
     required: true,
@@ -60,3 +68,5 @@ SpaceSchema.index({ workspace: 1 });
 SpaceSchema.index({ createdBy: 1 });
 SpaceSchema.index({ isDeleted: 1 });
 SpaceSchema.index({ isPublic: 1 });
+
+SpaceSchema.plugin(mongoosePaginate);

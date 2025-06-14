@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import * as mongoosePaginate from 'mongoose-paginate-v2';
 
 export type SpaceParticipantDocument = SpaceParticipant & Document;
 
@@ -64,3 +65,5 @@ SpaceParticipantSchema.index({ member: 1 });
 SpaceParticipantSchema.index({ workspace: 1 });
 SpaceParticipantSchema.index({ status: 1 });
 SpaceParticipantSchema.index({ member: 1, space: 1 }, { unique: true });
+
+SpaceParticipantSchema.plugin(mongoosePaginate);

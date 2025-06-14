@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Space, SpaceDocument } from '../schemas/space.schema';
-import { CreateSpaceDto } from '../dto/space.dto';
+import { CreateSpaceDto, UpdateSpaceDto } from '../dto/space.dto';
 import { SpaceParticipantService } from '../space-participants/services/space-participant.service';
 
 @Injectable()
@@ -33,5 +33,25 @@ export class SpaceService {
     );
 
     return savedSpace;
+  }
+
+  async update(
+    spaceId: Types.ObjectId,
+    updateSpaceDto: UpdateSpaceDto,
+    workspaceId: Types.ObjectId,
+  ): Promise<SpaceDocument> {
+    const space = await this.spaceModel
+      .findOneAndUpdate(
+        { _id: spaceId, workspace: workspaceId, isDeleted: false },
+        updateSpaceDto,
+        { new: true },
+      )
+      .exec();
+
+    if (!space) {
+      throw new NotFoundException('Space not found');
+    }
+
+    return space;
   }
 }

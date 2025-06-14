@@ -11,6 +11,7 @@ import { OptionsModule } from './modules/options/options.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { AppsModule } from './modules/apps/apps.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { BillingModule } from './modules/billing/billing.module';
     WorkspacesModule,
     WorkspaceMembersModule,
     OptionsModule,
+    AppsModule,
     BillingModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'frontend', 'dist'),

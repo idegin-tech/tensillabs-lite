@@ -35,13 +35,13 @@ export default function EachTasksSpace({ color, Icon, name, _id }: Props) {
                                 e.preventDefault();
                                 setShowList(!showList);
                             }}
-                            className={cn("h-5 w-5 rounded-sm flex items-center justify-center cursor-pointer transition-colors mr-1", {
+                            className={cn("h-6 w-6 rounded-sm flex items-center justify-center cursor-pointer transition-colors mr-1", {
                                 "bg-accent text-accent-foreground": isHovered,
                                 "text-white": !isHovered
                             })}
                             style={{ backgroundColor: !isHovered ? color : undefined }}
                         >
-                            {!isHovered ? Icon : (showList ? <TbChevronDown className="h-3 w-3" /> : <TbChevronUp className="h-3 w-3" />)}
+                            {!isHovered ? <i className={`fas ${Icon} text-xs`}></i> : (showList ? <TbChevronDown className="h-3 w-3" /> : <TbChevronUp className="h-3 w-3" />)}
                         </div>
                         <Link href={spaceUrl} className='flex-1 min-w-0'>
                             <span className="truncate">{name}</span>

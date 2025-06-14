@@ -5,164 +5,88 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
-import React, { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import React, { useEffect } from 'react'
 import { 
-  TbFolder, 
   TbUsers, 
   TbList, 
   TbPlus, 
-  TbDots,
-  TbPalette,
-  TbCalendar,
-  TbTarget,
-  TbBulb
+  TbAlertCircle,
+  TbRefresh,
+  TbFolderX
 } from 'react-icons/tb'
-import { cn } from '@/lib/utils'
 import { useTasksApp } from '../contexts/tasks-app.context'
-
-interface Space {
-  id: string
-  name: string
-  color: string
-  icon: string
-  description: string
-  listsCount: number
-  participantsCount: number
-  completionProgress: number
-  participants: Array<{
-    id: string
-    name: string
-    avatar?: string
-  }>
-  lastActivity: string
-}
-
-const mockSpaces: Space[] = [
-  {
-    id: '1',
-    name: 'Marketing Campaign',
-    color: 'bg-blue-500',
-    icon: 'TbTarget',
-    description: 'Q1 2024 product launch campaigns and initiatives',
-    listsCount: 12,
-    participantsCount: 8,
-    completionProgress: 75,
-    participants: [
-      { id: '1', name: 'John Doe' },
-      { id: '2', name: 'Jane Smith' },
-      { id: '3', name: 'Mike Johnson' },
-    ],
-    lastActivity: '2 hours ago'
-  },
-  {
-    id: '2',
-    name: 'Product Development',
-    color: 'bg-emerald-500',
-    icon: 'TbBulb',
-    description: 'Feature development and bug fixes for the next release',
-    listsCount: 18,
-    participantsCount: 12,
-    completionProgress: 45,
-    participants: [
-      { id: '4', name: 'Sarah Wilson' },
-      { id: '5', name: 'Tom Brown' },
-      { id: '6', name: 'Lisa Davis' },
-    ],
-    lastActivity: '1 hour ago'
-  },
-  {
-    id: '3',
-    name: 'Design System',
-    color: 'bg-purple-500',
-    icon: 'TbPalette',
-    description: 'Building and maintaining our design system components',
-    listsCount: 6,
-    participantsCount: 4,
-    completionProgress: 90,
-    participants: [
-      { id: '7', name: 'Alex Chen' },
-      { id: '8', name: 'Emma Taylor' },
-    ],
-    lastActivity: '30 minutes ago'
-  },
-  {
-    id: '4',
-    name: 'Event Planning',
-    color: 'bg-orange-500',
-    icon: 'TbCalendar',
-    description: 'Annual conference planning and coordination',
-    listsCount: 8,
-    participantsCount: 6,
-    completionProgress: 60,
-    participants: [
-      { id: '9', name: 'David Lee' },
-      { id: '10', name: 'Rachel Green' },
-      { id: '11', name: 'Kevin White' },
-    ],
-    lastActivity: '4 hours ago'
-  }
-]
+import { useInView } from 'react-intersection-observer'
+import { useRouter } from 'next/navigation'
+import useCommon from '@/hooks/use-common'
+import type { Space } from '@/types/spaces.types'
 
 function SpaceCard({ space }: { space: Space }) {
-  const IconComponent = space.icon === 'TbTarget' ? TbTarget : 
-                      space.icon === 'TbBulb' ? TbBulb :
-                      space.icon === 'TbPalette' ? TbPalette :
-                      TbCalendar
+  const router = useRouter()
+  const { getPathToApp } = useCommon()
+  const colorClass = space.color || '#3B82F6'
 
+  const handleClick = () => {
+    router.push(`${getPathToApp('tasks')}/spaces/${space._id}`)
+  }
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-border/50 hover:border-primary/20 bg-card/50 backdrop-blur-sm py-0">
+    <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-border/50 hover:border-primary/20 bg-card/50 backdrop-blur-sm py-0" onClick={handleClick}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className={cn(
-              "p-2 rounded-xl text-white shadow-sm",
-              space.color
-            )}>
-              <IconComponent className="h-7 w-7" />
+            <div 
+              className="h-12 w-12 rounded-lg text-white shadow-sm flex items-center justify-center"
+              style={{ backgroundColor: colorClass }}
+            >
+              {/* <IconComponent className="h-7 w-7" /> */}
+              <i className={`fas ${space.icon} text-xl`}></i>
             </div>
             <div>
               <h3 className="font-semibold text-lg text-foreground transition-colors">
                 {space.name}
               </h3>
-              <p className="text-sm text-muted-foreground">
-                {space.description}
-              </p>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {space.description || 'No description provided'}
+                </p>
             </div>
           </div>
-        </div>
-
-        <div className="space-y-4">
+        </div>        <div className="space-y-4">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1 text-muted-foreground">
                 <TbList className="h-4 w-4" />
-                <span>{space.listsCount} lists</span>
+                <span>{space.listCount} lists</span>
               </div>
               <div className="flex items-center space-x-1 text-muted-foreground">
                 <TbUsers className="h-4 w-4" />
-                <span>{space.participantsCount} members</span>
+                <span>{space.participantCount} members</span>
               </div>
             </div>
-           <div className="flex items-center justify-between">
-            <div className="flex -space-x-2">
-              {space.participants.slice(0, 3).map((participant, index) => (
-                <Avatar key={participant.id} className="h-8 w-8 border-2 border-background">
-                  <AvatarFallback className="text-xs bg-muted">
-                    {participant.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {space.participantsCount > 3 && (
-                <Avatar className="h-8 w-8 border-2 border-background">
-                  <AvatarFallback className="text-xs bg-muted">
-                    +{space.participantsCount - 3}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          </div>
           </div>
 
+          {space.recentParticipants.length > 0 && (
+            <div className="flex items-center justify-between">
+              <div className="flex -space-x-2">
+                {space.recentParticipants.slice(0, 3).map((participant) => (
+                  <Avatar key={participant._id} className="h-8 w-8 border-2 border-background">
+                    <AvatarFallback className="text-xs bg-muted">
+                      {participant.firstName?.[0]}{participant.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
+                {space.participantCount > 3 && (
+                  <Avatar className="h-8 w-8 border-2 border-background">
+                    <AvatarFallback className="text-xs bg-muted">
+                      +{space.participantCount - 3}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {new Date(space.createdAt).toLocaleDateString()}
+              </Badge>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -171,7 +95,7 @@ function SpaceCard({ space }: { space: Space }) {
 
 function SpaceCardSkeleton() {
   return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+    <div className="border-border/50 rounded-xl border backdrop-blur-sm">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -181,7 +105,6 @@ function SpaceCardSkeleton() {
               <Skeleton className="h-4 w-48" />
             </div>
           </div>
-          <Skeleton className="h-8 w-8 rounded" />
         </div>
 
         <div className="space-y-4">
@@ -190,15 +113,6 @@ function SpaceCardSkeleton() {
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-20" />
             </div>
-            <Skeleton className="h-5 w-16 rounded-full" />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-8" />
-            </div>
-            <Skeleton className="h-2 w-full rounded-full" />
           </div>
 
           <div className="flex items-center justify-between">
@@ -210,14 +124,82 @@ function SpaceCardSkeleton() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </div>
   )
 }
 
 export default function TaskHomePage() {
-  const { updateState } = useTasksApp()
-  const [isLoading, setIsLoading] = useState(false)
-  const [spaces] = useState<Space[]>(mockSpaces)
+  const { state, updateState, refetchSpaces, fetchNextPage, hasNextPage, isFetchingNextPage } = useTasksApp()
+  const { spaces, isLoading, error } = state
+
+  const { ref, inView } = useInView({
+    threshold: 0,
+  })
+
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  if (isLoading) {
+    return (
+      <AppBody>
+        <div className='container mx-auto'>
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <Skeleton className="h-9 w-32 mb-2" />
+                <Skeleton className="h-5 w-80" />
+              </div>
+              <Skeleton className="h-10 w-32" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SpaceCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </AppBody>
+    )
+  }
+
+  if (error) {
+    return (
+      <AppBody>
+        <div className='container mx-auto'>
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Spaces</h1>
+                <p className="text-muted-foreground mt-1">
+                  Organize your work into focused spaces for better collaboration
+                </p>
+              </div>
+            </div>
+
+            <div className="py-12">
+              <SectionPlaceholder
+                variant="error"
+                icon={TbAlertCircle}
+                heading="Failed to load spaces"
+                subHeading="We couldn't load your spaces. Please try again."
+                ctaButton={{
+                  label: "Try Again",
+                  onClick: () => refetchSpaces(),
+                  variant: "default",
+                  icon: TbRefresh
+                }}
+                fullWidth
+              />
+            </div>
+          </div>
+        </div>
+      </AppBody>
+    )
+  }
 
   return (
     <AppBody>
@@ -236,28 +218,32 @@ export default function TaskHomePage() {
           </Button>
         </div>
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <SpaceCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : spaces.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {spaces.map((space) => (
-              <SpaceCard key={space.id} space={space} />
-            ))}
+        {spaces.length > 0 ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {spaces.map((space) => (
+                <SpaceCard key={space._id} space={space} />
+              ))}
+            </div>
+            
+            {hasNextPage && (
+              <div ref={ref} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {isFetchingNextPage && Array.from({ length: 2 }).map((_, i) => (
+                  <SpaceCardSkeleton key={`loading-${i}`} />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-12">
             <SectionPlaceholder
               variant="empty"
-              icon={TbFolder}
+              icon={TbFolderX}
               heading="No spaces yet"
               subHeading="Get started by creating your first space. Organize your tasks and collaborate with your team more effectively."
               ctaButton={{
                 label: "Create Your First Space",
-                onClick: () => {},
+                onClick: () => updateState({ showCreateSpace: true }),
                 variant: "default",
                 icon: TbPlus
               }}

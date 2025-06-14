@@ -1,10 +1,18 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import {
+  Model,
+  Types,
+  PaginateModel,
+  PaginateResult,
+  FilterQuery,
+} from 'mongoose';
 import {
   SpaceParticipant,
   SpaceParticipantDocument,
@@ -16,12 +24,17 @@ import {
   UpdateParticipantDto,
 } from '../dto/space-participant.dto';
 import { Space, SpaceDocument } from '../../schemas/space.schema';
+import {
+  PaginationDto,
+  extractPaginationOptions,
+} from '../../../../workspace-members/dto/pagination.dto';
 
 @Injectable()
 export class SpaceParticipantService {
   constructor(
     @InjectModel(SpaceParticipant.name)
-    private spaceParticipantModel: Model<SpaceParticipantDocument>,
+    private spaceParticipantModel: Model<SpaceParticipantDocument> &
+      PaginateModel<SpaceParticipantDocument>,
     @InjectModel(Space.name)
     private spaceModel: Model<SpaceDocument>,
   ) {}
@@ -46,23 +59,7 @@ export class SpaceParticipantService {
     spaceId: Types.ObjectId,
     inviteParticipantDto: InviteParticipantDto,
     workspaceId: Types.ObjectId,
-    currentMemberId: Types.ObjectId,
   ): Promise<SpaceParticipantDocument> {
-    const currentParticipant = await this.spaceParticipantModel
-      .findOne({
-        space: spaceId,
-        member: currentMemberId,
-        workspace: workspaceId,
-        status: ParticipantStatus.ACTIVE,
-      })
-      .exec();
-
-    if (!currentParticipant || currentParticipant.role !== SpaceRole.ADMIN) {
-      throw new ForbiddenException(
-        'Only admin participants can invite members',
-      );
-    }
-
     const existingParticipant = await this.spaceParticipantModel
       .findOne({
         space: spaceId,
@@ -90,55 +87,26 @@ export class SpaceParticipantService {
     participantId: Types.ObjectId,
     updateParticipantDto: UpdateParticipantDto,
     workspaceId: Types.ObjectId,
-    currentMemberId: Types.ObjectId,
   ): Promise<SpaceParticipantDocument> {
     const participant = await this.spaceParticipantModel
-      .findById(participantId)
+      .findOne({
+        _id: participantId,
+        workspace: workspaceId,
+        status: ParticipantStatus.ACTIVE,
+      })
       .exec();
 
     if (!participant) {
       throw new NotFoundException('Participant not found');
     }
 
-    const currentParticipant = await this.spaceParticipantModel
-      .findOne({
-        space: participant.space,
-        member: currentMemberId,
-        workspace: workspaceId,
-        status: ParticipantStatus.ACTIVE,
-      })
-      .exec();
-
-    if (!currentParticipant || currentParticipant.role !== SpaceRole.ADMIN) {
-      throw new ForbiddenException(
-        'Only admin participants can update members',
-      );
-    }
-
-    const isSpaceOwner = await this.isSpaceOwner(
-      participant.space,
-      participant.member,
-    );
-
-    if (isSpaceOwner) {
-      throw new ForbiddenException('Space owner data cannot be updated');
-    }
-
     return await this.spaceParticipantModel
-      .findByIdAndUpdate(participantId, updateParticipantDto, { new: true })
+      .findOneAndUpdate(
+        { _id: participantId, workspace: workspaceId },
+        updateParticipantDto,
+        { new: true },
+      )
       .exec();
-  }
-
-  private async isSpaceOwner(
-    spaceId: Types.ObjectId,
-    memberId: Types.ObjectId,
-  ): Promise<boolean> {
-    const space = await this.spaceModel
-      .findById(spaceId)
-      .select('createdBy')
-      .exec();
-
-    return space?.createdBy.equals(memberId) || false;
   }
 
   async getSpaceParticipants(
@@ -153,5 +121,104 @@ export class SpaceParticipantService {
       })
       .populate('member', 'firstName lastName primaryEmail')
       .exec();
+  }
+
+  async getSpacesByParticipant(
+    memberId: Types.ObjectId,
+    workspaceId: Types.ObjectId,
+    pagination?: PaginationDto,
+  ): Promise<PaginateResult<SpaceParticipantDocument>> {
+    if (!pagination) {
+      pagination = { page: 1, limit: 30, sortBy: '-createdAt' };
+    }
+
+    const { search, paginationOptions } = extractPaginationOptions(pagination);
+
+    const query: FilterQuery<SpaceParticipantDocument> = {
+      member: memberId,
+      workspace: workspaceId,
+      status: ParticipantStatus.ACTIVE,
+    };
+
+    if (search) {
+      const spaceIds = await this.spaceModel
+        .find({
+          workspace: workspaceId,
+          isDeleted: false,
+          name: { $regex: search, $options: 'i' },
+        })
+        .select('_id')
+        .exec();
+
+      if (spaceIds.length > 0) {
+        query.space = { $in: spaceIds.map((s) => s._id) };
+      } else {
+        query.space = null;
+      }
+    }
+
+    const result = await this.spaceParticipantModel.paginate(query, {
+      ...paginationOptions,
+      populate: [
+        {
+          path: 'space',
+          select: 'name description color icon isPublic createdAt',
+          match: { isDeleted: false },
+        },
+      ],
+    });
+
+    const enhancedDocs = await Promise.all(
+      result.docs.map(async (doc) => {
+        if (!doc.space) return doc;
+
+        const spaceId = (doc.space as any)._id;
+
+        const [participantCount, recentParticipants, listCount] =
+          await Promise.all([
+            this.spaceParticipantModel.countDocuments({
+              space: spaceId,
+              workspace: workspaceId,
+              status: ParticipantStatus.ACTIVE,
+            }),
+            this.spaceParticipantModel
+              .find({
+                space: spaceId,
+                workspace: workspaceId,
+                status: ParticipantStatus.ACTIVE,
+              })
+              .populate('member', 'firstName lastName primaryEmail')
+              .sort({ createdAt: -1 })
+              .limit(5)
+              .exec(),
+            this.spaceModel.db.collection('lists').countDocuments({
+              space: spaceId,
+              workspace: workspaceId,
+              isDeleted: false,
+            }),
+          ]);
+
+        const docObj = doc.toObject();
+        return {
+          ...docObj,
+          space: {
+            ...(docObj.space as any),
+            participantCount,
+            recentParticipants: recentParticipants.map((p: any) => ({
+              _id: p.member._id,
+              firstName: p.member.firstName,
+              lastName: p.member.lastName,
+              primaryEmail: p.member.primaryEmail,
+            })),
+            listCount,
+          },
+        };
+      }),
+    );
+
+    return {
+      ...result,
+      docs: enhancedDocs as any,
+    };
   }
 }

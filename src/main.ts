@@ -20,6 +20,28 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
 
+  app.enableCors({
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:3001',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+    ],
+    credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Member-ID',
+      'X-Timezone',
+      'X-User-DateTime',
+      'X-Request-ID',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+    ],
+    exposedHeaders: ['X-Member-ID', 'X-Timezone', 'X-User-DateTime'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  });
+
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cookieParser());
@@ -66,27 +88,6 @@ async function bootstrap() {
     }),
   );
 
-  app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3001',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001'
-    ],
-    credentials: true,
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Member-ID',
-      'X-Timezone',
-      'X-User-DateTime',
-      'X-Request-ID',
-      'Accept',
-      'Origin',
-      'X-Requested-With',
-    ],
-    exposedHeaders: ['X-Member-ID', 'X-Timezone', 'X-User-DateTime'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  });
   app.setGlobalPrefix('api/v1');
 
   app.enableShutdownHooks();
