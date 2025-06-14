@@ -2,7 +2,8 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { TbEye } from 'react-icons/tb'
 import React from 'react'
-import { useTaskList } from '../../context/task-list.context'
+import { useTaskList } from '../../../../../contexts/task-list.context'
+
 
 export default function TasksListOptions() {
     const { state, updateState } = useTaskList()

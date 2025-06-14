@@ -60,6 +60,18 @@ export interface CreateSpaceResponse {
   payload: Space
 }
 
+export interface CreateListRequest {
+  name: string
+  description?: string
+  isPrivate: boolean
+}
+
+export interface CreateListResponse {
+  success: boolean
+  message: string
+  payload: TaskList
+}
+
 export interface TasksAppState {
   showCreateSpace: boolean
   showCreateList: boolean
@@ -75,4 +87,45 @@ export interface TasksAppContextType {
   fetchNextPage: () => void
   hasNextPage: boolean
   isFetchingNextPage: boolean
+}
+
+export interface TaskList {
+  _id: string
+  name: string
+  isPrivate: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SpaceDetailsParticipant {
+  _id: string
+  firstName: string
+  lastName: string
+  primaryEmail: string
+  role: string
+  status: string
+  joinedAt: string
+}
+
+export interface SpaceDetails {
+  space: Omit<Space, 'participantCount' | 'recentParticipants' | 'listCount'>
+  lists: TaskList[]
+  recentParticipants: SpaceDetailsParticipant[]
+}
+
+export interface GetSpaceDetailsResponse {
+  success: boolean
+  message: string
+  payload: SpaceDetails
+}
+
+export interface TasksSpaceState {
+  space: SpaceDetails | null
+  isLoading: boolean
+  error: Error | null
+}
+
+export interface TasksSpaceContextType {
+  state: TasksSpaceState
+  refetchSpace: () => void
 }

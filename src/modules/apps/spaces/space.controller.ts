@@ -1,3 +1,5 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
@@ -94,5 +96,23 @@ export class SpaceController {
     );
 
     return createSuccessResponse('Space updated successfully', space);
+  }
+
+  @Get(':spaceId')
+  @UseGuards(SpaceParticipationGuard)
+  async getSpaceDetails(
+    @Param('spaceId') spaceId: string,
+    @Req() req: Request & { workspaceMember: any; workspace: any; space: any },
+  ) {
+    if (!Types.ObjectId.isValid(spaceId)) {
+      throw new BadRequestException('Invalid space ID format');
+    }
+
+    const spaceDetails = await this.spaceService.getSpaceDetails(
+      new Types.ObjectId(spaceId),
+      req.workspace._id,
+    );
+
+    return createSuccessResponse('Space details retrieved successfully', spaceDetails);
   }
 }

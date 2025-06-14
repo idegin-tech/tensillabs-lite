@@ -1,10 +1,10 @@
 import AppBody from '@/components/layout/app-layout/AppBody'
 import React from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TbChartPie, TbLayoutDashboard, TbLayoutList, TbMenu3 } from 'react-icons/tb'
+import { TbChartPie, TbLayoutList, TbMenu3 } from 'react-icons/tb'
 import TasksListView from '../../../components/views/TaskListView/TasksListView';
 
-export default function page() {
+export default function ListDetailsPage() {
   const contentClassName = 'p-0 min-h-[calc(100dvh-6.5rem)] overflow-y-auto';
   return (
     <AppBody withoutPadding>

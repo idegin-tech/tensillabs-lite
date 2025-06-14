@@ -32,7 +32,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Task } from '@/types/tasks.types'
 import { createColumns } from './TasksTableColumns'
-import { useTaskList } from '../../context/task-list.context'
+import { useTaskList } from '../../../../../contexts/task-list.context'
+
 
 const getCommonPinningStyles = (column: Column<Task>): CSSProperties => {
     const isPinned = column.getIsPinned()
@@ -66,7 +67,7 @@ export default function TasksTable({ tasks }: TasksTableProps) {
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});    
     
-    const { state, updateState } = useTaskList()
+    const { state, updateState } = useTaskList();
     const columns = useMemo(() => createColumns(), [])
     const table = useReactTable({
         data: tasks,

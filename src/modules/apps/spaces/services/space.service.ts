@@ -54,4 +54,46 @@ export class SpaceService {
 
     return space;
   }
+
+  async getSpaceDetails(
+    spaceId: Types.ObjectId,
+    workspaceId: Types.ObjectId,
+  ): Promise<any> {
+    const space = await this.spaceModel
+      .findOne({ _id: spaceId, workspace: workspaceId, isDeleted: false })
+      .exec();
+
+    if (!space) {
+      throw new NotFoundException('Space not found');
+    }
+
+    const [lists, recentParticipants] = await Promise.all([
+      this.spaceModel.db.collection('lists').find({
+        space: spaceId,
+        workspace: workspaceId,
+        isDeleted: false,
+      }).sort({ createdAt: -1 }).toArray(),
+      this.spaceParticipantService.getSpaceParticipants(spaceId, workspaceId)
+    ]);
+
+    return {
+      space: space.toObject(),
+      lists: lists.map(list => ({
+        _id: list._id,
+        name: list.name,
+        isPrivate: list.isPrivate,
+        createdAt: list.createdAt,
+        updatedAt: list.updatedAt,
+      })),
+      recentParticipants: recentParticipants.slice(0, 20).map((p: any) => ({
+        _id: p.member._id,
+        firstName: p.member.firstName,
+        lastName: p.member.lastName,
+        primaryEmail: p.member.primaryEmail,
+        role: p.role,
+        status: p.status,
+        joinedAt: p.createdAt,
+      })),
+    };
+  }
 }
