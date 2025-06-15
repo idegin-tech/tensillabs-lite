@@ -2,7 +2,7 @@ node_modules
 .env
 dist
 .ide
-
+.idea
 # Fly.io
 fly.toml.bak
 .fly/a/

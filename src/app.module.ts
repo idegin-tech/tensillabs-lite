@@ -12,6 +12,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { AppsModule } from './modules/apps/apps.module';
+import { ProjectsModule } from './modules/projects/projects.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AppsModule } from './modules/apps/apps.module';
     WorkspacesModule,
     WorkspaceMembersModule,
     OptionsModule,
+    ProjectsModule,
     AppsModule,
     BillingModule,
     ServeStaticModule.forRoot({

@@ -39,7 +39,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
-    TbBuilding,
+    TbUsers,
     TbSearch,
     TbPlus,
     TbDotsVertical,
@@ -50,23 +50,24 @@ import {
     TbChevronLeft,
     TbChevronRight,
     TbX,
-    TbLoader2
+    TbLoader2,
+    TbBuilding
 } from 'react-icons/tb'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { Office } from '@/types/offices.types'
-import { useOffices, useCreateOffice, useUpdateOffice } from '@/hooks/use-offices'
+import { Client } from '@/types/clients.types'
+import { useClients, useCreateClient, useUpdateClient } from '@/hooks/use-clients'
 import { toast } from 'sonner'
 
-interface OfficesTableProps {
-    offices: Office[]
+interface ClientsTableProps {
+    clients: Client[]
     isLoading: boolean
-    onViewOffice: (office: Office) => void
-    onEditOffice: (office: Office) => void
-    onDeleteOffice: (office: Office) => void
+    onViewClient: (client: Client) => void
+    onEditClient: (client: Client) => void
+    onDeleteClient: (client: Client) => void
 }
 
-function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDeleteOffice }: OfficesTableProps) {
+function ClientsTable({ clients, isLoading, onViewClient, onEditClient, onDeleteClient }: ClientsTableProps) {
     if (isLoading) {
         return <TablePlaceholder rows={10} columns={5} />
     }
@@ -90,13 +91,18 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
         return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'UN'
     }
 
+    const getOfficesCount = (offices: any) => {
+        if (!offices) return 0
+        return Array.isArray(offices) ? offices.length : 0
+    }
+
     return (
         <div className="rounded-lg border bg-background shadow-sm">
             <Table>
                 <TableHeader>
                     <TableRow className="border-b">
-                        <TableHead className="font-semibold text-foreground">Office</TableHead>
-                        <TableHead className="font-semibold text-foreground">Address</TableHead>
+                        <TableHead className="font-semibold text-foreground">Client</TableHead>
+                        <TableHead className="font-semibold text-foreground">Offices</TableHead>
                         <TableHead className="font-semibold text-foreground">Created By</TableHead>
                         <TableHead className="font-semibold text-foreground">Status</TableHead>
                         <TableHead className="font-semibold text-foreground">Date Created</TableHead>
@@ -104,44 +110,49 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {offices.map((office) => (
-                        <TableRow key={office._id} className="hover:bg-muted/30 transition-colors">
+                    {clients.map((client) => (
+                        <TableRow key={client._id} className="hover:bg-muted/30 transition-colors">
                             <TableCell className="py-4">
                                 <div className="space-y-1">
                                     <div className="font-semibold text-sm text-foreground">
-                                        {office.name}
+                                        {client.name}
                                     </div>
-                                    {office.description && (
+                                    {client.description && (
                                         <div className="text-xs text-muted-foreground line-clamp-2">
-                                            {office.description}
+                                            {client.description}
                                         </div>
                                     )}
                                 </div>
                             </TableCell>
-                            <TableCell className="py-4 text-muted-foreground font-medium">
-                                {office.address || 'No Address'}
+                            <TableCell className="py-4">
+                                <div className="flex items-center space-x-2">
+                                    <TbBuilding className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm text-muted-foreground">
+                                        {getOfficesCount(client.offices)} office{getOfficesCount(client.offices) !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
                             </TableCell>
                             <TableCell className="py-4">
                                 <div className="flex items-center space-x-3">
                                     <Avatar className="h-7 w-7 ring-2 ring-background">
                                         <AvatarImage 
-                                            src={typeof office.createdBy === 'object' ? office.createdBy.avatarURL?.sm : ''} 
-                                            alt={getCreatorName(office.createdBy)} 
+                                            src={typeof client.createdBy === 'object' ? client.createdBy.avatarURL?.sm : ''} 
+                                            alt={getCreatorName(client.createdBy)} 
                                         />
                                         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
-                                            {getCreatorInitials(office.createdBy)}
+                                            {getCreatorInitials(client.createdBy)}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="text-sm text-muted-foreground">
-                                        {getCreatorName(office.createdBy)}
+                                        {getCreatorName(client.createdBy)}
                                     </div>
                                 </div>
                             </TableCell>
                             <TableCell className="py-4">
-                                {getStatusBadge(office.isActive)}
+                                {getStatusBadge(client.isActive)}
                             </TableCell>
                             <TableCell className="py-4 text-muted-foreground font-medium">
-                                {format(new Date(office.createdAt), 'MMM d, yyyy')}
+                                {format(new Date(client.createdAt), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="py-4">
                                 <DropdownMenu>
@@ -151,20 +162,20 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-40">
-                                        <DropdownMenuItem onClick={() => onViewOffice(office)}>
+                                        <DropdownMenuItem onClick={() => onViewClient(client)}>
                                             <TbEye className="h-4 w-4 mr-2" />
-                                            View Office
+                                            View Client
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onEditOffice(office)}>
+                                        <DropdownMenuItem onClick={() => onEditClient(client)}>
                                             <TbEdit className="h-4 w-4 mr-2" />
-                                            Edit Office
+                                            Edit Client
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                            onClick={() => onDeleteOffice(office)}
+                                            onClick={() => onDeleteClient(client)}
                                             className="text-destructive"
                                         >
                                             <TbTrash className="h-4 w-4 mr-2" />
-                                            Delete Office
+                                            Delete Client
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -239,48 +250,44 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
     )
 }
 
-interface OfficeDialogProps {
-    office?: Office
+interface ClientDialogProps {
+    client?: Client
     open: boolean
     onOpenChange: (open: boolean) => void
     onSubmit: (data: any) => void
     isLoading: boolean
 }
 
-function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: OfficeDialogProps) {
+function ClientDialog({ client, open, onOpenChange, onSubmit, isLoading }: ClientDialogProps) {
     const [formData, setFormData] = useState({
-        name: office?.name || '',
-        description: office?.description || '',
-        address: office?.address || ''
+        name: client?.name || '',
+        description: client?.description || ''
     })
 
     useEffect(() => {
-        if (office) {
+        if (client) {
             setFormData({
-                name: office.name,
-                description: office.description || '',
-                address: office.address || ''
+                name: client.name,
+                description: client.description || ''
             })
         } else {
             setFormData({
                 name: '',
-                description: '',
-                address: ''
+                description: ''
             })
         }
-    }, [office, open])
+    }, [client, open])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.name.trim()) {
-            toast.error('Please enter an office name')
+            toast.error('Please enter a client name')
             return
         }
         
         const submitData: any = {
             name: formData.name.trim(),
-            description: formData.description.trim() || undefined,
-            address: formData.address.trim() || undefined
+            description: formData.description.trim() || undefined
         }
         
         Object.keys(submitData).forEach(key => {
@@ -297,27 +304,18 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {office ? 'Edit Office' : 'Create New Office'}
+                        {client ? 'Edit Client' : 'Create New Client'}
                     </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Office Name *</Label>
+                        <Label htmlFor="name">Client Name *</Label>
                         <Input
                             id="name"
                             value={formData.name}
                             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Enter office name"
+                            placeholder="Enter client name"
                             required
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="address">Address</Label>
-                        <Input
-                            id="address"
-                            value={formData.address}
-                            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                            placeholder="Enter office address"
                         />
                     </div>
                     <div className="space-y-2">
@@ -326,7 +324,7 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
                             id="description"
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Enter office description"
+                            placeholder="Enter client description"
                             rows={3}
                         />
                     </div>
@@ -341,7 +339,7 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
                         </Button>
                         <Button type="submit" disabled={isLoading}>
                             {isLoading && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {office ? 'Update' : 'Create'} Office
+                            {client ? 'Update' : 'Create'} Client
                         </Button>
                     </div>
                 </form>
@@ -350,16 +348,16 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
     )
 }
 
-export default function OfficesPage() {
+export default function ClientsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [editingOffice, setEditingOffice] = useState<Office | null>(null)
+    const [editingClient, setEditingClient] = useState<Client | null>(null)
 
-    const createOffice = useCreateOffice()
-    const updateOffice = useUpdateOffice()
+    const createClient = useCreateClient()
+    const updateClient = useUpdateClient()
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -373,7 +371,7 @@ export default function OfficesPage() {
         setCurrentPage(1)
     }, [debouncedSearchQuery])
 
-    const { offices, pagination, isLoading, error, refetch } = useOffices({
+    const { clients, pagination, isLoading, error, refetch } = useClients({
         page: currentPage,
         limit: itemsPerPage,
         search: debouncedSearchQuery,
@@ -397,30 +395,30 @@ export default function OfficesPage() {
         setCurrentPage(1)
     }
 
-    const handleCreateOffice = () => {
-        setEditingOffice(null)
+    const handleCreateClient = () => {
+        setEditingClient(null)
         setIsDialogOpen(true)
     }
 
-    const handleEditOffice = (office: Office) => {
-        setEditingOffice(office)
+    const handleEditClient = (client: Client) => {
+        setEditingClient(client)
         setIsDialogOpen(true)
     }
 
-    const handleSubmitOffice = async (formData: any) => {
+    const handleSubmitClient = async (formData: any) => {
         try {
-            if (editingOffice) {
-                await updateOffice.mutateAsync({
-                    id: editingOffice._id,
+            if (editingClient) {
+                await updateClient.mutateAsync({
+                    id: editingClient._id,
                     data: formData
                 })
-                toast.success('Office updated successfully')
+                toast.success('Client updated successfully')
             } else {
-                await createOffice.mutateAsync(formData)
-                toast.success('Office created successfully')
+                await createClient.mutateAsync(formData)
+                toast.success('Client created successfully')
             }
             setIsDialogOpen(false)
-            setEditingOffice(null)
+            setEditingClient(null)
         } catch (error: any) {
             toast.error(error.message || 'Something went wrong')
         }
@@ -433,7 +431,7 @@ export default function OfficesPage() {
             <div className="relative flex-1 max-w-sm">
                 <TbSearch className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Search offices..."
+                    placeholder="Search clients..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 h-10 border-muted focus:border-primary"
@@ -456,9 +454,9 @@ export default function OfficesPage() {
             return (
                 <SectionPlaceholder
                     variant="error"
-                    icon={TbBuilding}
-                    heading="Failed to load offices"
-                    subHeading="We couldn't load the offices. Please check your connection and try again."
+                    icon={TbUsers}
+                    heading="Failed to load clients"
+                    subHeading="We couldn't load the clients. Please check your connection and try again."
                     ctaButton={{
                         label: "Try Again",
                         onClick: handleRefresh,
@@ -468,32 +466,32 @@ export default function OfficesPage() {
             )
         }
 
-        if (isLoading && offices.length === 0) {
+        if (isLoading && clients.length === 0) {
             return <TablePlaceholder rows={10} columns={5} />
         }
 
-        if (!isLoading && offices.length === 0 && !hasActiveFilters) {
+        if (!isLoading && clients.length === 0 && !hasActiveFilters) {
             return (
                 <SectionPlaceholder
                     variant="empty"
-                    icon={TbBuilding}
-                    heading="No offices found"
-                    subHeading="Get started by creating your first office for this workspace."
+                    icon={TbUsers}
+                    heading="No clients found"
+                    subHeading="Get started by creating your first client for this workspace."
                     ctaButton={{
-                        label: "Create Office",
-                        onClick: handleCreateOffice,
+                        label: "Create Client",
+                        onClick: handleCreateClient,
                         icon: TbPlus
                     }}
                 />
             )
         }
 
-        if (!isLoading && offices.length === 0 && hasActiveFilters) {
+        if (!isLoading && clients.length === 0 && hasActiveFilters) {
             return (
                 <SectionPlaceholder
                     variant="empty"
-                    icon={TbBuilding}
-                    heading="No offices match your search"
+                    icon={TbUsers}
+                    heading="No clients match your search"
                     subHeading="Try adjusting your search criteria or clearing the filters."
                     ctaButton={{
                         label: "Clear Filters",
@@ -506,12 +504,12 @@ export default function OfficesPage() {
 
         return (
             <div className="space-y-4">
-                <OfficesTable
-                    offices={offices}
+                <ClientsTable
+                    clients={clients}
                     isLoading={isLoading}
-                    onViewOffice={() => {}}
-                    onEditOffice={handleEditOffice}
-                    onDeleteOffice={() => {}}
+                    onViewClient={() => {}}
+                    onEditClient={handleEditClient}
+                    onDeleteClient={() => {}}
                 />
                 <Pagination
                     currentPage={pagination?.currentPage || 1}
@@ -530,10 +528,10 @@ export default function OfficesPage() {
             <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b">
                     <div className="space-y-1">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Offices</h1>
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Clients</h1>
                         <p className="text-base text-muted-foreground">
-                            Manage workspace offices and locations
-                            {pagination?.totalItems ? ` • ${pagination.totalItems} ${pagination.totalItems === 1 ? 'office' : 'offices'}` : ''}
+                            Manage workspace clients and organizations
+                            {pagination?.totalItems ? ` • ${pagination.totalItems} ${pagination.totalItems === 1 ? 'client' : 'clients'}` : ''}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -548,12 +546,12 @@ export default function OfficesPage() {
                             Refresh
                         </Button>
                         <Button
-                            onClick={handleCreateOffice}
+                            onClick={handleCreateClient}
                             className="h-10 flex items-center gap-2"
                             disabled={isLoading}
                         >
                             <TbPlus className="h-4 w-4" />
-                            Create Office
+                            Create Client
                         </Button>
                     </div>
                 </div>
@@ -563,12 +561,12 @@ export default function OfficesPage() {
                     {renderContent()}
                 </div>
             </div>
-            <OfficeDialog
-                office={editingOffice || undefined}
+            <ClientDialog
+                client={editingClient || undefined}
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
-                onSubmit={handleSubmitOffice}
-                isLoading={createOffice.isPending || updateOffice.isPending}
+                onSubmit={handleSubmitClient}
+                isLoading={createClient.isPending || updateClient.isPending}
             />
         </AppBody>
     )

@@ -74,12 +74,20 @@ export class WorkspaceMemberService {
       pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
     }
 
-    const { search, paginationOptions } = extractPaginationOptions(pagination);
+    const { search, status, permission, paginationOptions } =
+      extractPaginationOptions(pagination);
 
     const query: FilterQuery<WorkspaceMemberDocument> = {
       workspace: workspaceId,
-      status: MemberStatus.ACTIVE,
     };
+
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    if (permission && permission !== 'all') {
+      query.permission = permission;
+    }
 
     if (search) {
       query.$or = [
@@ -111,6 +119,42 @@ export class WorkspaceMemberService {
     memberId: Types.ObjectId,
   ): Promise<WorkspaceMemberDocument | null> {
     return await this.workspaceMemberModel.findById(memberId).exec();
+  }
+
+  async getMemberDependencies(memberId: Types.ObjectId): Promise<any> {
+    const member = await this.workspaceMemberModel
+      .findById(memberId)
+      .populate({
+        path: 'user',
+        select: 'email timezone isEmailVerified lastLoginAt',
+      })
+      .exec();
+
+    if (!member) {
+      return null;
+    }
+
+    const workspace = await this.workspaceMemberModel.db
+      .collection('workspaces')
+      .findOne(
+        { _id: member.workspace },
+        {
+          projection: {
+            name: 1,
+            description: 1,
+            logoURL: 1,
+            bannerURL: 1,
+            createdBy: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
+      );
+
+    return {
+      member,
+      workspace,
+    };
   }
 
   async findByUserId(

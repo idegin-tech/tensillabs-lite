@@ -18,7 +18,7 @@ function makeQueryClient() {
           return failureCount < 3
         },
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-        refetchOnWindowFocus: isProduction ? false : 'always',
+        refetchOnWindowFocus: false,
         refetchOnReconnect: 'always',
         refetchOnMount: true,
         networkMode: 'online',
@@ -32,7 +32,8 @@ function makeQueryClient() {
           if (error?.status >= 500) return failureCount < 1
           return failureCount < 2
         },
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),        networkMode: 'online',
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),        
+        networkMode: 'online',
         throwOnError: false,
       },
     },

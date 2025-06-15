@@ -38,7 +38,6 @@ function SpaceCard({ space }: { space: Space }) {
               className="h-12 w-12 rounded-lg text-white shadow-sm flex items-center justify-center"
               style={{ backgroundColor: colorClass }}
             >
-              {/* <IconComponent className="h-7 w-7" /> */}
               <i className={`fas ${space.icon} text-xl`}></i>
             </div>
             <div>
@@ -50,19 +49,9 @@ function SpaceCard({ space }: { space: Space }) {
               </p>
             </div>
           </div>
-        </div>        <div className="space-y-4">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1 text-muted-foreground">
-                <TbList className="h-4 w-4" />
-                <span>{space.listCount} lists</span>
-              </div>
-              <div className="flex items-center space-x-1 text-muted-foreground">
-                <TbUsers className="h-4 w-4" />
-                <span>{space.participantCount} members</span>
-              </div>
-            </div>
-          </div>
+        </div>
+        <div className="space-y-4">
+
 
           {space.recentParticipants.length > 0 && (
             <div className="flex items-center justify-between">
@@ -82,9 +71,18 @@ function SpaceCard({ space }: { space: Space }) {
                   </Avatar>
                 )}
               </div>
-              <Badge variant="secondary" className="text-xs">
-                {new Date(space.createdAt).toLocaleDateString()}
-              </Badge>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-1 text-muted-foreground">
+                    <TbList className="h-4 w-4" />
+                    <span>{space.listCount} lists</span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-muted-foreground">
+                    <TbUsers className="h-4 w-4" />
+                    <span>{space.participantCount} members</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -220,14 +218,14 @@ export default function TaskHomePage() {
 
           {spaces.length > 0 ? (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 {spaces.map((space) => (
                   <SpaceCard key={space._id} space={space} />
                 ))}
               </div>
 
               {hasNextPage && (
-                <div ref={ref} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div ref={ref} className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                   {isFetchingNextPage && Array.from({ length: 2 }).map((_, i) => (
                     <SpaceCardSkeleton key={`loading-${i}`} />
                   ))}

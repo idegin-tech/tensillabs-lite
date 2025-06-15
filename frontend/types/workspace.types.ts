@@ -17,8 +17,13 @@ export interface Workspace {
 
 export interface WorkspaceMember {
   _id: string
-  user: string
-  workspace: Workspace
+  user: string | {
+    _id: string
+    email: string
+    timezone: string
+    isEmailVerified: boolean
+  }
+  workspace: string | Workspace
   avatarURL: {
     sm: string
     original: string

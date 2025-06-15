@@ -23,10 +23,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { NavProjects } from "./nav-projects"
 import { NavSecondary } from "./nav-secondary"
 import { NavMemberInfo } from "./app-layout/NavMemberInfo"
 import AppToggler from "./AppToggler"
+import { useWorkspaceMember } from "@/contexts/workspace-member.context"
 
 const data = {
   user: {
@@ -152,42 +152,47 @@ const data = {
   ],
 }
 
-export function AppSidebar({ 
+export function AppSidebar({
   navContent,
-  ...props 
+  ...props
 }: React.ComponentProps<typeof Sidebar> & {
   navContent?: React.ReactNode;
 }) {
+  const { state: { workspace } } = useWorkspaceMember();
+
   return (
     <Sidebar variant="inset" {...props} className="flex select-none">
-      <AppToggler/>
+      <AppToggler />
       <div className="flex flex-col w-full h-full">
         <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="#">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Command className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Acme Inc</span>
-                  <span className="truncate text-xs">Enterprise</span>
-                </div>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
-        {navContent}
-        {/* <NavProjects projects={data.projects} /> */}
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
-      </SidebarContent>
-      <SidebarFooter>
-        <NavMemberInfo user={data.user} />
-      </SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <a href="#">
+                  <div
+                    className="bg-muted flex aspect-square size-8 items-center justify-center rounded-lg bg-center bg-cover"
+                       style={{ backgroundImage: `url(${workspace?.logoURL})` }}
+                  >
+                    {/* <Command className="size-4" /> */}
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{workspace?.name}</span>
+                    <span className="truncate text-xs">Workspace</span>
+                  </div>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent>
+          {navContent}
+          {/* <NavProjects projects={data.projects} /> */}
+          <NavSecondary items={data.navSecondary} className="mt-auto" />
+        </SidebarContent>
+        <SidebarFooter>
+          <NavMemberInfo user={data.user} />
+        </SidebarFooter>
       </div>
     </Sidebar>
   )
-}
+};

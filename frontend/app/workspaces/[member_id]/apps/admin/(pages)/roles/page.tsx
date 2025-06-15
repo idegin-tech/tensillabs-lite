@@ -39,7 +39,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
-    TbBuilding,
+    TbUserCheck,
     TbSearch,
     TbPlus,
     TbDotsVertical,
@@ -54,19 +54,19 @@ import {
 } from 'react-icons/tb'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { Office } from '@/types/offices.types'
-import { useOffices, useCreateOffice, useUpdateOffice } from '@/hooks/use-offices'
+import { Role } from '@/types/roles.types'
+import { useRoles, useCreateRole, useUpdateRole } from '@/hooks/use-roles'
 import { toast } from 'sonner'
 
-interface OfficesTableProps {
-    offices: Office[]
+interface RolesTableProps {
+    roles: Role[]
     isLoading: boolean
-    onViewOffice: (office: Office) => void
-    onEditOffice: (office: Office) => void
-    onDeleteOffice: (office: Office) => void
+    onViewRole: (role: Role) => void
+    onEditRole: (role: Role) => void
+    onDeleteRole: (role: Role) => void
 }
 
-function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDeleteOffice }: OfficesTableProps) {
+function RolesTable({ roles, isLoading, onViewRole, onEditRole, onDeleteRole }: RolesTableProps) {
     if (isLoading) {
         return <TablePlaceholder rows={10} columns={5} />
     }
@@ -95,8 +95,7 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
             <Table>
                 <TableHeader>
                     <TableRow className="border-b">
-                        <TableHead className="font-semibold text-foreground">Office</TableHead>
-                        <TableHead className="font-semibold text-foreground">Address</TableHead>
+                        <TableHead className="font-semibold text-foreground">Role</TableHead>
                         <TableHead className="font-semibold text-foreground">Created By</TableHead>
                         <TableHead className="font-semibold text-foreground">Status</TableHead>
                         <TableHead className="font-semibold text-foreground">Date Created</TableHead>
@@ -104,44 +103,41 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {offices.map((office) => (
-                        <TableRow key={office._id} className="hover:bg-muted/30 transition-colors">
+                    {roles.map((role) => (
+                        <TableRow key={role._id} className="hover:bg-muted/30 transition-colors">
                             <TableCell className="py-4">
                                 <div className="space-y-1">
                                     <div className="font-semibold text-sm text-foreground">
-                                        {office.name}
+                                        {role.name}
                                     </div>
-                                    {office.description && (
+                                    {role.description && (
                                         <div className="text-xs text-muted-foreground line-clamp-2">
-                                            {office.description}
+                                            {role.description}
                                         </div>
                                     )}
                                 </div>
-                            </TableCell>
-                            <TableCell className="py-4 text-muted-foreground font-medium">
-                                {office.address || 'No Address'}
                             </TableCell>
                             <TableCell className="py-4">
                                 <div className="flex items-center space-x-3">
                                     <Avatar className="h-7 w-7 ring-2 ring-background">
                                         <AvatarImage 
-                                            src={typeof office.createdBy === 'object' ? office.createdBy.avatarURL?.sm : ''} 
-                                            alt={getCreatorName(office.createdBy)} 
+                                            src={typeof role.createdBy === 'object' ? role.createdBy.avatarURL?.sm : ''} 
+                                            alt={getCreatorName(role.createdBy)} 
                                         />
                                         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
-                                            {getCreatorInitials(office.createdBy)}
+                                            {getCreatorInitials(role.createdBy)}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="text-sm text-muted-foreground">
-                                        {getCreatorName(office.createdBy)}
+                                        {getCreatorName(role.createdBy)}
                                     </div>
                                 </div>
                             </TableCell>
                             <TableCell className="py-4">
-                                {getStatusBadge(office.isActive)}
+                                {getStatusBadge(role.isActive)}
                             </TableCell>
                             <TableCell className="py-4 text-muted-foreground font-medium">
-                                {format(new Date(office.createdAt), 'MMM d, yyyy')}
+                                {format(new Date(role.createdAt), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="py-4">
                                 <DropdownMenu>
@@ -151,20 +147,20 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-40">
-                                        <DropdownMenuItem onClick={() => onViewOffice(office)}>
+                                        <DropdownMenuItem onClick={() => onViewRole(role)}>
                                             <TbEye className="h-4 w-4 mr-2" />
-                                            View Office
+                                            View Role
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onEditOffice(office)}>
+                                        <DropdownMenuItem onClick={() => onEditRole(role)}>
                                             <TbEdit className="h-4 w-4 mr-2" />
-                                            Edit Office
+                                            Edit Role
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                            onClick={() => onDeleteOffice(office)}
+                                            onClick={() => onDeleteRole(role)}
                                             className="text-destructive"
                                         >
                                             <TbTrash className="h-4 w-4 mr-2" />
-                                            Delete Office
+                                            Delete Role
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -239,48 +235,44 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
     )
 }
 
-interface OfficeDialogProps {
-    office?: Office
+interface RoleDialogProps {
+    role?: Role
     open: boolean
     onOpenChange: (open: boolean) => void
     onSubmit: (data: any) => void
     isLoading: boolean
 }
 
-function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: OfficeDialogProps) {
+function RoleDialog({ role, open, onOpenChange, onSubmit, isLoading }: RoleDialogProps) {
     const [formData, setFormData] = useState({
-        name: office?.name || '',
-        description: office?.description || '',
-        address: office?.address || ''
+        name: role?.name || '',
+        description: role?.description || ''
     })
 
     useEffect(() => {
-        if (office) {
+        if (role) {
             setFormData({
-                name: office.name,
-                description: office.description || '',
-                address: office.address || ''
+                name: role.name,
+                description: role.description || ''
             })
         } else {
             setFormData({
                 name: '',
-                description: '',
-                address: ''
+                description: ''
             })
         }
-    }, [office, open])
+    }, [role, open])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.name.trim()) {
-            toast.error('Please enter an office name')
+            toast.error('Please enter a role name')
             return
         }
         
         const submitData: any = {
             name: formData.name.trim(),
-            description: formData.description.trim() || undefined,
-            address: formData.address.trim() || undefined
+            description: formData.description.trim() || undefined
         }
         
         Object.keys(submitData).forEach(key => {
@@ -297,40 +289,37 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {office ? 'Edit Office' : 'Create New Office'}
+                        {role ? 'Edit Role' : 'Create New Role'}
                     </DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Office Name *</Label>
+                        <Label htmlFor="name" className="text-sm font-medium">
+                            Role Name
+                        </Label>
                         <Input
                             id="name"
                             value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Enter office name"
-                            required
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            placeholder="Enter role name..."
+                            className="h-10"
+                            disabled={isLoading}
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="address">Address</Label>
-                        <Input
-                            id="address"
-                            value={formData.address}
-                            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                            placeholder="Enter office address"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
+                        <Label htmlFor="description" className="text-sm font-medium">
+                            Description (Optional)
+                        </Label>
                         <Textarea
                             id="description"
                             value={formData.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Enter office description"
-                            rows={3}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            placeholder="Enter role description..."
+                            className="min-h-[80px] resize-none"
+                            disabled={isLoading}
                         />
                     </div>
-                    <div className="flex justify-end space-x-2 pt-4">
+                    <div className="flex justify-end space-x-3 pt-2">
                         <Button
                             type="button"
                             variant="outline"
@@ -341,7 +330,7 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
                         </Button>
                         <Button type="submit" disabled={isLoading}>
                             {isLoading && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {office ? 'Update' : 'Create'} Office
+                            {role ? 'Update' : 'Create'} Role
                         </Button>
                     </div>
                 </form>
@@ -350,16 +339,16 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
     )
 }
 
-export default function OfficesPage() {
+export default function RolesPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [editingOffice, setEditingOffice] = useState<Office | null>(null)
+    const [editingRole, setEditingRole] = useState<Role | null>(null)
 
-    const createOffice = useCreateOffice()
-    const updateOffice = useUpdateOffice()
+    const createRole = useCreateRole()
+    const updateRole = useUpdateRole()
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -373,7 +362,7 @@ export default function OfficesPage() {
         setCurrentPage(1)
     }, [debouncedSearchQuery])
 
-    const { offices, pagination, isLoading, error, refetch } = useOffices({
+    const { roles, pagination, isLoading, error, refetch } = useRoles({
         page: currentPage,
         limit: itemsPerPage,
         search: debouncedSearchQuery,
@@ -397,30 +386,30 @@ export default function OfficesPage() {
         setCurrentPage(1)
     }
 
-    const handleCreateOffice = () => {
-        setEditingOffice(null)
+    const handleCreateRole = () => {
+        setEditingRole(null)
         setIsDialogOpen(true)
     }
 
-    const handleEditOffice = (office: Office) => {
-        setEditingOffice(office)
+    const handleEditRole = (role: Role) => {
+        setEditingRole(role)
         setIsDialogOpen(true)
     }
 
-    const handleSubmitOffice = async (formData: any) => {
+    const handleSubmitRole = async (formData: any) => {
         try {
-            if (editingOffice) {
-                await updateOffice.mutateAsync({
-                    id: editingOffice._id,
+            if (editingRole) {
+                await updateRole.mutateAsync({
+                    id: editingRole._id,
                     data: formData
                 })
-                toast.success('Office updated successfully')
+                toast.success('Role updated successfully')
             } else {
-                await createOffice.mutateAsync(formData)
-                toast.success('Office created successfully')
+                await createRole.mutateAsync(formData)
+                toast.success('Role created successfully')
             }
             setIsDialogOpen(false)
-            setEditingOffice(null)
+            setEditingRole(null)
         } catch (error: any) {
             toast.error(error.message || 'Something went wrong')
         }
@@ -433,7 +422,7 @@ export default function OfficesPage() {
             <div className="relative flex-1 max-w-sm">
                 <TbSearch className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Search offices..."
+                    placeholder="Search roles..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 h-10 border-muted focus:border-primary"
@@ -456,9 +445,9 @@ export default function OfficesPage() {
             return (
                 <SectionPlaceholder
                     variant="error"
-                    icon={TbBuilding}
-                    heading="Failed to load offices"
-                    subHeading="We couldn't load the offices. Please check your connection and try again."
+                    icon={TbUserCheck}
+                    heading="Failed to load roles"
+                    subHeading="We couldn't load the roles. Please check your connection and try again."
                     ctaButton={{
                         label: "Try Again",
                         onClick: handleRefresh,
@@ -468,32 +457,32 @@ export default function OfficesPage() {
             )
         }
 
-        if (isLoading && offices.length === 0) {
+        if (isLoading && roles.length === 0) {
             return <TablePlaceholder rows={10} columns={5} />
         }
 
-        if (!isLoading && offices.length === 0 && !hasActiveFilters) {
+        if (!isLoading && roles.length === 0 && !hasActiveFilters) {
             return (
                 <SectionPlaceholder
                     variant="empty"
-                    icon={TbBuilding}
-                    heading="No offices found"
-                    subHeading="Get started by creating your first office for this workspace."
+                    icon={TbUserCheck}
+                    heading="No roles found"
+                    subHeading="Get started by creating your first role for this workspace."
                     ctaButton={{
-                        label: "Create Office",
-                        onClick: handleCreateOffice,
+                        label: "Create Role",
+                        onClick: handleCreateRole,
                         icon: TbPlus
                     }}
                 />
             )
         }
 
-        if (!isLoading && offices.length === 0 && hasActiveFilters) {
+        if (!isLoading && roles.length === 0 && hasActiveFilters) {
             return (
                 <SectionPlaceholder
                     variant="empty"
-                    icon={TbBuilding}
-                    heading="No offices match your search"
+                    icon={TbUserCheck}
+                    heading="No roles match your search"
                     subHeading="Try adjusting your search criteria or clearing the filters."
                     ctaButton={{
                         label: "Clear Filters",
@@ -506,12 +495,12 @@ export default function OfficesPage() {
 
         return (
             <div className="space-y-4">
-                <OfficesTable
-                    offices={offices}
+                <RolesTable
+                    roles={roles}
                     isLoading={isLoading}
-                    onViewOffice={() => {}}
-                    onEditOffice={handleEditOffice}
-                    onDeleteOffice={() => {}}
+                    onViewRole={() => {}}
+                    onEditRole={handleEditRole}
+                    onDeleteRole={() => {}}
                 />
                 <Pagination
                     currentPage={pagination?.currentPage || 1}
@@ -530,10 +519,10 @@ export default function OfficesPage() {
             <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b">
                     <div className="space-y-1">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Offices</h1>
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Roles</h1>
                         <p className="text-base text-muted-foreground">
-                            Manage workspace offices and locations
-                            {pagination?.totalItems ? ` • ${pagination.totalItems} ${pagination.totalItems === 1 ? 'office' : 'offices'}` : ''}
+                            Manage workspace roles and responsibilities
+                            {pagination?.totalItems ? ` • ${pagination.totalItems} ${pagination.totalItems === 1 ? 'role' : 'roles'}` : ''}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -548,12 +537,12 @@ export default function OfficesPage() {
                             Refresh
                         </Button>
                         <Button
-                            onClick={handleCreateOffice}
+                            onClick={handleCreateRole}
                             className="h-10 flex items-center gap-2"
                             disabled={isLoading}
                         >
                             <TbPlus className="h-4 w-4" />
-                            Create Office
+                            Create Role
                         </Button>
                     </div>
                 </div>
@@ -563,12 +552,12 @@ export default function OfficesPage() {
                     {renderContent()}
                 </div>
             </div>
-            <OfficeDialog
-                office={editingOffice || undefined}
+            <RoleDialog
+                role={editingRole || undefined}
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
-                onSubmit={handleSubmitOffice}
-                isLoading={createOffice.isPending || updateOffice.isPending}
+                onSubmit={handleSubmitRole}
+                isLoading={createRole.isPending || updateRole.isPending}
             />
         </AppBody>
     )

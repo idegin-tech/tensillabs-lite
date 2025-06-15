@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Controller,
@@ -32,8 +31,10 @@ import {
 import {
   createOfficeSchema,
   updateOfficeSchema,
+  toggleActiveSchema,
   CreateOfficeDto,
   UpdateOfficeDto,
+  ToggleActiveDto,
 } from './dto/office.dto';
 
 @Controller('offices')
@@ -50,8 +51,8 @@ export class OfficeController {
   ) {
     const office = await this.officeService.create(
       createOfficeDto,
-      req.workspace._id,
-      req.workspaceMember._id,
+      req.workspace._id as Types.ObjectId,
+      req.workspaceMember._id as Types.ObjectId,
     );
 
     return createSuccessResponse('Office created successfully', office);
@@ -65,7 +66,7 @@ export class OfficeController {
     @Req() req: Request & { workspace: any },
   ) {
     const offices = await this.officeService.findAll(
-      req.workspace._id,
+      req.workspace._id as Types.ObjectId,
       pagination,
     );
     return createSuccessResponse('Offices retrieved successfully', offices);
@@ -86,7 +87,7 @@ export class OfficeController {
     const office = await this.officeService.update(
       new Types.ObjectId(id),
       updateOfficeDto,
-      req.workspace._id,
+      req.workspace._id as Types.ObjectId,
     );
 
     return createSuccessResponse('Office updated successfully', office);
@@ -94,8 +95,10 @@ export class OfficeController {
 
   @Patch(':id/toggle-active')
   @RequirePermission(MemberPermissions.MANAGER)
+  @UsePipes(new ZodValidationPipe(toggleActiveSchema))
   async toggleActive(
     @Param('id') id: string,
+    @Body() body: ToggleActiveDto,
     @Req() req: Request & { workspace: any },
   ) {
     if (!Types.ObjectId.isValid(id)) {
@@ -104,7 +107,8 @@ export class OfficeController {
 
     const office = await this.officeService.toggleActive(
       new Types.ObjectId(id),
-      req.workspace._id,
+      body.isActive,
+      req.workspace._id as Types.ObjectId,
     );
 
     return createSuccessResponse('Office status updated successfully', office);
@@ -122,7 +126,7 @@ export class OfficeController {
 
     const office = await this.officeService.moveToTrash(
       new Types.ObjectId(id),
-      req.workspace._id,
+      req.workspace._id as Types.ObjectId,
     );
 
     return createSuccessResponse('Office moved to trash successfully', office);

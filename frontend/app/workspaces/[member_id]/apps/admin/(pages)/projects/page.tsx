@@ -39,7 +39,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
-    TbBuilding,
+    TbFolderOpen,
     TbSearch,
     TbPlus,
     TbDotsVertical,
@@ -54,28 +54,32 @@ import {
 } from 'react-icons/tb'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { Office } from '@/types/offices.types'
-import { useOffices, useCreateOffice, useUpdateOffice } from '@/hooks/use-offices'
+import { Project } from '@/types/projects.types'
+import { useProjects, useCreateProject, useUpdateProject } from '@/hooks/use-projects'
 import { toast } from 'sonner'
 
-interface OfficesTableProps {
-    offices: Office[]
+interface ProjectsTableProps {
+    projects: Project[]
     isLoading: boolean
-    onViewOffice: (office: Office) => void
-    onEditOffice: (office: Office) => void
-    onDeleteOffice: (office: Office) => void
+    onViewProject: (project: Project) => void
+    onEditProject: (project: Project) => void
+    onDeleteProject: (project: Project) => void
 }
 
-function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDeleteOffice }: OfficesTableProps) {
+function ProjectsTable({ projects, isLoading, onViewProject, onEditProject, onDeleteProject }: ProjectsTableProps) {
     if (isLoading) {
         return <TablePlaceholder rows={10} columns={5} />
-    }
-
-    const getStatusBadge = (isActive: boolean) => {
+    }    const getStatusBadge = (isActive: boolean) => {
         if (isActive) {
             return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
         }
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>
+    }
+
+    const getClientName = (client: any) => {
+        if (!client) return 'No Client'
+        if (typeof client === 'string') return client
+        return client?.name || 'Unknown Client'
     }
 
     const getCreatorName = (createdBy: any) => {
@@ -95,8 +99,8 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
             <Table>
                 <TableHeader>
                     <TableRow className="border-b">
-                        <TableHead className="font-semibold text-foreground">Office</TableHead>
-                        <TableHead className="font-semibold text-foreground">Address</TableHead>
+                        <TableHead className="font-semibold text-foreground">Project</TableHead>
+                        <TableHead className="font-semibold text-foreground">Client</TableHead>
                         <TableHead className="font-semibold text-foreground">Created By</TableHead>
                         <TableHead className="font-semibold text-foreground">Status</TableHead>
                         <TableHead className="font-semibold text-foreground">Date Created</TableHead>
@@ -104,44 +108,44 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {offices.map((office) => (
-                        <TableRow key={office._id} className="hover:bg-muted/30 transition-colors">
+                    {projects.map((project) => (
+                        <TableRow key={project._id} className="hover:bg-muted/30 transition-colors">
                             <TableCell className="py-4">
                                 <div className="space-y-1">
                                     <div className="font-semibold text-sm text-foreground">
-                                        {office.name}
+                                        {project.name}
                                     </div>
-                                    {office.description && (
+                                    {project.description && (
                                         <div className="text-xs text-muted-foreground line-clamp-2">
-                                            {office.description}
+                                            {project.description}
                                         </div>
                                     )}
                                 </div>
                             </TableCell>
                             <TableCell className="py-4 text-muted-foreground font-medium">
-                                {office.address || 'No Address'}
+                                {getClientName(project.client)}
                             </TableCell>
                             <TableCell className="py-4">
                                 <div className="flex items-center space-x-3">
                                     <Avatar className="h-7 w-7 ring-2 ring-background">
                                         <AvatarImage 
-                                            src={typeof office.createdBy === 'object' ? office.createdBy.avatarURL?.sm : ''} 
-                                            alt={getCreatorName(office.createdBy)} 
+                                            src={typeof project.createdBy === 'object' ? project.createdBy.avatarURL?.sm : ''} 
+                                            alt={getCreatorName(project.createdBy)} 
                                         />
                                         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
-                                            {getCreatorInitials(office.createdBy)}
+                                            {getCreatorInitials(project.createdBy)}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="text-sm text-muted-foreground">
-                                        {getCreatorName(office.createdBy)}
+                                        {getCreatorName(project.createdBy)}
                                     </div>
                                 </div>
                             </TableCell>
                             <TableCell className="py-4">
-                                {getStatusBadge(office.isActive)}
+                                {getStatusBadge(project.isActive)}
                             </TableCell>
                             <TableCell className="py-4 text-muted-foreground font-medium">
-                                {format(new Date(office.createdAt), 'MMM d, yyyy')}
+                                {format(new Date(project.createdAt), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="py-4">
                                 <DropdownMenu>
@@ -151,20 +155,20 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-40">
-                                        <DropdownMenuItem onClick={() => onViewOffice(office)}>
+                                        <DropdownMenuItem onClick={() => onViewProject(project)}>
                                             <TbEye className="h-4 w-4 mr-2" />
-                                            View Office
+                                            View Project
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onEditOffice(office)}>
+                                        <DropdownMenuItem onClick={() => onEditProject(project)}>
                                             <TbEdit className="h-4 w-4 mr-2" />
-                                            Edit Office
+                                            Edit Project
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                            onClick={() => onDeleteOffice(office)}
+                                            onClick={() => onDeleteProject(project)}
                                             className="text-destructive"
                                         >
                                             <TbTrash className="h-4 w-4 mr-2" />
-                                            Delete Office
+                                            Delete Project
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -239,48 +243,47 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
     )
 }
 
-interface OfficeDialogProps {
-    office?: Office
+interface ProjectDialogProps {
+    project?: Project
     open: boolean
     onOpenChange: (open: boolean) => void
     onSubmit: (data: any) => void
     isLoading: boolean
 }
 
-function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: OfficeDialogProps) {
+function ProjectDialog({ project, open, onOpenChange, onSubmit, isLoading }: ProjectDialogProps) {    
     const [formData, setFormData] = useState({
-        name: office?.name || '',
-        description: office?.description || '',
-        address: office?.address || ''
+        name: project?.name || '',
+        description: project?.description || '',
+        client: typeof project?.client === 'string' ? project.client : project?.client?._id || ''
     })
 
     useEffect(() => {
-        if (office) {
+        if (project) {
             setFormData({
-                name: office.name,
-                description: office.description || '',
-                address: office.address || ''
+                name: project.name,
+                description: project.description || '',
+                client: typeof project.client === 'string' ? project.client : project.client?._id || ''
             })
         } else {
             setFormData({
                 name: '',
                 description: '',
-                address: ''
+                client: ''
             })
         }
-    }, [office, open])
+    }, [project, open])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.name.trim()) {
-            toast.error('Please enter an office name')
+            toast.error('Please enter a project name')
             return
-        }
-        
+        }        
         const submitData: any = {
             name: formData.name.trim(),
             description: formData.description.trim() || undefined,
-            address: formData.address.trim() || undefined
+            client: formData.client.trim() || undefined
         }
         
         Object.keys(submitData).forEach(key => {
@@ -297,27 +300,26 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {office ? 'Edit Office' : 'Create New Office'}
+                        {project ? 'Edit Project' : 'Create New Project'}
                     </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Office Name *</Label>
+                        <Label htmlFor="name">Project Name *</Label>
                         <Input
                             id="name"
                             value={formData.name}
                             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Enter office name"
+                            placeholder="Enter project name"
                             required
                         />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="address">Address</Label>
+                    </div>                    <div className="space-y-2">
+                        <Label htmlFor="client">Client ID</Label>
                         <Input
-                            id="address"
-                            value={formData.address}
-                            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                            placeholder="Enter office address"
+                            id="client"
+                            value={formData.client}
+                            onChange={(e) => setFormData(prev => ({ ...prev, client: e.target.value }))}
+                            placeholder="Enter client ID (optional)"
                         />
                     </div>
                     <div className="space-y-2">
@@ -326,7 +328,7 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
                             id="description"
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Enter office description"
+                            placeholder="Enter project description"
                             rows={3}
                         />
                     </div>
@@ -341,7 +343,7 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
                         </Button>
                         <Button type="submit" disabled={isLoading}>
                             {isLoading && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {office ? 'Update' : 'Create'} Office
+                            {project ? 'Update' : 'Create'} Project
                         </Button>
                     </div>
                 </form>
@@ -350,16 +352,16 @@ function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: Offic
     )
 }
 
-export default function OfficesPage() {
+export default function ProjectsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [editingOffice, setEditingOffice] = useState<Office | null>(null)
+    const [editingProject, setEditingProject] = useState<Project | null>(null)
 
-    const createOffice = useCreateOffice()
-    const updateOffice = useUpdateOffice()
+    const createProject = useCreateProject()
+    const updateProject = useUpdateProject()
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -373,7 +375,7 @@ export default function OfficesPage() {
         setCurrentPage(1)
     }, [debouncedSearchQuery])
 
-    const { offices, pagination, isLoading, error, refetch } = useOffices({
+    const { projects, pagination, isLoading, error, refetch } = useProjects({
         page: currentPage,
         limit: itemsPerPage,
         search: debouncedSearchQuery,
@@ -397,30 +399,30 @@ export default function OfficesPage() {
         setCurrentPage(1)
     }
 
-    const handleCreateOffice = () => {
-        setEditingOffice(null)
+    const handleCreateProject = () => {
+        setEditingProject(null)
         setIsDialogOpen(true)
     }
 
-    const handleEditOffice = (office: Office) => {
-        setEditingOffice(office)
+    const handleEditProject = (project: Project) => {
+        setEditingProject(project)
         setIsDialogOpen(true)
     }
 
-    const handleSubmitOffice = async (formData: any) => {
+    const handleSubmitProject = async (formData: any) => {
         try {
-            if (editingOffice) {
-                await updateOffice.mutateAsync({
-                    id: editingOffice._id,
+            if (editingProject) {
+                await updateProject.mutateAsync({
+                    id: editingProject._id,
                     data: formData
                 })
-                toast.success('Office updated successfully')
+                toast.success('Project updated successfully')
             } else {
-                await createOffice.mutateAsync(formData)
-                toast.success('Office created successfully')
+                await createProject.mutateAsync(formData)
+                toast.success('Project created successfully')
             }
             setIsDialogOpen(false)
-            setEditingOffice(null)
+            setEditingProject(null)
         } catch (error: any) {
             toast.error(error.message || 'Something went wrong')
         }
@@ -433,7 +435,7 @@ export default function OfficesPage() {
             <div className="relative flex-1 max-w-sm">
                 <TbSearch className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Search offices..."
+                    placeholder="Search projects..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 h-10 border-muted focus:border-primary"
@@ -456,9 +458,9 @@ export default function OfficesPage() {
             return (
                 <SectionPlaceholder
                     variant="error"
-                    icon={TbBuilding}
-                    heading="Failed to load offices"
-                    subHeading="We couldn't load the offices. Please check your connection and try again."
+                    icon={TbFolderOpen}
+                    heading="Failed to load projects"
+                    subHeading="We couldn't load the projects. Please check your connection and try again."
                     ctaButton={{
                         label: "Try Again",
                         onClick: handleRefresh,
@@ -468,32 +470,32 @@ export default function OfficesPage() {
             )
         }
 
-        if (isLoading && offices.length === 0) {
+        if (isLoading && projects.length === 0) {
             return <TablePlaceholder rows={10} columns={5} />
         }
 
-        if (!isLoading && offices.length === 0 && !hasActiveFilters) {
+        if (!isLoading && projects.length === 0 && !hasActiveFilters) {
             return (
                 <SectionPlaceholder
                     variant="empty"
-                    icon={TbBuilding}
-                    heading="No offices found"
-                    subHeading="Get started by creating your first office for this workspace."
+                    icon={TbFolderOpen}
+                    heading="No projects found"
+                    subHeading="Get started by creating your first project for this workspace."
                     ctaButton={{
-                        label: "Create Office",
-                        onClick: handleCreateOffice,
+                        label: "Create Project",
+                        onClick: handleCreateProject,
                         icon: TbPlus
                     }}
                 />
             )
         }
 
-        if (!isLoading && offices.length === 0 && hasActiveFilters) {
+        if (!isLoading && projects.length === 0 && hasActiveFilters) {
             return (
                 <SectionPlaceholder
                     variant="empty"
-                    icon={TbBuilding}
-                    heading="No offices match your search"
+                    icon={TbFolderOpen}
+                    heading="No projects match your search"
                     subHeading="Try adjusting your search criteria or clearing the filters."
                     ctaButton={{
                         label: "Clear Filters",
@@ -506,12 +508,12 @@ export default function OfficesPage() {
 
         return (
             <div className="space-y-4">
-                <OfficesTable
-                    offices={offices}
+                <ProjectsTable
+                    projects={projects}
                     isLoading={isLoading}
-                    onViewOffice={() => {}}
-                    onEditOffice={handleEditOffice}
-                    onDeleteOffice={() => {}}
+                    onViewProject={() => {}}
+                    onEditProject={handleEditProject}
+                    onDeleteProject={() => {}}
                 />
                 <Pagination
                     currentPage={pagination?.currentPage || 1}
@@ -530,10 +532,10 @@ export default function OfficesPage() {
             <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b">
                     <div className="space-y-1">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Offices</h1>
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Projects</h1>
                         <p className="text-base text-muted-foreground">
-                            Manage workspace offices and locations
-                            {pagination?.totalItems ? ` • ${pagination.totalItems} ${pagination.totalItems === 1 ? 'office' : 'offices'}` : ''}
+                            Manage workspace projects and assignments
+                            {pagination?.totalItems ? ` • ${pagination.totalItems} ${pagination.totalItems === 1 ? 'project' : 'projects'}` : ''}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -548,12 +550,12 @@ export default function OfficesPage() {
                             Refresh
                         </Button>
                         <Button
-                            onClick={handleCreateOffice}
+                            onClick={handleCreateProject}
                             className="h-10 flex items-center gap-2"
                             disabled={isLoading}
                         >
                             <TbPlus className="h-4 w-4" />
-                            Create Office
+                            Create Project
                         </Button>
                     </div>
                 </div>
@@ -562,13 +564,12 @@ export default function OfficesPage() {
                     {renderFilters()}
                     {renderContent()}
                 </div>
-            </div>
-            <OfficeDialog
-                office={editingOffice || undefined}
+            </div>            <ProjectDialog
+                project={editingProject || undefined}
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
-                onSubmit={handleSubmitOffice}
-                isLoading={createOffice.isPending || updateOffice.isPending}
+                onSubmit={handleSubmitProject}
+                isLoading={createProject.isPending || updateProject.isPending}
             />
         </AppBody>
     )

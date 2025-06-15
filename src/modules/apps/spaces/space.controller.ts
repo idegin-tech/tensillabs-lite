@@ -113,6 +113,9 @@ export class SpaceController {
       req.workspace._id,
     );
 
-    return createSuccessResponse('Space details retrieved successfully', spaceDetails);
+    return createSuccessResponse(
+      'Space details retrieved successfully',
+      spaceDetails,
+    );
   }
 }

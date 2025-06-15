@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
@@ -87,5 +88,21 @@ export class WorkspaceMemberController {
     );
 
     return createSuccessResponse('Member invited successfully', member);
+  }
+
+  @Get('dependencies')
+  @UseGuards(WorkspaceMemberGuard)
+  async getMemberDependencies(
+    @Req() req: Request & { workspaceMember: any; workspace: any },
+  ) {
+    const memberWithWorkspace =
+      await this.workspaceMemberService.getMemberDependencies(
+        req.workspaceMember._id as Types.ObjectId,
+      );
+
+    return createSuccessResponse(
+      'Member dependencies retrieved successfully',
+      memberWithWorkspace,
+    );
   }
 }

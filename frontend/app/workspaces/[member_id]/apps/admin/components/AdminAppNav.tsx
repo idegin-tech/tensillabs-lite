@@ -16,6 +16,7 @@ import {
   TbShield,
   TbUsersGroup,
   TbSettings,
+  TbFolders,
 } from "react-icons/tb"
 import Link from 'next/link'
 import useCommon from '@/hooks/use-common'
@@ -33,6 +34,11 @@ export default function AuthAppNav() {
           title: "Overview",
           url: `${getPathToApp('admin')}`,
           icon: TbDashboard,
+        },
+        {
+          title: "Projects",
+          url: `${getPathToApp('admin')}/projects`,
+          icon: TbFolders,
         },
         {
           title: "Offices",

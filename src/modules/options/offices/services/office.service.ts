@@ -72,22 +72,34 @@ export class OfficeService {
   async update(
     id: Types.ObjectId,
     updateOfficeDto: UpdateOfficeDto,
-    _id: any,
+    workspaceId: Types.ObjectId,
   ): Promise<OfficeDocument> {
     const office = await this.officeModel
-      .findByIdAndUpdate(id, updateOfficeDto, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        updateOfficeDto,
+        { new: true },
+      )
+      .populate('createdBy')
       .exec();
 
-    if (!office || office.isDeleted) {
+    if (!office) {
       throw new NotFoundException('Office not found');
     }
 
     return office;
   }
 
-  async moveToTrash(id: Types.ObjectId, _id: any): Promise<OfficeDocument> {
+  async moveToTrash(
+    id: Types.ObjectId,
+    workspaceId: Types.ObjectId,
+  ): Promise<OfficeDocument> {
     const office = await this.officeModel
-      .findByIdAndUpdate(id, { isDeleted: true }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isDeleted: true },
+        { new: true },
+      )
       .exec();
 
     if (!office) {
@@ -100,12 +112,18 @@ export class OfficeService {
   async toggleActive(
     id: Types.ObjectId,
     isActive: boolean,
+    workspaceId: Types.ObjectId,
   ): Promise<OfficeDocument> {
     const office = await this.officeModel
-      .findByIdAndUpdate(id, { isActive }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isActive },
+        { new: true },
+      )
+      .populate('createdBy')
       .exec();
 
-    if (!office || office.isDeleted) {
+    if (!office) {
       throw new NotFoundException('Office not found');
     }
 

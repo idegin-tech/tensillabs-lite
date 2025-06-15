@@ -69,7 +69,7 @@ export default function SectionPlaceholder({
       fullWidth ? 'w-full' : 'w-full max-w-lg mx-auto',
       className
     )}>
-      <Card className={cn(
+      <div className={cn(
         'w-full transition-all duration-200',
         styles.cardBorder
       )}>
@@ -110,7 +110,7 @@ export default function SectionPlaceholder({
             </Button>
           )}
         </CardContent>
-      </Card>
+      </div>
     </div>
   )
 }

@@ -68,17 +68,21 @@ export class SpaceService {
     }
 
     const [lists, recentParticipants] = await Promise.all([
-      this.spaceModel.db.collection('lists').find({
-        space: spaceId,
-        workspace: workspaceId,
-        isDeleted: false,
-      }).sort({ createdAt: -1 }).toArray(),
-      this.spaceParticipantService.getSpaceParticipants(spaceId, workspaceId)
+      this.spaceModel.db
+        .collection('lists')
+        .find({
+          space: spaceId,
+          workspace: workspaceId,
+          isDeleted: false,
+        })
+        .sort({ createdAt: -1 })
+        .toArray(),
+      this.spaceParticipantService.getSpaceParticipants(spaceId, workspaceId),
     ]);
 
     return {
       space: space.toObject(),
-      lists: lists.map(list => ({
+      lists: lists.map((list) => ({
         _id: list._id,
         name: list.name,
         isPrivate: list.isPrivate,
