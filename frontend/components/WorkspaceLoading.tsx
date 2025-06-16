@@ -32,10 +32,10 @@ export default function WorkspaceLoading({ className }: WorkspaceLoadingProps) {
                     </div> */}
 
                     <div className="flex justify-center items-center space-x-2 pt-2 animate-pulse">
-                        <div className="h-3 w-3 bg-primary rounded-full animate-bounce shadow-lg shadow-primary/30"></div>
-                        <div className="h-3 w-3 bg-primary rounded-full animate-bounce shadow-lg shadow-primary/30"
+                        <div className="h-2 w-2 bg-primary rounded-full animate-bounce shadow-lg shadow-primary/30"></div>
+                        <div className="h-2 w-2 bg-primary rounded-full animate-bounce shadow-lg shadow-primary/30"
                             style={{ animationDelay: '0.15s' }}></div>
-                        <div className="h-3 w-3 bg-primary rounded-full animate-bounce shadow-lg shadow-primary/30"
+                        <div className="h-2 w-2 bg-primary rounded-full animate-bounce shadow-lg shadow-primary/30"
                             style={{ animationDelay: '0.3s' }}></div>
                     </div>
                 </div>

@@ -57,6 +57,7 @@ import { cn } from '@/lib/utils'
 import { Project } from '@/types/projects.types'
 import { useProjects, useCreateProject, useUpdateProject } from '@/hooks/use-projects'
 import { toast } from 'sonner'
+import ProjectDialog from './ProjectDialog'
 
 interface ProjectsTableProps {
     projects: Project[]
@@ -240,115 +241,6 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
                 </div>
             </div>
         </div>
-    )
-}
-
-interface ProjectDialogProps {
-    project?: Project
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    onSubmit: (data: any) => void
-    isLoading: boolean
-}
-
-function ProjectDialog({ project, open, onOpenChange, onSubmit, isLoading }: ProjectDialogProps) {    
-    const [formData, setFormData] = useState({
-        name: project?.name || '',
-        description: project?.description || '',
-        client: typeof project?.client === 'string' ? project.client : project?.client?._id || ''
-    })
-
-    useEffect(() => {
-        if (project) {
-            setFormData({
-                name: project.name,
-                description: project.description || '',
-                client: typeof project.client === 'string' ? project.client : project.client?._id || ''
-            })
-        } else {
-            setFormData({
-                name: '',
-                description: '',
-                client: ''
-            })
-        }
-    }, [project, open])
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!formData.name.trim()) {
-            toast.error('Please enter a project name')
-            return
-        }        
-        const submitData: any = {
-            name: formData.name.trim(),
-            description: formData.description.trim() || undefined,
-            client: formData.client.trim() || undefined
-        }
-        
-        Object.keys(submitData).forEach(key => {
-            if (submitData[key] === undefined) {
-                delete submitData[key]
-            }
-        })
-        
-        onSubmit(submitData)
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>
-                        {project ? 'Edit Project' : 'Create New Project'}
-                    </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Project Name *</Label>
-                        <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Enter project name"
-                            required
-                        />
-                    </div>                    <div className="space-y-2">
-                        <Label htmlFor="client">Client ID</Label>
-                        <Input
-                            id="client"
-                            value={formData.client}
-                            onChange={(e) => setFormData(prev => ({ ...prev, client: e.target.value }))}
-                            placeholder="Enter client ID (optional)"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Enter project description"
-                            rows={3}
-                        />
-                    </div>
-                    <div className="flex justify-end space-x-2 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={isLoading}
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {project ? 'Update' : 'Create'} Project
-                        </Button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
     )
 }
 

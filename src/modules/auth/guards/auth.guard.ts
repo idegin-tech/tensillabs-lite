@@ -27,12 +27,6 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const session = request.session;
 
-    console.log('[DEBUG] Auth Guard - Session data:', {
-      userId: session?.userId,
-      userEmail: session?.userEmail,
-      sessionExists: !!session,
-    });
-
     if (!session || !session.userId) {
       console.log('[DEBUG] Auth Guard - No active session found');
       throw new UnauthorizedException('No active session found');
@@ -58,10 +52,6 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException('Email not verified');
       }
 
-      console.log(
-        '[DEBUG] Auth Guard - User authenticated successfully:',
-        user.email,
-      );
       request.user = user;
 
       if (typeof session.touch === 'function') {
