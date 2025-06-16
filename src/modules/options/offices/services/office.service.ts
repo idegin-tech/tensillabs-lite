@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -53,6 +52,10 @@ export class OfficeService {
         { description: { $regex: search, $options: 'i' } },
         { address: { $regex: search, $options: 'i' } },
       ];
+    }
+
+    if (pagination.isActive && pagination.isActive !== 'all') {
+      query.isActive = pagination.isActive === 'true';
     }
 
     return await this.officeModel.paginate(query, {

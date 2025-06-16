@@ -39,7 +39,8 @@ export class TeamService {
     workspaceId: Types.ObjectId,
     pagination: PaginationDto,
   ): Promise<PaginateResult<TeamDocument>> {
-    const { search, paginationOptions } = extractPaginationOptions(pagination);
+    const { search, isActive, paginationOptions } =
+      extractPaginationOptions(pagination);
 
     const query: FilterQuery<TeamDocument> = {
       workspace: workspaceId,
@@ -51,6 +52,10 @@ export class TeamService {
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
+    }
+
+    if (isActive && isActive !== 'all') {
+      query.isActive = isActive === 'true';
     }
 
     return await this.teamModel.paginate(query, {
@@ -70,21 +75,34 @@ export class TeamService {
   async update(
     id: Types.ObjectId,
     updateTeamDto: UpdateTeamDto,
+    workspaceId: Types.ObjectId,
   ): Promise<TeamDocument> {
     const team = await this.teamModel
-      .findByIdAndUpdate(id, updateTeamDto, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        updateTeamDto,
+        { new: true },
+      )
+      .populate('createdBy')
       .exec();
 
-    if (!team || team.isDeleted) {
+    if (!team) {
       throw new NotFoundException('Team not found');
     }
 
     return team;
   }
 
-  async moveToTrash(id: Types.ObjectId): Promise<TeamDocument> {
+  async moveToTrash(
+    id: Types.ObjectId,
+    workspaceId: Types.ObjectId,
+  ): Promise<TeamDocument> {
     const team = await this.teamModel
-      .findByIdAndUpdate(id, { isDeleted: true }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isDeleted: true },
+        { new: true },
+      )
       .exec();
 
     if (!team) {
@@ -97,12 +115,18 @@ export class TeamService {
   async toggleActive(
     id: Types.ObjectId,
     isActive: boolean,
+    workspaceId: Types.ObjectId,
   ): Promise<TeamDocument> {
     const team = await this.teamModel
-      .findByIdAndUpdate(id, { isActive }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isActive },
+        { new: true },
+      )
+      .populate('createdBy')
       .exec();
 
-    if (!team || team.isDeleted) {
+    if (!team) {
       throw new NotFoundException('Team not found');
     }
 

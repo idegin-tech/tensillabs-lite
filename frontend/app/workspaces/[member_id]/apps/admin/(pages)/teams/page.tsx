@@ -55,18 +55,29 @@ import {
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Team } from '@/types/teams.types'
-import { useTeams, useCreateTeam, useUpdateTeam } from '@/hooks/use-teams'
+import { useTeams, useCreateTeam, useUpdateTeam, useToggleTeamActive, useDeleteTeam } from '@/hooks/use-teams'
 import { toast } from 'sonner'
+import TeamDialog from './TeamDialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface TeamsTableProps {
     teams: Team[]
     isLoading: boolean
-    onViewTeam: (team: Team) => void
     onEditTeam: (team: Team) => void
+    onToggleActive: (team: Team) => void
     onDeleteTeam: (team: Team) => void
 }
 
-function TeamsTable({ teams, isLoading, onViewTeam, onEditTeam, onDeleteTeam }: TeamsTableProps) {
+function TeamsTable({ teams, isLoading, onEditTeam, onToggleActive, onDeleteTeam }: TeamsTableProps) {
     if (isLoading) {
         return <TablePlaceholder />
     }
@@ -161,15 +172,7 @@ function TeamsTable({ teams, isLoading, onViewTeam, onEditTeam, onDeleteTeam }: 
                                         >
                                             <TbDotsVertical className="h-4 w-4" />
                                         </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-48">
-                                        <DropdownMenuItem
-                                            onClick={() => onViewTeam(team)}
-                                            className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer"
-                                        >
-                                            <TbEye className="h-4 w-4" />
-                                            View Details
-                                        </DropdownMenuItem>
+                                    </DropdownMenuTrigger>                                    <DropdownMenuContent align="end" className="w-48">
                                         <DropdownMenuItem
                                             onClick={() => onEditTeam(team)}
                                             className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer"
@@ -177,11 +180,15 @@ function TeamsTable({ teams, isLoading, onViewTeam, onEditTeam, onDeleteTeam }: 
                                             <TbEdit className="h-4 w-4" />
                                             Edit Team
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onToggleActive(team)}>
+                                            <TbEye className="h-4 w-4 mr-2" />
+                                            {team.isActive ? 'Make Inactive' : 'Make Active'}
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem
+                                            variant='destructive'
                                             onClick={() => onDeleteTeam(team)}
-                                            className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
                                         >
-                                            <TbTrash className="h-4 w-4" />
+                                            <TbTrash className="h-4 w-4 mr-2" />
                                             Delete Team
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -257,124 +264,38 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
     )
 }
 
-interface TeamDialogProps {
-    team?: Team | null
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    onSubmit: (data: any) => void
-    isLoading: boolean
-}
-
-function TeamDialog({ team, open, onOpenChange, onSubmit, isLoading }: TeamDialogProps) {
-    const [formData, setFormData] = useState({
-        name: '',
-        description: ''
-    })
-
-    useEffect(() => {
-        if (team) {
-            setFormData({
-                name: team.name || '',
-                description: team.description || ''
-            })
-        } else {
-            setFormData({
-                name: '',
-                description: ''
-            })
-        }
-    }, [team, open])
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-        onSubmit(formData)
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>
-                        {team ? 'Edit Team' : 'Create New Team'}
-                    </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Name *</Label>
-                            <Input
-                                id="name"
-                                value={formData.name}
-                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                placeholder="Enter team name..."
-                                required
-                                className="border-muted focus:border-primary"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                value={formData.description}
-                                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                placeholder="Enter team description..."
-                                rows={3}
-                                className="border-muted focus:border-primary resize-none"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-end space-x-3 pt-4 border-t">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={isLoading}
-                            className="border-muted hover:bg-muted"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isLoading || !formData.name.trim()}
-                            className="bg-primary hover:bg-primary/90"
-                        >
-                            {isLoading && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {team ? 'Update Team' : 'Create Team'}
-                        </Button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 export default function TeamsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [editingTeam, setEditingTeam] = useState<Team | null>(null)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [teamToDelete, setTeamToDelete] = useState<Team | null>(null)
 
     const createTeam = useCreateTeam()
     const updateTeam = useUpdateTeam()
+    const toggleTeamActive = useToggleTeamActive()
+    const deleteTeam = useDeleteTeam()
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            setDebouncedSearchQuery(searchQuery)
-        }, 300)
+            setDebouncedSearchQuery(searchQuery)        }, 300)
 
         return () => clearTimeout(timer)
     }, [searchQuery])
 
     useEffect(() => {
         setCurrentPage(1)
-    }, [debouncedSearchQuery])
+    }, [debouncedSearchQuery, statusFilter])
 
     const { teams, pagination, isLoading, error, refetch } = useTeams({
         page: currentPage,
         limit: itemsPerPage,
         search: debouncedSearchQuery,
+        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active' ? 'true' : 'false',
     })
 
     const handlePageChange = (page: number) => {
@@ -392,6 +313,7 @@ export default function TeamsPage() {
 
     const handleClearFilters = () => {
         setSearchQuery('')
+        setStatusFilter('all')
         setCurrentPage(1)
     }
 
@@ -403,6 +325,41 @@ export default function TeamsPage() {
     const handleEditTeam = (team: Team) => {
         setEditingTeam(team)
         setIsDialogOpen(true)
+    }
+
+    const handleToggleActive = async (team: Team) => {
+        try {
+            await toggleTeamActive.mutateAsync({
+                id: team._id,
+                isActive: !team.isActive
+            })
+            toast.success(`Team ${!team.isActive ? 'activated' : 'deactivated'} successfully`)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
+        }
+    }
+
+    const handleDeleteTeam = (team: Team) => {
+        setTeamToDelete(team)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDeleteTeam = async () => {
+        if (!teamToDelete) return
+
+        try {
+            await deleteTeam.mutateAsync(teamToDelete._id)
+            toast.success('Team deleted successfully')
+            setIsDeleteDialogOpen(false)
+            setTeamToDelete(null)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
+        }
+    }
+
+    const cancelDeleteTeam = () => {
+        setIsDeleteDialogOpen(false)
+        setTeamToDelete(null)
     }
 
     const handleSubmitTeam = async (formData: any) => {
@@ -420,11 +377,10 @@ export default function TeamsPage() {
             setIsDialogOpen(false)
             setEditingTeam(null)
         } catch (error: any) {
-            toast.error(error.message || 'Something went wrong')
-        }
+            toast.error(error.message || 'Something went wrong')        }
     }
 
-    const hasActiveFilters = debouncedSearchQuery
+    const hasActiveFilters = debouncedSearchQuery || statusFilter !== 'all'
 
     const renderFilters = () => (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted/20 rounded-lg border">
@@ -438,36 +394,47 @@ export default function TeamsPage() {
                     disabled={isLoading}
                 />
             </div>
-            <div className="flex items-center gap-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRefresh}
-                    disabled={isLoading}
-                    className="h-10 border-muted hover:bg-muted"
-                >
-                    <TbRefresh className="h-4 w-4 mr-2" />
-                    Refresh
-                </Button>
-                {hasActiveFilters && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleClearFilters}
-                        className="h-10 border-muted hover:bg-muted"
+            <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="status-filter" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                        Status:
+                    </Label>
+                    <Select
+                        value={statusFilter}
+                        onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'inactive')}
+                        disabled={isLoading}
                     >
-                        <TbX className="h-4 w-4 mr-2" />
+                        <SelectTrigger className="h-10 w-[140px] border-muted focus:border-primary">
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-400 mr-2"></div>
+                                    All Teams
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="active">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                    Active Only
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="inactive">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-500 mr-2"></div>
+                                    Inactive Only
+                                </div>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                {hasActiveFilters && (
+                    <Button variant="outline" size="sm" onClick={handleClearFilters} className="h-10 border-muted">
+                        <TbX className="h-4 w-4 mr-1" />
                         Clear
                     </Button>
                 )}
-                <Button
-                    onClick={handleCreateTeam}
-                    disabled={isLoading}
-                    className="h-10 bg-primary hover:bg-primary/90"
-                >
-                    <TbPlus className="h-4 w-4 mr-2" />
-                    Create Team
-                </Button>
             </div>
         </div>
     )
@@ -534,14 +501,13 @@ export default function TeamsPage() {
             )
         }
 
-        return (
-            <div className="space-y-4">
+        return (            <div className="space-y-4">
                 <TeamsTable
                     teams={teams}
                     isLoading={isLoading}
-                    onViewTeam={() => { }}
                     onEditTeam={handleEditTeam}
-                    onDeleteTeam={() => { }}
+                    onToggleActive={handleToggleActive}
+                    onDeleteTeam={handleDeleteTeam}
                 />
                 <Pagination
                     currentPage={pagination?.currentPage || 1}
@@ -555,8 +521,7 @@ export default function TeamsPage() {
         )
     }
 
-    return (
-        <AppBody>
+    return (        <AppBody>
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
@@ -565,19 +530,57 @@ export default function TeamsPage() {
                             Manage your workspace teams and their details.
                         </p>
                     </div>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRefresh}
+                            disabled={isLoading}
+                            className="h-10 border-muted hover:bg-muted"
+                        >
+                            <TbRefresh className="h-4 w-4 mr-2" />
+                            Refresh
+                        </Button>
+                        <Button
+                            onClick={handleCreateTeam}
+                            disabled={isLoading}
+                            className="h-10 bg-primary hover:bg-primary/90"
+                        >
+                            <TbPlus className="h-4 w-4 mr-2" />
+                            Create Team
+                        </Button>
+                    </div>
                 </div>
 
                 {renderFilters()}
                 {renderContent()}
-            </div>
-
-            <TeamDialog
-                team={editingTeam}
+            </div>            <TeamDialog
+                team={editingTeam || undefined}
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
                 onSubmit={handleSubmitTeam}
                 isLoading={createTeam.isPending || updateTeam.isPending}
             />
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Team</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete "{teamToDelete?.name}"? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={cancelDeleteTeam}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={confirmDeleteTeam}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppBody>
     )
 }

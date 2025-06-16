@@ -11,6 +11,7 @@ interface UseClientsParams {
   limit?: number
   search?: string
   sortBy?: string
+  isActive?: string
 }
 
 interface UseClientsOptions {
@@ -19,7 +20,7 @@ interface UseClientsOptions {
 
 export function useClients(params: UseClientsParams = {}, options: UseClientsOptions = {}) {
   const { member_id } = useCommon()
-  const { page = 1, limit = 10, search = '', sortBy = '-createdAt' } = params
+  const { page = 1, limit = 10, search = '', sortBy = '-createdAt', isActive } = params
   const { enabled = true } = options
   
   const buildEndpoint = () => {
@@ -29,17 +30,19 @@ export function useClients(params: UseClientsParams = {}, options: UseClientsOpt
       sortBy,
     })    
     if (search) searchParams.append('search', search)
+    if (isActive) searchParams.append('isActive', isActive)
     
     return `/clients?${searchParams.toString()}`
   }
   
   const query = useQuery<{ success: boolean; payload: PaginatedClients }, ApiError>({
-    queryKey: ['clients', member_id || '', page.toString(), limit.toString(), search, sortBy],
+    queryKey: ['clients', member_id || '', page.toString(), limit.toString(), search, sortBy, isActive || ''],
     queryFn: () => api.get<{ success: boolean; payload: PaginatedClients }>(buildEndpoint(), {
       headers: {
         'x-member-id': member_id
       }
-    }),    staleTime: 5 * 60 * 1000,
+    }),
+    staleTime: 5 * 60 * 1000,
     enabled: !!member_id && enabled,
     refetchOnReconnect: true,
     refetchOnWindowFocus: false,
@@ -96,6 +99,40 @@ export function useUpdateClient() {
   return useMutation<{ success: boolean; payload: Client }, ApiError, { id: string; data: UpdateClientData }>({
     mutationFn: ({ id, data }) =>
       api.put<{ success: boolean; payload: Client }>(`/clients/${id}`, data, {
+        headers: {
+          'x-member-id': member_id
+        }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+    },
+  })
+}
+
+export function useToggleClientActive() {
+  const { member_id } = useCommon()
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: Client }, ApiError, { id: string; isActive: boolean }>({
+    mutationFn: ({ id, isActive }) =>
+      api.patch<{ success: boolean; payload: Client }>(`/clients/${id}/toggle-active`, { isActive }, {
+        headers: {
+          'x-member-id': member_id
+        }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+    },
+  })
+}
+
+export function useDeleteClient() {
+  const { member_id } = useCommon()
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: Client }, ApiError, string>({
+    mutationFn: (id: string) =>
+      api.patch<{ success: boolean; payload: Client }>(`/clients/${id}/trash`, {}, {
         headers: {
           'x-member-id': member_id
         }

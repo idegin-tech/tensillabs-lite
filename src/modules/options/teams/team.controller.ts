@@ -72,7 +72,11 @@ export class TeamController {
 
   @Put(':id')
   @UsePipes(new ZodValidationPipe(updateTeamSchema))
-  async update(@Param('id') id: string, @Body() updateTeamDto: UpdateTeamDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateTeamDto: UpdateTeamDto,
+    @Req() req: Request & { workspace: any },
+  ) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid team ID format');
     }
@@ -80,18 +84,25 @@ export class TeamController {
     const team = await this.teamService.update(
       new Types.ObjectId(id),
       updateTeamDto,
+      req.workspace._id,
     );
 
     return createSuccessResponse('Team updated successfully', team);
   }
 
   @Patch(':id/trash')
-  async moveToTrash(@Param('id') id: string) {
+  async moveToTrash(
+    @Param('id') id: string,
+    @Req() req: Request & { workspace: any },
+  ) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid team ID format');
     }
 
-    const team = await this.teamService.moveToTrash(new Types.ObjectId(id));
+    const team = await this.teamService.moveToTrash(
+      new Types.ObjectId(id),
+      req.workspace._id,
+    );
 
     return createSuccessResponse('Team moved to trash successfully', team);
   }
@@ -101,6 +112,7 @@ export class TeamController {
   async toggleActive(
     @Param('id') id: string,
     @Body() toggleActiveDto: ToggleActiveDto,
+    @Req() req: Request & { workspace: any },
   ) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid team ID format');
@@ -109,6 +121,7 @@ export class TeamController {
     const team = await this.teamService.toggleActive(
       new Types.ObjectId(id),
       toggleActiveDto.isActive,
+      req.workspace._id,
     );
 
     return createSuccessResponse('Team status updated successfully', team);

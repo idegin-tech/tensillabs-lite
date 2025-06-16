@@ -46,7 +46,8 @@ export class ProjectService {
     workspaceId: Types.ObjectId,
     pagination: PaginationDto,
   ): Promise<PaginateResult<ProjectDocument>> {
-    const { search, paginationOptions } = extractPaginationOptions(pagination);
+    const { search, isActive, paginationOptions } =
+      extractPaginationOptions(pagination);
 
     const query: FilterQuery<ProjectDocument> = {
       workspace: workspaceId,
@@ -58,6 +59,10 @@ export class ProjectService {
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
+    }
+
+    if (isActive && isActive !== 'all') {
+      query.isActive = isActive === 'true';
     }
 
     return await this.projectModel.paginate(query, {
@@ -97,6 +102,47 @@ export class ProjectService {
       .findOneAndUpdate(
         { _id: id, workspace: workspaceId, isDeleted: false },
         updateData,
+        { new: true },
+      )
+      .populate(['client', 'createdBy'])
+      .exec();
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    return project;
+  }
+
+  async toggleActive(
+    id: Types.ObjectId,
+    isActive: boolean,
+    workspaceId: Types.ObjectId,
+  ): Promise<ProjectDocument> {
+    const project = await this.projectModel
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isActive },
+        { new: true },
+      )
+      .populate(['client', 'createdBy'])
+      .exec();
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    return project;
+  }
+
+  async delete(
+    id: Types.ObjectId,
+    workspaceId: Types.ObjectId,
+  ): Promise<ProjectDocument> {
+    const project = await this.projectModel
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isDeleted: true },
         { new: true },
       )
       .populate(['client', 'createdBy'])

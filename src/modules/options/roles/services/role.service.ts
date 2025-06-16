@@ -40,7 +40,8 @@ export class RoleService {
     workspaceId: Types.ObjectId,
     pagination: PaginationDto,
   ): Promise<PaginateResult<RoleDocument>> {
-    const { search, paginationOptions } = extractPaginationOptions(pagination);
+    const { search, isActive, paginationOptions } =
+      extractPaginationOptions(pagination);
 
     const query: FilterQuery<RoleDocument> = {
       workspace: workspaceId,
@@ -52,6 +53,10 @@ export class RoleService {
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
+    }
+
+    if (isActive && isActive !== 'all') {
+      query.isActive = isActive === 'true';
     }
 
     return await this.roleModel.paginate(query, {
@@ -71,21 +76,34 @@ export class RoleService {
   async update(
     id: Types.ObjectId,
     updateRoleDto: UpdateRoleDto,
+    workspaceId: Types.ObjectId,
   ): Promise<RoleDocument> {
     const role = await this.roleModel
-      .findByIdAndUpdate(id, updateRoleDto, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        updateRoleDto,
+        { new: true },
+      )
+      .populate('createdBy')
       .exec();
 
-    if (!role || role.isDeleted) {
+    if (!role) {
       throw new NotFoundException('Role not found');
     }
 
     return role;
   }
 
-  async moveToTrash(id: Types.ObjectId): Promise<RoleDocument> {
+  async moveToTrash(
+    id: Types.ObjectId,
+    workspaceId: Types.ObjectId,
+  ): Promise<RoleDocument> {
     const role = await this.roleModel
-      .findByIdAndUpdate(id, { isDeleted: true }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isDeleted: true },
+        { new: true },
+      )
       .exec();
 
     if (!role) {
@@ -98,12 +116,18 @@ export class RoleService {
   async toggleActive(
     id: Types.ObjectId,
     isActive: boolean,
+    workspaceId: Types.ObjectId,
   ): Promise<RoleDocument> {
     const role = await this.roleModel
-      .findByIdAndUpdate(id, { isActive }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isActive },
+        { new: true },
+      )
+      .populate('createdBy')
       .exec();
 
-    if (!role || role.isDeleted) {
+    if (!role) {
       throw new NotFoundException('Role not found');
     }
 

@@ -10,24 +10,19 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { TbLoader2 } from 'react-icons/tb'
-import { Project } from '@/types/projects.types'
-import { toast } from 'sonner'
-import ClientsSelector from '@/components/ClientsSelector'
-import { InputSelectorData } from '@/components/InputSelector'
+import { Role } from '@/types/roles.types'
 
-// Define the form schema based on backend validation
-const projectFormSchema = z.object({
+const roleFormSchema = z.object({
     name: z
         .string()
-        .min(1, 'Project name is required')
-        .max(100, 'Project name must not exceed 100 characters')
+        .min(1, 'Role name is required')
+        .max(100, 'Role name must not exceed 100 characters')
         .trim()
         .refine((val) => val.length > 0, {
-            message: 'Project name cannot be empty or contain only spaces',
+            message: 'Role name cannot be empty or contain only spaces',
         }),
     description: z
         .string()
@@ -36,58 +31,48 @@ const projectFormSchema = z.object({
         .optional()
         .or(z.literal(''))
         .transform((val) => (val === '' ? undefined : val)),
-    client: z
-        .string()
-        .optional()
-        .or(z.literal(''))
-        .transform((val) => (val === '' ? undefined : val)),
 })
 
-type ProjectFormData = z.infer<typeof projectFormSchema>
+type RoleFormData = z.infer<typeof roleFormSchema>
 
-interface ProjectDialogProps {
-    project?: Project
+interface RoleDialogProps {
+    role?: Role
     open: boolean
     onOpenChange: (open: boolean) => void
     onSubmit: (data: any) => void
     isLoading: boolean
 }
 
-export default function ProjectDialog({ project, open, onOpenChange, onSubmit, isLoading }: ProjectDialogProps) {    const form = useForm<ProjectFormData>({
-        resolver: zodResolver(projectFormSchema),
+export default function RoleDialog({ role, open, onOpenChange, onSubmit, isLoading }: RoleDialogProps) {
+    const form = useForm<RoleFormData>({
+        resolver: zodResolver(roleFormSchema),
         defaultValues: {
             name: '',
             description: '',
-            client: '',
         },
         mode: 'onChange',
     })
 
-    // Reset and populate form when project changes
     useEffect(() => {
-        if (project) {
+        if (role && open) {
             form.reset({
-                name: project.name,
-                description: project.description || '',
-                client: typeof project.client === 'string' ? project.client : project.client?._id || ''
+                name: role.name || '',
+                description: role.description || '',
             })
-        } else {
+        } else if (!role && open) {
             form.reset({
                 name: '',
                 description: '',
-                client: ''
             })
         }
-    }, [project, open, form])
+    }, [role, open, form])
 
-    const handleSubmit = (data: ProjectFormData) => {
+    const handleSubmit = (data: RoleFormData) => {
         const submitData: any = {
-            name: data.name,
-            description: data.description,
-            client: data.client
+            name: data.name.trim(),
+            description: data.description?.trim() || undefined,
         }
 
-        // Remove undefined values
         Object.keys(submitData).forEach(key => {
             if (submitData[key] === undefined) {
                 delete submitData[key]
@@ -97,42 +82,35 @@ export default function ProjectDialog({ project, open, onOpenChange, onSubmit, i
         onSubmit(submitData)
     }
 
-    const handleClientChange = (client: InputSelectorData) => {
-        form.setValue('client', client.value, { shouldValidate: true })
-    }
-
-    const getSelectedClient = (): InputSelectorData | undefined => {
-        const clientValue = form.watch('client')
-        if (project && project.client && typeof project.client === 'object' && clientValue === project.client._id) {
-            return {
-                label: project.client.name || '',
-                value: project.client._id || ''
-            }
+    const handleOpenChange = (newOpen: boolean) => {
+        if (!newOpen && !isLoading) {
+            form.reset()
         }
-        return undefined
+        onOpenChange(newOpen)
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {project ? 'Edit Project' : 'Create New Project'}
+                        {role ? 'Edit Role' : 'Create New Role'}
                     </DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">                        <FormField
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField
                             control={form.control}
                             name="name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Project Name *</FormLabel>
+                                    <FormLabel>Role Name *</FormLabel>
                                     <FormControl>
                                         <Input
-                                            {...field}
-                                            placeholder="Enter project name"
+                                            placeholder="Enter role name"
                                             disabled={isLoading}
                                             maxLength={100}
+                                            {...field}
                                         />
                                     </FormControl>
                                     <div className="flex justify-between items-center">
@@ -144,28 +122,7 @@ export default function ProjectDialog({ project, open, onOpenChange, onSubmit, i
                                 </FormItem>
                             )}
                         />
-                          <FormField
-                            control={form.control}
-                            name="client"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Client</FormLabel>
-                                    <FormControl>
-                                        <ClientsSelector
-                                            value={getSelectedClient()}
-                                            onChange={handleClientChange}
-                                            placeholder="Select a client (optional)"
-                                            disabled={isLoading}
-                                            className="w-full"
-                                        />
-                                    </FormControl>
-                                    <FormDescription className="text-xs">
-                                        Choose a client to associate with this project (optional)
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        /><FormField
+                        <FormField
                             control={form.control}
                             name="description"
                             render={({ field }) => (
@@ -173,12 +130,12 @@ export default function ProjectDialog({ project, open, onOpenChange, onSubmit, i
                                     <FormLabel>Description</FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            {...field}
-                                            placeholder="Enter project description"
+                                            placeholder="Enter role description"
                                             rows={3}
                                             disabled={isLoading}
                                             maxLength={500}
                                             className="resize-none"
+                                            {...field}
                                         />
                                     </FormControl>
                                     <div className="flex justify-between items-center">
@@ -190,12 +147,11 @@ export default function ProjectDialog({ project, open, onOpenChange, onSubmit, i
                                 </FormItem>
                             )}
                         />
-
                         <div className="flex justify-end space-x-2 pt-4">
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => onOpenChange(false)}
+                                onClick={() => handleOpenChange(false)}
                                 disabled={isLoading}
                             >
                                 Cancel
@@ -205,7 +161,7 @@ export default function ProjectDialog({ project, open, onOpenChange, onSubmit, i
                                 disabled={isLoading || !form.formState.isValid}
                             >
                                 {isLoading && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {project ? 'Update' : 'Create'} Project
+                                {role ? 'Update' : 'Create'} Role
                             </Button>
                         </div>
                     </form>

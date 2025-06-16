@@ -73,7 +73,11 @@ export class RoleController {
 
   @Put(':id')
   @UsePipes(new ZodValidationPipe(updateRoleSchema))
-  async update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateRoleDto: UpdateRoleDto,
+    @Req() req: Request & { workspace: any },
+  ) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid role ID format');
     }
@@ -81,18 +85,25 @@ export class RoleController {
     const role = await this.roleService.update(
       new Types.ObjectId(id),
       updateRoleDto,
+      req.workspace._id,
     );
 
     return createSuccessResponse('Role updated successfully', role);
   }
 
   @Patch(':id/trash')
-  async moveToTrash(@Param('id') id: string) {
+  async moveToTrash(
+    @Param('id') id: string,
+    @Req() req: Request & { workspace: any },
+  ) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid role ID format');
     }
 
-    const role = await this.roleService.moveToTrash(new Types.ObjectId(id));
+    const role = await this.roleService.moveToTrash(
+      new Types.ObjectId(id),
+      req.workspace._id,
+    );
 
     return createSuccessResponse('Role moved to trash successfully', role);
   }
@@ -102,6 +113,7 @@ export class RoleController {
   async toggleActive(
     @Param('id') id: string,
     @Body() toggleActiveDto: ToggleActiveDto,
+    @Req() req: Request & { workspace: any },
   ) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid role ID format');
@@ -110,6 +122,7 @@ export class RoleController {
     const role = await this.roleService.toggleActive(
       new Types.ObjectId(id),
       toggleActiveDto.isActive,
+      req.workspace._id,
     );
 
     return createSuccessResponse('Role status updated successfully', role);

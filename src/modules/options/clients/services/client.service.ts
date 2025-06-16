@@ -43,7 +43,8 @@ export class ClientService {
     workspaceId: Types.ObjectId,
     pagination: PaginationDto,
   ): Promise<PaginateResult<ClientDocument>> {
-    const { search, paginationOptions } = extractPaginationOptions(pagination);
+    const { search, isActive, paginationOptions } =
+      extractPaginationOptions(pagination);
 
     const query: FilterQuery<ClientDocument> = {
       workspace: workspaceId,
@@ -55,6 +56,10 @@ export class ClientService {
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
+    }
+
+    if (isActive && isActive !== 'all') {
+      query.isActive = isActive === 'true';
     }
 
     return await this.clientModel.paginate(query, {
@@ -77,7 +82,7 @@ export class ClientService {
   async update(
     id: Types.ObjectId,
     updateClientDto: UpdateClientDto,
-    _id: any,
+    workspaceId: Types.ObjectId,
   ): Promise<ClientDocument> {
     const updateData: Record<string, any> = { ...updateClientDto };
 
@@ -88,20 +93,31 @@ export class ClientService {
     }
 
     const client = await this.clientModel
-      .findByIdAndUpdate(id, updateData, { new: true })
-      .populate('offices')
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        updateData,
+        { new: true },
+      )
+      .populate(['createdBy', 'offices'])
       .exec();
 
-    if (!client || client.isDeleted) {
+    if (!client) {
       throw new NotFoundException('Client not found');
     }
 
     return client;
   }
 
-  async moveToTrash(id: Types.ObjectId, _id: any): Promise<ClientDocument> {
+  async moveToTrash(
+    id: Types.ObjectId,
+    workspaceId: Types.ObjectId,
+  ): Promise<ClientDocument> {
     const client = await this.clientModel
-      .findByIdAndUpdate(id, { isDeleted: true }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isDeleted: true },
+        { new: true },
+      )
       .exec();
 
     if (!client) {
@@ -114,9 +130,15 @@ export class ClientService {
   async toggleActive(
     id: Types.ObjectId,
     isActive: boolean,
+    workspaceId: Types.ObjectId,
   ): Promise<ClientDocument> {
     const client = await this.clientModel
-      .findByIdAndUpdate(id, { isActive }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, workspace: workspaceId, isDeleted: false },
+        { isActive },
+        { new: true },
+      )
+      .populate(['createdBy', 'offices'])
       .exec();
 
     if (!client || client.isDeleted) {

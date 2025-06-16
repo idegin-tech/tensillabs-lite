@@ -30,14 +30,16 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog'
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
     TbUsers,
     TbSearch,
@@ -56,20 +58,21 @@ import {
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Client } from '@/types/clients.types'
-import { useClients, useCreateClient, useUpdateClient } from '@/hooks/use-clients'
+import { useClients, useCreateClient, useUpdateClient, useToggleClientActive, useDeleteClient } from '@/hooks/use-clients'
 import { toast } from 'sonner'
+import ClientDialog from './ClientDialog'
 
 interface ClientsTableProps {
     clients: Client[]
     isLoading: boolean
-    onViewClient: (client: Client) => void
     onEditClient: (client: Client) => void
+    onToggleActive: (client: Client) => void
     onDeleteClient: (client: Client) => void
 }
 
-function ClientsTable({ clients, isLoading, onViewClient, onEditClient, onDeleteClient }: ClientsTableProps) {
+function ClientsTable({ clients, isLoading, onEditClient, onToggleActive, onDeleteClient }: ClientsTableProps) {
     if (isLoading) {
-        return <TablePlaceholder rows={10} columns={5} />
+        return <TablePlaceholder rows={10} columns={6} />
     }
 
     const getStatusBadge = (isActive: boolean) => {
@@ -112,13 +115,13 @@ function ClientsTable({ clients, isLoading, onViewClient, onEditClient, onDelete
                 <TableBody>
                     {clients.map((client) => (
                         <TableRow key={client._id} className="hover:bg-muted/30 transition-colors">
-                            <TableCell className="py-4">
+                            <TableCell className="py-4 max-w-[400px]">
                                 <div className="space-y-1">
                                     <div className="font-semibold text-sm text-foreground">
                                         {client.name}
                                     </div>
                                     {client.description && (
-                                        <div className="text-xs text-muted-foreground line-clamp-2">
+                                        <div className="text-xs text-muted-foreground line-clamp-2 truncate">
                                             {client.description}
                                         </div>
                                     )}
@@ -135,9 +138,9 @@ function ClientsTable({ clients, isLoading, onViewClient, onEditClient, onDelete
                             <TableCell className="py-4">
                                 <div className="flex items-center space-x-3">
                                     <Avatar className="h-7 w-7 ring-2 ring-background">
-                                        <AvatarImage 
-                                            src={typeof client.createdBy === 'object' ? client.createdBy.avatarURL?.sm : ''} 
-                                            alt={getCreatorName(client.createdBy)} 
+                                        <AvatarImage
+                                            src={typeof client.createdBy === 'object' ? client.createdBy.avatarURL?.sm : ''}
+                                            alt={getCreatorName(client.createdBy)}
                                         />
                                         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
                                             {getCreatorInitials(client.createdBy)}
@@ -162,17 +165,26 @@ function ClientsTable({ clients, isLoading, onViewClient, onEditClient, onDelete
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-40">
-                                        <DropdownMenuItem onClick={() => onViewClient(client)}>
-                                            <TbEye className="h-4 w-4 mr-2" />
-                                            View Client
-                                        </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => onEditClient(client)}>
                                             <TbEdit className="h-4 w-4 mr-2" />
                                             Edit Client
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onToggleActive(client)}>
+                                            {client.isActive ? (
+                                                <>
+                                                    <TbX className="h-4 w-4 mr-2" />
+                                                    Make Inactive
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <TbEye className="h-4 w-4 mr-2" />
+                                                    Make Active
+                                                </>
+                                            )}
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem
+                                            variant='destructive'
                                             onClick={() => onDeleteClient(client)}
-                                            className="text-destructive"
                                         >
                                             <TbTrash className="h-4 w-4 mr-2" />
                                             Delete Client
@@ -203,7 +215,7 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
 
     return (
         <div className="flex items-center justify-between px-4 py-3 bg-background border-t">
-            <div className="flex items-center space-x-6 lg:space-x-8 justify-between w-full ">
+            <div className="flex items-center space-x-6 lg:space-x-8 justify-between w-full">
                 <div className="flex items-center space-x-2">
                     <p className="text-sm font-medium text-muted-foreground">Rows per page</p>
                     <Select
@@ -250,114 +262,21 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
     )
 }
 
-interface ClientDialogProps {
-    client?: Client
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    onSubmit: (data: any) => void
-    isLoading: boolean
-}
-
-function ClientDialog({ client, open, onOpenChange, onSubmit, isLoading }: ClientDialogProps) {
-    const [formData, setFormData] = useState({
-        name: client?.name || '',
-        description: client?.description || ''
-    })
-
-    useEffect(() => {
-        if (client) {
-            setFormData({
-                name: client.name,
-                description: client.description || ''
-            })
-        } else {
-            setFormData({
-                name: '',
-                description: ''
-            })
-        }
-    }, [client, open])
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!formData.name.trim()) {
-            toast.error('Please enter a client name')
-            return
-        }
-        
-        const submitData: any = {
-            name: formData.name.trim(),
-            description: formData.description.trim() || undefined
-        }
-        
-        Object.keys(submitData).forEach(key => {
-            if (submitData[key] === undefined) {
-                delete submitData[key]
-            }
-        })
-        
-        onSubmit(submitData)
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>
-                        {client ? 'Edit Client' : 'Create New Client'}
-                    </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Client Name *</Label>
-                        <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Enter client name"
-                            required
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Enter client description"
-                            rows={3}
-                        />
-                    </div>
-                    <div className="flex justify-end space-x-2 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={isLoading}
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {client ? 'Update' : 'Create'} Client
-                        </Button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 export default function ClientsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [editingClient, setEditingClient] = useState<Client | null>(null)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
 
     const createClient = useCreateClient()
     const updateClient = useUpdateClient()
+    const toggleClientActive = useToggleClientActive()
+    const deleteClient = useDeleteClient()
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -369,12 +288,13 @@ export default function ClientsPage() {
 
     useEffect(() => {
         setCurrentPage(1)
-    }, [debouncedSearchQuery])
+    }, [debouncedSearchQuery, statusFilter])
 
     const { clients, pagination, isLoading, error, refetch } = useClients({
         page: currentPage,
         limit: itemsPerPage,
         search: debouncedSearchQuery,
+        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active' ? 'true' : 'false',
     })
 
     const handlePageChange = (page: number) => {
@@ -392,6 +312,7 @@ export default function ClientsPage() {
 
     const handleClearFilters = () => {
         setSearchQuery('')
+        setStatusFilter('all')
         setCurrentPage(1)
     }
 
@@ -424,7 +345,42 @@ export default function ClientsPage() {
         }
     }
 
-    const hasActiveFilters = debouncedSearchQuery
+    const handleToggleActive = async (client: Client) => {
+        try {
+            await toggleClientActive.mutateAsync({
+                id: client._id,
+                isActive: !client.isActive
+            })
+            toast.success(`Client ${!client.isActive ? 'activated' : 'deactivated'} successfully`)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
+        }
+    }
+
+    const handleDeleteClient = (client: Client) => {
+        setClientToDelete(client)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDeleteClient = async () => {
+        if (!clientToDelete) return
+
+        try {
+            await deleteClient.mutateAsync(clientToDelete._id)
+            toast.success('Client deleted successfully')
+            setIsDeleteDialogOpen(false)
+            setClientToDelete(null)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
+        }
+    }
+
+    const cancelDeleteClient = () => {
+        setIsDeleteDialogOpen(false)
+        setClientToDelete(null)
+    }
+
+    const hasActiveFilters = debouncedSearchQuery || statusFilter !== 'all'
 
     const renderFilters = () => (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted/20 rounded-lg border">
@@ -439,6 +395,40 @@ export default function ClientsPage() {
                 />
             </div>
             <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="status-filter" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                        Status:
+                    </Label>
+                    <Select
+                        value={statusFilter}
+                        onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'inactive')}
+                        disabled={isLoading}
+                    >
+                        <SelectTrigger className="h-10 w-[140px] border-muted focus:border-primary">
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-400 mr-2"></div>
+                                    All Clients
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="active">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                    Active Only
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="inactive">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-500 mr-2"></div>
+                                    Inactive Only
+                                </div>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
                 {hasActiveFilters && (
                     <Button variant="outline" size="sm" onClick={handleClearFilters} className="h-10 border-muted">
                         <TbX className="h-4 w-4 mr-1" />
@@ -467,7 +457,7 @@ export default function ClientsPage() {
         }
 
         if (isLoading && clients.length === 0) {
-            return <TablePlaceholder rows={10} columns={5} />
+            return <TablePlaceholder rows={10} columns={6} />
         }
 
         if (!isLoading && clients.length === 0 && !hasActiveFilters) {
@@ -507,9 +497,9 @@ export default function ClientsPage() {
                 <ClientsTable
                     clients={clients}
                     isLoading={isLoading}
-                    onViewClient={() => {}}
                     onEditClient={handleEditClient}
-                    onDeleteClient={() => {}}
+                    onToggleActive={handleToggleActive}
+                    onDeleteClient={handleDeleteClient}
                 />
                 <Pagination
                     currentPage={pagination?.currentPage || 1}
@@ -525,7 +515,7 @@ export default function ClientsPage() {
 
     return (
         <AppBody>
-            <div className="space-y-8">
+            <div className="space-y-8 grid grid-cols-1">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">Clients</h1>
@@ -561,6 +551,7 @@ export default function ClientsPage() {
                     {renderContent()}
                 </div>
             </div>
+
             <ClientDialog
                 client={editingClient || undefined}
                 open={isDialogOpen}
@@ -568,6 +559,30 @@ export default function ClientsPage() {
                 onSubmit={handleSubmitClient}
                 isLoading={createClient.isPending || updateClient.isPending}
             />
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Client</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete "{clientToDelete?.name}"? This client may be in use in other parts of the system and deleting it may cause issues. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={cancelDeleteClient}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDeleteClient}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            disabled={deleteClient.isPending}
+                        >
+                            {deleteClient.isPending && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Delete Client
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppBody>
     )
 }

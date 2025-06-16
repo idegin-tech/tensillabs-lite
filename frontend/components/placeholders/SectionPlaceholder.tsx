@@ -74,7 +74,7 @@ export default function SectionPlaceholder({
         styles.cardBorder
       )}>
         <CardContent className="flex flex-col items-center text-center space-y-6 py-12 px-8">
-          {/* Icon Container */}
+         
           <div className={cn(
             'rounded-full p-6 transition-all duration-200',
             'w-20 h-20 flex items-center justify-center',
@@ -84,7 +84,6 @@ export default function SectionPlaceholder({
             <Icon className={cn('h-8 w-8', styles.iconColor)} />
           </div>
           
-          {/* Content */}
           <div className="space-y-3 max-w-md">
             <h3 className="text-xl font-semibold text-foreground leading-tight">
               {heading}
@@ -94,7 +93,6 @@ export default function SectionPlaceholder({
             </p>
           </div>
           
-          {/* CTA Button */}
           {ctaButton && (
             <Button 
               onClick={ctaButton.onClick}

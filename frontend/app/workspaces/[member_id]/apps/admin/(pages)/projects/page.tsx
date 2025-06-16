@@ -36,6 +36,16 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -50,37 +60,55 @@ import {
     TbChevronLeft,
     TbChevronRight,
     TbX,
-    TbLoader2
+    TbLoader2,
+    TbBuilding
 } from 'react-icons/tb'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Project } from '@/types/projects.types'
-import { useProjects, useCreateProject, useUpdateProject } from '@/hooks/use-projects'
+import { useProjects, useCreateProject, useUpdateProject, useToggleProjectActive, useDeleteProject } from '@/hooks/use-projects'
 import { toast } from 'sonner'
 import ProjectDialog from './ProjectDialog'
 
 interface ProjectsTableProps {
     projects: Project[]
     isLoading: boolean
-    onViewProject: (project: Project) => void
     onEditProject: (project: Project) => void
+    onToggleActive: (project: Project) => void
     onDeleteProject: (project: Project) => void
 }
 
-function ProjectsTable({ projects, isLoading, onViewProject, onEditProject, onDeleteProject }: ProjectsTableProps) {
+function ProjectsTable({ projects, isLoading, onEditProject, onToggleActive, onDeleteProject }: ProjectsTableProps) {
     if (isLoading) {
         return <TablePlaceholder rows={10} columns={5} />
-    }    const getStatusBadge = (isActive: boolean) => {
+    }
+
+    const getStatusBadge = (isActive: boolean) => {
         if (isActive) {
             return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
         }
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>
     }
 
-    const getClientName = (client: any) => {
-        if (!client) return 'No Client'
-        if (typeof client === 'string') return client
-        return client?.name || 'Unknown Client'
+    const getClientDisplay = (client: any) => {
+        if (!client) {
+            return (
+                <span className="text-muted-foreground">No Client</span>
+            )
+        }
+
+        const clientName = typeof client === 'string' ? client : client?.name || 'Unknown Client'
+
+        return (
+            <div className="flex items-center space-x-2">
+                <div className="flex-shrink-0">
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                        <TbBuilding className="h-3 w-3 text-primary" />
+                    </div>
+                </div>
+                <span className="text-sm font-medium">{clientName}</span>
+            </div>
+        )
     }
 
     const getCreatorName = (createdBy: any) => {
@@ -100,7 +128,7 @@ function ProjectsTable({ projects, isLoading, onViewProject, onEditProject, onDe
             <Table>
                 <TableHeader>
                     <TableRow className="border-b">
-                        <TableHead className="font-semibold text-foreground">Project</TableHead>
+                        <TableHead className="font-semibold text-foreground w-96 min-w-96">Project</TableHead>
                         <TableHead className="font-semibold text-foreground">Client</TableHead>
                         <TableHead className="font-semibold text-foreground">Created By</TableHead>
                         <TableHead className="font-semibold text-foreground">Status</TableHead>
@@ -109,72 +137,71 @@ function ProjectsTable({ projects, isLoading, onViewProject, onEditProject, onDe
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {projects.map((project) => (
-                        <TableRow key={project._id} className="hover:bg-muted/30 transition-colors">
-                            <TableCell className="py-4">
-                                <div className="space-y-1">
-                                    <div className="font-semibold text-sm text-foreground">
-                                        {project.name}
-                                    </div>
-                                    {project.description && (
-                                        <div className="text-xs text-muted-foreground line-clamp-2">
-                                            {project.description}
-                                        </div>
-                                    )}
+                    {projects.map((project) => (<TableRow key={project._id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="py-4 w-96 min-w-96">
+                            <div className="space-y-1">
+                                <div className="font-semibold text-sm text-foreground">
+                                    {project.name}
                                 </div>
-                            </TableCell>
-                            <TableCell className="py-4 text-muted-foreground font-medium">
-                                {getClientName(project.client)}
-                            </TableCell>
-                            <TableCell className="py-4">
-                                <div className="flex items-center space-x-3">
-                                    <Avatar className="h-7 w-7 ring-2 ring-background">
-                                        <AvatarImage 
-                                            src={typeof project.createdBy === 'object' ? project.createdBy.avatarURL?.sm : ''} 
-                                            alt={getCreatorName(project.createdBy)} 
-                                        />
-                                        <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
-                                            {getCreatorInitials(project.createdBy)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="text-sm text-muted-foreground">
-                                        {getCreatorName(project.createdBy)}
+                                {project.description && (
+                                    <div className="text-xs text-muted-foreground line-clamp-2">
+                                        {project.description}
                                     </div>
+                                )}
+                            </div>
+                        </TableCell>
+                        <TableCell className="py-4">
+                            {getClientDisplay(project.client)}
+                        </TableCell>
+                        <TableCell className="py-4">
+                            <div className="flex items-center space-x-3">
+                                <Avatar className="h-7 w-7 ring-2 ring-background">
+                                    <AvatarImage
+                                        src={typeof project.createdBy === 'object' ? project.createdBy.avatarURL?.sm : ''}
+                                        alt={getCreatorName(project.createdBy)}
+                                    />
+                                    <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
+                                        {getCreatorInitials(project.createdBy)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="text-sm text-muted-foreground">
+                                    {getCreatorName(project.createdBy)}
                                 </div>
-                            </TableCell>
-                            <TableCell className="py-4">
-                                {getStatusBadge(project.isActive)}
-                            </TableCell>
-                            <TableCell className="py-4 text-muted-foreground font-medium">
-                                {format(new Date(project.createdAt), 'MMM d, yyyy')}
-                            </TableCell>
-                            <TableCell className="py-4">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted">
-                                            <TbDotsVertical className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-40">
-                                        <DropdownMenuItem onClick={() => onViewProject(project)}>
-                                            <TbEye className="h-4 w-4 mr-2" />
-                                            View Project
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onEditProject(project)}>
-                                            <TbEdit className="h-4 w-4 mr-2" />
-                                            Edit Project
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onClick={() => onDeleteProject(project)}
-                                            className="text-destructive"
-                                        >
-                                            <TbTrash className="h-4 w-4 mr-2" />
-                                            Delete Project
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
+                            </div>
+                        </TableCell>
+                        <TableCell className="py-4">
+                            {getStatusBadge(project.isActive)}
+                        </TableCell>
+                        <TableCell className="py-4 text-muted-foreground font-medium">
+                            {format(new Date(project.createdAt), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell className="py-4">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted">
+                                        <TbDotsVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem onClick={() => onEditProject(project)}>
+                                        <TbEdit className="h-4 w-4 mr-2" />
+                                        Edit Project
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onToggleActive(project)}>
+                                        <TbEye className="h-4 w-4 mr-2" />
+                                        {project.isActive ? 'Make Inactive' : 'Make Active'}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        variant='destructive'
+                                        onClick={() => onDeleteProject(project)}
+                                    >
+                                        <TbTrash className="h-4 w-4 mr-2" />
+                                        Delete Project
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
                     ))}
                 </TableBody>
             </Table>
@@ -247,15 +274,18 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
 export default function ProjectsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [editingProject, setEditingProject] = useState<Project | null>(null)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
 
     const createProject = useCreateProject()
     const updateProject = useUpdateProject()
-
-    useEffect(() => {
+    const toggleProjectActive = useToggleProjectActive()
+    const deleteProject = useDeleteProject(); useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearchQuery(searchQuery)
         }, 300)
@@ -265,12 +295,13 @@ export default function ProjectsPage() {
 
     useEffect(() => {
         setCurrentPage(1)
-    }, [debouncedSearchQuery])
+    }, [debouncedSearchQuery, statusFilter])
 
     const { projects, pagination, isLoading, error, refetch } = useProjects({
         page: currentPage,
         limit: itemsPerPage,
         search: debouncedSearchQuery,
+        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active' ? 'true' : 'false',
     })
 
     const handlePageChange = (page: number) => {
@@ -284,11 +315,6 @@ export default function ProjectsPage() {
 
     const handleRefresh = () => {
         refetch()
-    }
-
-    const handleClearFilters = () => {
-        setSearchQuery('')
-        setCurrentPage(1)
     }
 
     const handleCreateProject = () => {
@@ -320,7 +346,46 @@ export default function ProjectsPage() {
         }
     }
 
-    const hasActiveFilters = debouncedSearchQuery
+    const handleToggleActive = async (project: Project) => {
+        try {
+            await toggleProjectActive.mutateAsync({
+                id: project._id,
+                isActive: !project.isActive
+            })
+            toast.success(`Project ${!project.isActive ? 'activated' : 'deactivated'} successfully`)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
+        }
+    }
+
+    const handleDeleteProject = (project: Project) => {
+        setProjectToDelete(project)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDeleteProject = async () => {
+        if (!projectToDelete) return
+
+        try {
+            await deleteProject.mutateAsync(projectToDelete._id)
+            toast.success('Project deleted successfully')
+            setIsDeleteDialogOpen(false)
+            setProjectToDelete(null)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
+        }
+    }
+
+    const cancelDeleteProject = () => {
+        setIsDeleteDialogOpen(false)
+        setProjectToDelete(null)
+    }; const hasActiveFilters = debouncedSearchQuery || statusFilter !== 'all'
+
+    const handleClearFilters = () => {
+        setSearchQuery('')
+        setStatusFilter('all')
+        setCurrentPage(1)
+    }
 
     const renderFilters = () => (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted/20 rounded-lg border">
@@ -333,10 +398,43 @@ export default function ProjectsPage() {
                     className="pl-9 h-10 border-muted focus:border-primary"
                     disabled={isLoading}
                 />
-            </div>
-            <div className="flex items-center gap-3">
+            </div>            <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="status-filter" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                        Status:
+                    </Label>
+                    <Select
+                        value={statusFilter}
+                        onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'inactive')}
+                        disabled={isLoading}
+                    >
+                        <SelectTrigger className="h-10 w-[140px] border-muted focus:border-primary">
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-400 mr-2"></div>
+                                    All Projects
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="active">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                    Active Only
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="inactive">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-500 mr-2"></div>
+                                    Inactive Only
+                                </div>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
                 {hasActiveFilters && (
-                    <Button variant="outline" size="sm" onClick={handleClearFilters} className="h-10 border-muted">
+                    <Button variant="ghost" size="sm" onClick={handleClearFilters} className="h-10 border-muted">
                         <TbX className="h-4 w-4 mr-1" />
                         Clear
                     </Button>
@@ -403,9 +501,9 @@ export default function ProjectsPage() {
                 <ProjectsTable
                     projects={projects}
                     isLoading={isLoading}
-                    onViewProject={() => {}}
                     onEditProject={handleEditProject}
-                    onDeleteProject={() => {}}
+                    onToggleActive={handleToggleActive}
+                    onDeleteProject={handleDeleteProject}
                 />
                 <Pagination
                     currentPage={pagination?.currentPage || 1}
@@ -456,13 +554,38 @@ export default function ProjectsPage() {
                     {renderFilters()}
                     {renderContent()}
                 </div>
-            </div>            <ProjectDialog
+            </div>
+            <ProjectDialog
                 project={editingProject || undefined}
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
                 onSubmit={handleSubmitProject}
                 isLoading={createProject.isPending || updateProject.isPending}
             />
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete "{projectToDelete?.name}"? This project may be in use in other parts of the system and deleting it may cause issues. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={cancelDeleteProject}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDeleteProject}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            disabled={deleteProject.isPending}
+                        >
+                            {deleteProject.isPending && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Delete Project
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppBody>
     )
 }

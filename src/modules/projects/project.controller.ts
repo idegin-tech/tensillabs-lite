@@ -5,6 +5,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -16,8 +17,6 @@ import {
 import { Request } from 'express';
 import { Types } from 'mongoose';
 import { ProjectService } from './services/project.service';
-import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
-import { createProjectSchema, updateProjectSchema } from './dto/project.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { WorkspaceMemberGuard } from '../workspace-members/guards/workspace-member.guard';
 import { RequirePermission } from '../workspace-members/guards/workspace-member.guard';
@@ -28,6 +27,14 @@ import {
   PaginationDto,
   paginationSchema,
 } from '../workspace-members/dto/pagination.dto';
+import {
+  CreateProjectDto,
+  createProjectSchema,
+  ToggleActiveDto,
+  toggleActiveSchema,
+  UpdateProjectDto,
+  updateProjectSchema,
+} from './dto/project.dto';
 
 @Controller('projects')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
@@ -66,10 +73,10 @@ export class ProjectController {
 
   @Put(':id')
   @RequirePermission(MemberPermissions.ADMIN)
-  @UsePipes(new ZodValidationPipe(updateProjectSchema))
   async update(
     @Param('id') id: string,
-    @Body() updateProjectDto: UpdateProjectDto,
+    @Body(new ZodValidationPipe(updateProjectSchema))
+    updateProjectDto: UpdateProjectDto,
     @Req() req: Request & { workspace: any },
   ) {
     if (!Types.ObjectId.isValid(id)) {
@@ -83,5 +90,46 @@ export class ProjectController {
     );
 
     return createSuccessResponse('Project updated successfully', project);
+  }
+
+  @Put(':id/toggle-active')
+  @RequirePermission(MemberPermissions.ADMIN)
+  async toggleActive(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(toggleActiveSchema)) body: ToggleActiveDto,
+    @Req() req: Request & { workspace: any },
+  ) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid project ID format');
+    }
+
+    const project = await this.projectService.toggleActive(
+      new Types.ObjectId(id),
+      body.isActive,
+      req.workspace._id,
+    );
+
+    return createSuccessResponse(
+      'Project status updated successfully',
+      project,
+    );
+  }
+
+  @Delete(':id')
+  @RequirePermission(MemberPermissions.ADMIN)
+  async delete(
+    @Param('id') id: string,
+    @Req() req: Request & { workspace: any },
+  ) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid project ID format');
+    }
+
+    const project = await this.projectService.delete(
+      new Types.ObjectId(id),
+      req.workspace._id,
+    );
+
+    return createSuccessResponse('Project deleted successfully', project);
   }
 }

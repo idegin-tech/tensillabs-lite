@@ -11,11 +11,12 @@ interface UseRolesParams {
   limit?: number
   search?: string
   sortBy?: string
+  isActive?: string
 }
 
 export function useRoles(params: UseRolesParams = {}) {
   const { member_id } = useCommon()
-  const { page = 1, limit = 10, search = '', sortBy = '-createdAt' } = params
+  const { page = 1, limit = 10, search = '', sortBy = '-createdAt', isActive } = params
   
   const buildEndpoint = () => {
     const searchParams = new URLSearchParams({
@@ -24,12 +25,13 @@ export function useRoles(params: UseRolesParams = {}) {
       sortBy,
     })    
     if (search) searchParams.append('search', search)
+    if (isActive) searchParams.append('isActive', isActive)
     
     return `/roles?${searchParams.toString()}`
   }
   
   const query = useQuery<{ success: boolean; payload: PaginatedRoles }, ApiError>({
-    queryKey: ['roles', member_id || '', page.toString(), limit.toString(), search, sortBy],
+    queryKey: ['roles', member_id || '', page.toString(), limit.toString(), search, sortBy, isActive || ''],
     queryFn: () => api.get<{ success: boolean; payload: PaginatedRoles }>(buildEndpoint(), {
       headers: {
         'x-member-id': member_id
@@ -109,6 +111,23 @@ export function useToggleRoleActive() {
   return useMutation<{ success: boolean; payload: Role }, ApiError, { id: string; isActive: boolean }>({
     mutationFn: ({ id, isActive }) =>
       api.patch<{ success: boolean; payload: Role }>(`/roles/${id}/toggle-active`, { isActive }, {
+        headers: {
+          'x-member-id': member_id
+        }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] })
+    },
+  })
+}
+
+export function useDeleteRole() {
+  const { member_id } = useCommon()
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: Role }, ApiError, string>({
+    mutationFn: (id: string) =>
+      api.patch<{ success: boolean; payload: Role }>(`/roles/${id}/trash`, {}, {
         headers: {
           'x-member-id': member_id
         }

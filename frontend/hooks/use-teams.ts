@@ -11,25 +11,26 @@ interface UseTeamsParams {
   limit?: number
   search?: string
   sortBy?: string
+  isActive?: string
 }
 
 export function useTeams(params: UseTeamsParams = {}) {
   const { member_id } = useCommon()
-  const { page = 1, limit = 10, search = '', sortBy = '-createdAt' } = params
+  const { page = 1, limit = 10, search = '', sortBy = '-createdAt', isActive } = params
   
   const buildEndpoint = () => {
     const searchParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
-      sortBy,
-    })    
+      sortBy,    })
+    
     if (search) searchParams.append('search', search)
+    if (isActive) searchParams.append('isActive', isActive)
     
     return `/teams?${searchParams.toString()}`
   }
-  
-  const query = useQuery<{ success: boolean; payload: PaginatedTeams }, ApiError>({
-    queryKey: ['teams', member_id || '', page.toString(), limit.toString(), search, sortBy],
+    const query = useQuery<{ success: boolean; payload: PaginatedTeams }, ApiError>({
+    queryKey: ['teams', member_id || '', page.toString(), limit.toString(), search, sortBy, isActive || ''],
     queryFn: () => api.get<{ success: boolean; payload: PaginatedTeams }>(buildEndpoint(), {
       headers: {
         'x-member-id': member_id
@@ -109,6 +110,23 @@ export function useToggleTeamActive() {
   return useMutation<{ success: boolean; payload: Team }, ApiError, { id: string; isActive: boolean }>({
     mutationFn: ({ id, isActive }) =>
       api.patch<{ success: boolean; payload: Team }>(`/teams/${id}/toggle-active`, { isActive }, {
+        headers: {
+          'x-member-id': member_id
+        }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] })
+    },
+  })
+}
+
+export function useDeleteTeam() {
+  const { member_id } = useCommon()
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: Team }, ApiError, string>({
+    mutationFn: (id: string) =>
+      api.patch<{ success: boolean; payload: Team }>(`/teams/${id}/trash`, {}, {
         headers: {
           'x-member-id': member_id
         }

@@ -11,11 +11,12 @@ interface UseProjectsParams {
   limit?: number
   search?: string
   sortBy?: string
+  isActive?: string
 }
 
 export function useProjects(params: UseProjectsParams = {}) {
   const { member_id } = useCommon()
-  const { page = 1, limit = 10, search = '', sortBy = '-createdAt' } = params
+  const { page = 1, limit = 10, search = '', sortBy = '-createdAt', isActive } = params
   
   const buildEndpoint = () => {
     const searchParams = new URLSearchParams({
@@ -24,12 +25,13 @@ export function useProjects(params: UseProjectsParams = {}) {
       sortBy,
     })    
     if (search) searchParams.append('search', search)
+    if (isActive) searchParams.append('isActive', isActive)
     
     return `/projects?${searchParams.toString()}`
   }
   
   const query = useQuery<{ success: boolean; payload: PaginatedProjects }, ApiError>({
-    queryKey: ['projects', member_id || '', page.toString(), limit.toString(), search, sortBy],
+    queryKey: ['projects', member_id || '', page.toString(), limit.toString(), search, sortBy, isActive || ''],
     queryFn: () => api.get<{ success: boolean; payload: PaginatedProjects }>(buildEndpoint(), {
       headers: {
         'x-member-id': member_id
@@ -92,6 +94,40 @@ export function useUpdateProject() {
   return useMutation<{ success: boolean; payload: Project }, ApiError, { id: string; data: UpdateProjectData }>({
     mutationFn: ({ id, data }) =>
       api.put<{ success: boolean; payload: Project }>(`/projects/${id}`, data, {
+        headers: {
+          'x-member-id': member_id
+        }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+    },
+  })
+}
+
+export function useToggleProjectActive() {
+  const { member_id } = useCommon()
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: Project }, ApiError, { id: string; isActive: boolean }>({
+    mutationFn: ({ id, isActive }) =>
+      api.put<{ success: boolean; payload: Project }>(`/projects/${id}/toggle-active`, { isActive }, {
+        headers: {
+          'x-member-id': member_id
+        }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+    },
+  })
+}
+
+export function useDeleteProject() {
+  const { member_id } = useCommon()
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: Project }, ApiError, string>({
+    mutationFn: (id: string) =>
+      api.delete<{ success: boolean; payload: Project }>(`/projects/${id}`, {
         headers: {
           'x-member-id': member_id
         }

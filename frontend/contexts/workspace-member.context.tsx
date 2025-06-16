@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import useCommon from '@/hooks/use-common'
 import type { WorkspaceMember, Workspace } from '@/types/workspace.types'
 import WorkspaceLoading from '@/components/WorkspaceLoading'
+import ApplicationError from '@/components/placeholders/ApplicationError'
 
 interface WorkspaceMemberState {
   member: WorkspaceMember | null
@@ -73,9 +74,17 @@ export function WorkspaceMemberProvider({ children }: { children: ReactNode }) {
   const refetch = () => {
     memberQuery.refetch()
   }
-
   if (state.isLoading) {
     return <WorkspaceLoading />
+  }
+
+  if (state.error) {
+    return (
+      <ApplicationError
+        message="We couldn't load your workspace. Please check your connection and try again."
+        onRetry={refetch}
+      />
+    )
   }
 
   return (

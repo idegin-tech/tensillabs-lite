@@ -55,18 +55,29 @@ import {
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Office } from '@/types/offices.types'
-import { useOffices, useCreateOffice, useUpdateOffice } from '@/hooks/use-offices'
+import { useOffices, useCreateOffice, useUpdateOffice, useToggleOfficeActive, useDeleteOffice } from '@/hooks/use-offices'
 import { toast } from 'sonner'
+import OfficeDialog from './OfficeDialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface OfficesTableProps {
     offices: Office[]
     isLoading: boolean
-    onViewOffice: (office: Office) => void
     onEditOffice: (office: Office) => void
+    onToggleActive: (office: Office) => void
     onDeleteOffice: (office: Office) => void
 }
 
-function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDeleteOffice }: OfficesTableProps) {
+function OfficesTable({ offices, isLoading, onEditOffice, onToggleActive, onDeleteOffice }: OfficesTableProps) {
     if (isLoading) {
         return <TablePlaceholder rows={10} columns={5} />
     }
@@ -91,7 +102,7 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
     }
 
     return (
-        <div className="rounded-lg border bg-background shadow-sm">
+        <div className="rounded-lg border bg-background shadow-sm grid grid-cols-1">
             <Table>
                 <TableHeader>
                     <TableRow className="border-b">
@@ -106,22 +117,22 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
                 <TableBody>
                     {offices.map((office) => (
                         <TableRow key={office._id} className="hover:bg-muted/30 transition-colors">
-                            <TableCell className="py-4">
+                            <TableCell className="py-4 max-w-[300px]">
                                 <div className="space-y-1">
-                                    <div className="font-semibold text-sm text-foreground">
+                                    <div className="font-semibold text-sm text-foreground truncate">
                                         {office.name}
                                     </div>
                                     {office.description && (
-                                        <div className="text-xs text-muted-foreground line-clamp-2">
+                                        <div className="text-xs text-muted-foreground line-clamp-2 truncate">
                                             {office.description}
                                         </div>
                                     )}
                                 </div>
                             </TableCell>
-                            <TableCell className="py-4 text-muted-foreground font-medium">
+                            <TableCell className="py-4 text-muted-foreground font-medium  max-w-[300px] truncate">
                                 {office.address || 'No Address'}
                             </TableCell>
-                            <TableCell className="py-4">
+                            <TableCell className="py-4 max-w-[250px] truncate">
                                 <div className="flex items-center space-x-3">
                                     <Avatar className="h-7 w-7 ring-2 ring-background">
                                         <AvatarImage 
@@ -132,7 +143,7 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
                                             {getCreatorInitials(office.createdBy)}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div className="text-sm text-muted-foreground">
+                                    <div className="text-sm text-muted-foreground truncate">
                                         {getCreatorName(office.createdBy)}
                                     </div>
                                 </div>
@@ -149,19 +160,26 @@ function OfficesTable({ offices, isLoading, onViewOffice, onEditOffice, onDelete
                                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted">
                                             <TbDotsVertical className="h-4 w-4" />
                                         </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-40">
-                                        <DropdownMenuItem onClick={() => onViewOffice(office)}>
-                                            <TbEye className="h-4 w-4 mr-2" />
-                                            View Office
-                                        </DropdownMenuItem>
+                                    </DropdownMenuTrigger>                                    <DropdownMenuContent align="end" className="w-40">
                                         <DropdownMenuItem onClick={() => onEditOffice(office)}>
                                             <TbEdit className="h-4 w-4 mr-2" />
                                             Edit Office
+                                        </DropdownMenuItem><DropdownMenuItem onClick={() => onToggleActive(office)}>
+                                            {office.isActive ? (
+                                                <>
+                                                    <TbX className="h-4 w-4 mr-2" />
+                                                    Make Inactive
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <TbEye className="h-4 w-4 mr-2" />
+                                                    Make Active
+                                                </>
+                                            )}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
+                                            variant='destructive'
                                             onClick={() => onDeleteOffice(office)}
-                                            className="text-destructive"
                                         >
                                             <TbTrash className="h-4 w-4 mr-2" />
                                             Delete Office
@@ -239,127 +257,23 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
     )
 }
 
-interface OfficeDialogProps {
-    office?: Office
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    onSubmit: (data: any) => void
-    isLoading: boolean
-}
 
-function OfficeDialog({ office, open, onOpenChange, onSubmit, isLoading }: OfficeDialogProps) {
-    const [formData, setFormData] = useState({
-        name: office?.name || '',
-        description: office?.description || '',
-        address: office?.address || ''
-    })
-
-    useEffect(() => {
-        if (office) {
-            setFormData({
-                name: office.name,
-                description: office.description || '',
-                address: office.address || ''
-            })
-        } else {
-            setFormData({
-                name: '',
-                description: '',
-                address: ''
-            })
-        }
-    }, [office, open])
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!formData.name.trim()) {
-            toast.error('Please enter an office name')
-            return
-        }
-        
-        const submitData: any = {
-            name: formData.name.trim(),
-            description: formData.description.trim() || undefined,
-            address: formData.address.trim() || undefined
-        }
-        
-        Object.keys(submitData).forEach(key => {
-            if (submitData[key] === undefined) {
-                delete submitData[key]
-            }
-        })
-        
-        onSubmit(submitData)
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>
-                        {office ? 'Edit Office' : 'Create New Office'}
-                    </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Office Name *</Label>
-                        <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Enter office name"
-                            required
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="address">Address</Label>
-                        <Input
-                            id="address"
-                            value={formData.address}
-                            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                            placeholder="Enter office address"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Enter office description"
-                            rows={3}
-                        />
-                    </div>
-                    <div className="flex justify-end space-x-2 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={isLoading}
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {office ? 'Update' : 'Create'} Office
-                        </Button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
-    )
-}
 
 export default function OfficesPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [editingOffice, setEditingOffice] = useState<Office | null>(null)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [officeToDelete, setOfficeToDelete] = useState<Office | null>(null)
 
     const createOffice = useCreateOffice()
     const updateOffice = useUpdateOffice()
+    const toggleOfficeActive = useToggleOfficeActive()
+    const deleteOffice = useDeleteOffice()
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -371,12 +285,13 @@ export default function OfficesPage() {
 
     useEffect(() => {
         setCurrentPage(1)
-    }, [debouncedSearchQuery])
+    }, [debouncedSearchQuery, statusFilter])
 
     const { offices, pagination, isLoading, error, refetch } = useOffices({
         page: currentPage,
         limit: itemsPerPage,
         search: debouncedSearchQuery,
+        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active' ? 'true' : 'false',
     })
 
     const handlePageChange = (page: number) => {
@@ -394,6 +309,7 @@ export default function OfficesPage() {
 
     const handleClearFilters = () => {
         setSearchQuery('')
+        setStatusFilter('all')
         setCurrentPage(1)
     }
 
@@ -423,10 +339,44 @@ export default function OfficesPage() {
             setEditingOffice(null)
         } catch (error: any) {
             toast.error(error.message || 'Something went wrong')
+        }    }
+
+    const handleToggleActive = async (office: Office) => {
+        try {
+            await toggleOfficeActive.mutateAsync({
+                id: office._id,
+                isActive: !office.isActive
+            })
+            toast.success(`Office ${!office.isActive ? 'activated' : 'deactivated'} successfully`)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
         }
     }
 
-    const hasActiveFilters = debouncedSearchQuery
+    const handleDeleteOffice = (office: Office) => {
+        setOfficeToDelete(office)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDeleteOffice = async () => {
+        if (!officeToDelete) return
+
+        try {
+            await deleteOffice.mutateAsync(officeToDelete._id)
+            toast.success('Office deleted successfully')
+            setIsDeleteDialogOpen(false)
+            setOfficeToDelete(null)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
+        }
+    }
+
+    const cancelDeleteOffice = () => {
+        setIsDeleteDialogOpen(false)
+        setOfficeToDelete(null)
+    }
+
+    const hasActiveFilters = debouncedSearchQuery || statusFilter !== 'all'
 
     const renderFilters = () => (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted/20 rounded-lg border">
@@ -439,8 +389,41 @@ export default function OfficesPage() {
                     className="pl-9 h-10 border-muted focus:border-primary"
                     disabled={isLoading}
                 />
-            </div>
-            <div className="flex items-center gap-3">
+            </div>            <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="status-filter" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                        Status:
+                    </Label>
+                    <Select
+                        value={statusFilter}
+                        onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'inactive')}
+                        disabled={isLoading}
+                    >
+                        <SelectTrigger className="h-10 w-[140px] border-muted focus:border-primary">
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-400 mr-2"></div>
+                                    All Offices
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="active">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                    Active Only
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="inactive">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-500 mr-2"></div>
+                                    Inactive Only
+                                </div>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
                 {hasActiveFilters && (
                     <Button variant="outline" size="sm" onClick={handleClearFilters} className="h-10 border-muted">
                         <TbX className="h-4 w-4 mr-1" />
@@ -505,13 +488,12 @@ export default function OfficesPage() {
         }
 
         return (
-            <div className="space-y-4">
-                <OfficesTable
+            <div className="space-y-4">                <OfficesTable
                     offices={offices}
                     isLoading={isLoading}
-                    onViewOffice={() => {}}
                     onEditOffice={handleEditOffice}
-                    onDeleteOffice={() => {}}
+                    onToggleActive={handleToggleActive}
+                    onDeleteOffice={handleDeleteOffice}
                 />
                 <Pagination
                     currentPage={pagination?.currentPage || 1}
@@ -562,14 +544,37 @@ export default function OfficesPage() {
                     {renderFilters()}
                     {renderContent()}
                 </div>
-            </div>
-            <OfficeDialog
+            </div>            <OfficeDialog
                 office={editingOffice || undefined}
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
                 onSubmit={handleSubmitOffice}
                 isLoading={createOffice.isPending || updateOffice.isPending}
             />
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Office</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete "{officeToDelete?.name}"? This office may be in use in other parts of the system and deleting it may cause issues. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={cancelDeleteOffice}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDeleteOffice}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            disabled={deleteOffice.isPending}
+                        >
+                            {deleteOffice.isPending && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Delete Office
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppBody>
     )
 }

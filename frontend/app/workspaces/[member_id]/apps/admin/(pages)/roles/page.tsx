@@ -55,18 +55,29 @@ import {
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Role } from '@/types/roles.types'
-import { useRoles, useCreateRole, useUpdateRole } from '@/hooks/use-roles'
+import { useRoles, useCreateRole, useUpdateRole, useToggleRoleActive, useDeleteRole } from '@/hooks/use-roles'
 import { toast } from 'sonner'
+import RoleDialog from './RoleDialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface RolesTableProps {
     roles: Role[]
     isLoading: boolean
-    onViewRole: (role: Role) => void
     onEditRole: (role: Role) => void
+    onToggleActive: (role: Role) => void
     onDeleteRole: (role: Role) => void
 }
 
-function RolesTable({ roles, isLoading, onViewRole, onEditRole, onDeleteRole }: RolesTableProps) {
+function RolesTable({ roles, isLoading, onEditRole, onToggleActive, onDeleteRole }: RolesTableProps) {
     if (isLoading) {
         return <TablePlaceholder rows={10} columns={5} />
     }
@@ -145,19 +156,27 @@ function RolesTable({ roles, isLoading, onViewRole, onEditRole, onDeleteRole }: 
                                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted">
                                             <TbDotsVertical className="h-4 w-4" />
                                         </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-40">
-                                        <DropdownMenuItem onClick={() => onViewRole(role)}>
-                                            <TbEye className="h-4 w-4 mr-2" />
-                                            View Role
-                                        </DropdownMenuItem>
+                                    </DropdownMenuTrigger>                                    <DropdownMenuContent align="end" className="w-40">
                                         <DropdownMenuItem onClick={() => onEditRole(role)}>
                                             <TbEdit className="h-4 w-4 mr-2" />
                                             Edit Role
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onToggleActive(role)}>
+                                            {role.isActive ? (
+                                                <>
+                                                    <TbX className="h-4 w-4 mr-2" />
+                                                    Make Inactive
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <TbEye className="h-4 w-4 mr-2" />
+                                                    Make Active
+                                                </>
+                                            )}
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem
+                                            variant='destructive'
                                             onClick={() => onDeleteRole(role)}
-                                            className="text-destructive"
                                         >
                                             <TbTrash className="h-4 w-4 mr-2" />
                                             Delete Role
@@ -235,137 +254,38 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
     )
 }
 
-interface RoleDialogProps {
-    role?: Role
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    onSubmit: (data: any) => void
-    isLoading: boolean
-}
-
-function RoleDialog({ role, open, onOpenChange, onSubmit, isLoading }: RoleDialogProps) {
-    const [formData, setFormData] = useState({
-        name: role?.name || '',
-        description: role?.description || ''
-    })
-
-    useEffect(() => {
-        if (role) {
-            setFormData({
-                name: role.name,
-                description: role.description || ''
-            })
-        } else {
-            setFormData({
-                name: '',
-                description: ''
-            })
-        }
-    }, [role, open])
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!formData.name.trim()) {
-            toast.error('Please enter a role name')
-            return
-        }
-        
-        const submitData: any = {
-            name: formData.name.trim(),
-            description: formData.description.trim() || undefined
-        }
-        
-        Object.keys(submitData).forEach(key => {
-            if (submitData[key] === undefined) {
-                delete submitData[key]
-            }
-        })
-        
-        onSubmit(submitData)
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>
-                        {role ? 'Edit Role' : 'Create New Role'}
-                    </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="name" className="text-sm font-medium">
-                            Role Name
-                        </Label>
-                        <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="Enter role name..."
-                            className="h-10"
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="description" className="text-sm font-medium">
-                            Description (Optional)
-                        </Label>
-                        <Textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            placeholder="Enter role description..."
-                            className="min-h-[80px] resize-none"
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div className="flex justify-end space-x-3 pt-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={isLoading}
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading && <TbLoader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {role ? 'Update' : 'Create'} Role
-                        </Button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 export default function RolesPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [editingRole, setEditingRole] = useState<Role | null>(null)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [roleToDelete, setRoleToDelete] = useState<Role | null>(null)
 
     const createRole = useCreateRole()
     const updateRole = useUpdateRole()
+    const toggleRoleActive = useToggleRoleActive()
+    const deleteRole = useDeleteRole()
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            setDebouncedSearchQuery(searchQuery)
-        }, 300)
+            setDebouncedSearchQuery(searchQuery)        }, 300)
 
         return () => clearTimeout(timer)
     }, [searchQuery])
 
     useEffect(() => {
         setCurrentPage(1)
-    }, [debouncedSearchQuery])
+    }, [debouncedSearchQuery, statusFilter])
 
     const { roles, pagination, isLoading, error, refetch } = useRoles({
         page: currentPage,
         limit: itemsPerPage,
         search: debouncedSearchQuery,
+        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active' ? 'true' : 'false',
     })
 
     const handlePageChange = (page: number) => {
@@ -383,6 +303,7 @@ export default function RolesPage() {
 
     const handleClearFilters = () => {
         setSearchQuery('')
+        setStatusFilter('all')
         setCurrentPage(1)
     }
 
@@ -394,6 +315,41 @@ export default function RolesPage() {
     const handleEditRole = (role: Role) => {
         setEditingRole(role)
         setIsDialogOpen(true)
+    }
+
+    const handleToggleActive = async (role: Role) => {
+        try {
+            await toggleRoleActive.mutateAsync({
+                id: role._id,
+                isActive: !role.isActive
+            })
+            toast.success(`Role ${!role.isActive ? 'activated' : 'deactivated'} successfully`)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
+        }
+    }
+
+    const handleDeleteRole = (role: Role) => {
+        setRoleToDelete(role)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDeleteRole = async () => {
+        if (!roleToDelete) return
+
+        try {
+            await deleteRole.mutateAsync(roleToDelete._id)
+            toast.success('Role deleted successfully')
+            setIsDeleteDialogOpen(false)
+            setRoleToDelete(null)
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong')
+        }
+    }
+
+    const cancelDeleteRole = () => {
+        setIsDeleteDialogOpen(false)
+        setRoleToDelete(null)
     }
 
     const handleSubmitRole = async (formData: any) => {
@@ -411,11 +367,10 @@ export default function RolesPage() {
             setIsDialogOpen(false)
             setEditingRole(null)
         } catch (error: any) {
-            toast.error(error.message || 'Something went wrong')
-        }
+            toast.error(error.message || 'Something went wrong')        }
     }
 
-    const hasActiveFilters = debouncedSearchQuery
+    const hasActiveFilters = debouncedSearchQuery || statusFilter !== 'all'
 
     const renderFilters = () => (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted/20 rounded-lg border">
@@ -430,6 +385,40 @@ export default function RolesPage() {
                 />
             </div>
             <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="status-filter" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                        Status:
+                    </Label>
+                    <Select
+                        value={statusFilter}
+                        onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'inactive')}
+                        disabled={isLoading}
+                    >
+                        <SelectTrigger className="h-10 w-[140px] border-muted focus:border-primary">
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-400 mr-2"></div>
+                                    All Roles
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="active">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                    Active Only
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="inactive">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 rounded-full bg-gray-500 mr-2"></div>
+                                    Inactive Only
+                                </div>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
                 {hasActiveFilters && (
                     <Button variant="outline" size="sm" onClick={handleClearFilters} className="h-10 border-muted">
                         <TbX className="h-4 w-4 mr-1" />
@@ -493,14 +482,13 @@ export default function RolesPage() {
             )
         }
 
-        return (
-            <div className="space-y-4">
+        return (            <div className="space-y-4">
                 <RolesTable
                     roles={roles}
                     isLoading={isLoading}
-                    onViewRole={() => {}}
                     onEditRole={handleEditRole}
-                    onDeleteRole={() => {}}
+                    onToggleActive={handleToggleActive}
+                    onDeleteRole={handleDeleteRole}
                 />
                 <Pagination
                     currentPage={pagination?.currentPage || 1}
@@ -551,14 +539,33 @@ export default function RolesPage() {
                     {renderFilters()}
                     {renderContent()}
                 </div>
-            </div>
-            <RoleDialog
+            </div>            <RoleDialog
                 role={editingRole || undefined}
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
                 onSubmit={handleSubmitRole}
                 isLoading={createRole.isPending || updateRole.isPending}
             />
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Role</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete "{roleToDelete?.name}"? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={cancelDeleteRole}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={confirmDeleteRole}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppBody>
     )
 }

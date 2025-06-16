@@ -1,22 +1,24 @@
 import { z } from 'zod';
 
-export const createOfficeSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Office name is required')
-    .max(100, 'Office name must not exceed 100 characters')
-    .trim(),
-  description: z
-    .string()
-    .max(500, 'Description must not exceed 500 characters')
-    .trim()
-    .optional(),
-  address: z
-    .string()
-    .max(500, 'Address must not exceed 500 characters')
-    .trim()
-    .optional(),
-});
+export const createOfficeSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1, 'Office name is required')
+      .max(100, 'Office name must not exceed 100 characters')
+      .trim(),
+    description: z
+      .string()
+      .max(500, 'Description must not exceed 500 characters')
+      .trim()
+      .optional(),
+    address: z
+      .string()
+      .max(500, 'Address must not exceed 500 characters')
+      .trim()
+      .optional(),
+  })
+  .strict();
 
 export const updateOfficeSchema = z.object({
   name: z
@@ -29,12 +31,16 @@ export const updateOfficeSchema = z.object({
     .string()
     .max(500, 'Description must not exceed 500 characters')
     .trim()
-    .optional(),
+    .optional()
+    .or(z.literal(''))
+    .transform((val) => (val === '' ? undefined : val)),
   address: z
     .string()
     .max(500, 'Address must not exceed 500 characters')
     .trim()
-    .optional(),
+    .optional()
+    .or(z.literal(''))
+    .transform((val) => (val === '' ? undefined : val)),
 });
 
 export const toggleActiveSchema = z.object({
