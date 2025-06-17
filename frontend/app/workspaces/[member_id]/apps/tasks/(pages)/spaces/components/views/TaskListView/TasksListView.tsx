@@ -1,7 +1,6 @@
 'use client'
 import React, { useState } from 'react'
 import EachTaskGroup from './EachTaskGroup'
-import { mockTasks } from './_mock_tasks'
 import TasksListOptions from './TasksListOptions'
 import { useTaskList } from '../../../../../contexts/task-list.context'
 import { taskGroupConfig } from '../../../../../task-app.config'
@@ -24,13 +23,12 @@ export default function TasksListView() {
                         <p className="text-muted-foreground">
                             {state.activeList?.description || 'Manage and track your tasks organized by status'}
                         </p>
-                    </div>
-                    <div className='grid grid-cols-1'>                        
+                    </div>                    <div className='grid grid-cols-1'>                        
                         {state.groupBy === 'none' ? (
                             <EachTaskGroup
                                 key="no-group"
                                 title="All Tasks"
-                                tasks={mockTasks}
+                                tasks={[]}
                                 isLoading={isLoading}
                                 icon={undefined}
                                 color="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
@@ -41,7 +39,7 @@ export default function TasksListView() {
                                 <EachTaskGroup
                                     key={`${group.groupKey}-${group.label}`}
                                     title={group.label}
-                                    tasks={mockTasks}
+                                    tasks={[]}
                                     isLoading={isLoading}
                                     icon={group.icon}
                                     color={group.color}

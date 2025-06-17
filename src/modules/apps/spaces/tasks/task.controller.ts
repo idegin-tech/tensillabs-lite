@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
@@ -26,12 +27,12 @@ import { SpaceParticipationGuard } from '../guards/space-participation.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
 import {
-  syncTasksSchema,
-  SyncTasksDto,
   updateTaskSchema,
   UpdateTaskDto,
-  getTasksByListQuerySchema,
-  GetTasksByListQueryDto,
+  createTasksSchema,
+  CreateTasksDto,
+  getTasksByGroupQuerySchema,
+  GetTasksByGroupQueryDto,
 } from './dto/task.dto';
 
 @Controller('lists/:listId/tasks')
@@ -40,11 +41,11 @@ import {
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
-  @Post('sync')
-  async syncTasks(
+  @Post()
+  async createTasks(
     @Param('listId') listId: string,
-    @Body(new ZodValidationPipe(syncTasksSchema))
-    syncTasksDto: SyncTasksDto,
+    @Body(new ZodValidationPipe(createTasksSchema))
+    createTasksDto: CreateTasksDto,
     @Req()
     req: Request & {
       workspaceMember: any;
@@ -53,15 +54,15 @@ export class TaskController {
       list: any;
     },
   ) {
-    const result = await this.taskService.syncTasks(
+    const result = await this.taskService.createTasks(
       new Types.ObjectId(listId),
-      syncTasksDto,
+      createTasksDto,
       req.workspace._id,
       req.workspaceMember._id,
       req.space._id,
     );
 
-    return createSuccessResponse('Tasks synced successfully', result);
+    return createSuccessResponse('Tasks created successfully', result);
   }
 
   @Put(':taskId')
@@ -92,11 +93,11 @@ export class TaskController {
     return createSuccessResponse('Task updated successfully', task);
   }
 
-  @Get()
-  async getTasksByList(
+  @Get('group')
+  async getAllTasksByGroup(
     @Param('listId') listId: string,
-    @Query(new ZodValidationPipe(getTasksByListQuerySchema))
-    queryParams: GetTasksByListQueryDto,
+    @Query(new ZodValidationPipe(getTasksByGroupQuerySchema))
+    queryParams: GetTasksByGroupQueryDto,
     @Req()
     req: Request & {
       workspaceMember: any;
@@ -109,7 +110,7 @@ export class TaskController {
       throw new BadRequestException('Invalid list ID format');
     }
 
-    const tasks = await this.taskService.getTasksByList(
+    const tasks = await this.taskService.getAllTasksByGroup(
       new Types.ObjectId(listId),
       req.workspace._id,
       queryParams,
