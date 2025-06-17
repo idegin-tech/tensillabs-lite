@@ -46,7 +46,6 @@ export default function LoginPage() {
   const onSubmit = async (values: LoginForm) => {
     try {
       clearError()
-      console.log('[LOGIN_PAGE] Calling login function...');
       const result = await login({
         email: values.email,
         password: values.password,

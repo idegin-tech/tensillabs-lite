@@ -33,8 +33,10 @@ import {
 import {
   createClientSchema,
   updateClientSchema,
+  toggleActiveSchema,
   CreateClientDto,
   UpdateClientDto,
+  ToggleActiveDto,
 } from './dto/client.dto';
 
 @Controller('clients')
@@ -95,8 +97,10 @@ export class ClientController {
 
   @Patch(':id/toggle-active')
   @RequirePermission(MemberPermissions.MANAGER)
+  @UsePipes(new ZodValidationPipe(toggleActiveSchema))
   async toggleActive(
     @Param('id') id: string,
+    @Body() toggleActiveDto: ToggleActiveDto,
     @Req() req: Request & { workspace: any },
   ) {
     if (!Types.ObjectId.isValid(id)) {
@@ -105,6 +109,7 @@ export class ClientController {
 
     const client = await this.clientService.toggleActive(
       new Types.ObjectId(id),
+      toggleActiveDto.isActive,
       req.workspace._id,
     );
 

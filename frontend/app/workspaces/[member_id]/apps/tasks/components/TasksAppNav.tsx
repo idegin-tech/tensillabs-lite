@@ -13,6 +13,7 @@ import {
   TbBell,
   TbClock,
   TbTrash,
+  TbWeight,
 } from "react-icons/tb"
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -37,11 +38,15 @@ export default function TasksAppNav() {
           title: "Notifications",
           url: `${getPathToApp('tasks')}/notifications`,
           icon: TbBell,
-        },
-        {
+        },        {
           title: "Timesheet",
           url: `${getPathToApp('tasks')}/timesheet`,
           icon: TbClock,
+        },
+        {
+          title: "Workload",
+          url: `${getPathToApp('tasks')}/workload`,
+          icon: TbWeight,
         },
         {
           title: "Trash",
