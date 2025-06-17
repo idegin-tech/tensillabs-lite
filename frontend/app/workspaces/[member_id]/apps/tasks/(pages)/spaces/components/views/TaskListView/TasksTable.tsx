@@ -65,15 +65,16 @@ interface TasksTableProps {
 export default function TasksTable({ tasks }: TasksTableProps) {
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});    
-    
+    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
     const { state, updateState } = useTaskList();
     const columns = useMemo(() => createColumns(), [])
     const table = useReactTable({
         data: tasks,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),        getSortedRowModel: getSortedRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -102,7 +103,8 @@ export default function TasksTable({ tasks }: TasksTableProps) {
         enableColumnResizing: true,
         enableRowSelection: true,
         debugTable: false,
-        debugHeaders: false,        debugColumns: false,
+        debugHeaders: false,
+        debugColumns: false,
     });
 
     return (
@@ -113,7 +115,7 @@ export default function TasksTable({ tasks }: TasksTableProps) {
                         width: table.getTotalSize(),
                     }}
                 >
-                    <TableHeader>
+                    <TableHeader className='bg-background'>
                         {table.getHeaderGroups().map(headerGroup => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map(header => {
@@ -124,7 +126,7 @@ export default function TasksTable({ tasks }: TasksTableProps) {
                                             colSpan={header.colSpan}
                                             className="relative"
                                             style={{ ...getCommonPinningStyles(column) }}
-                                        >                                                            
+                                        >
                                             <div className="whitespace-nowrap flex items-center gap-2">
                                                 <div className="flex-1">
                                                     {header.isPlaceholder

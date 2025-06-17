@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
@@ -24,10 +25,38 @@ import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
 import { createListSchema, CreateListDto } from './dto/list.dto';
 
-@Controller('spaces/:spaceId/lists')
+@Controller('lists')
 @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
 @RequirePermission(MemberPermissions.REGULAR)
 export class ListController {
+  constructor(private readonly listService: ListService) {}
+
+  @Get(':listId')
+  async getListDetails(
+    @Param('listId') listId: string,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    if (!Types.ObjectId.isValid(listId)) {
+      throw new BadRequestException('Invalid list ID format');
+    }
+
+    const list = await this.listService.getListDetails(
+      new Types.ObjectId(listId),
+      req.workspace._id,
+    );
+
+    return createSuccessResponse('List details retrieved successfully', list);
+  }
+}
+
+@Controller('spaces/:spaceId/lists')
+@UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
+@RequirePermission(MemberPermissions.REGULAR)
+export class SpaceListController {
   constructor(private readonly listService: ListService) {}
 
   @Post()

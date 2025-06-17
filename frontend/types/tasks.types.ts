@@ -47,6 +47,15 @@ export interface Task {
   updatedAt: string
 }
 
+export interface TaskGrouping {
+  groupKey: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  color: string;
+  defaultOpen?: boolean;
+  query: Record<string, string>;
+}
+
 export interface TaskGroupProps {
   title?: string
   status?: TaskStatus
@@ -54,6 +63,7 @@ export interface TaskGroupProps {
   isLoading?: boolean
   icon?: React.ComponentType<{ className?: string }>
   color?: string
+  groupConfig?: TaskGrouping
 }
 
 export interface GroupedTasks {
@@ -61,4 +71,14 @@ export interface GroupedTasks {
     count: number
     tasks: Task[]
   }
+}
+
+export interface TaskList {
+  _id: string
+  name: string
+  description?: string
+  isPrivate: boolean
+  taskCount: number
+  createdAt: string
+  updatedAt: string
 }

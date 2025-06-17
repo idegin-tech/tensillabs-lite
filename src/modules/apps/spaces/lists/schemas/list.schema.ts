@@ -16,6 +16,12 @@ export class List {
   name: string;
 
   @Prop({
+    trim: true,
+    maxlength: 500,
+  })
+  description?: string;
+
+  @Prop({
     required: true,
     default: false,
   })

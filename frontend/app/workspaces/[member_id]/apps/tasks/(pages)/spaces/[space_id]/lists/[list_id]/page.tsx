@@ -1,11 +1,21 @@
+'use client'
 import AppBody from '@/components/layout/app-layout/AppBody'
 import React from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TbChartPie, TbLayoutList, TbMenu3 } from 'react-icons/tb'
-import TasksListView from '../../../components/views/TaskListView/TasksListView';
+import TasksListView from '../../../components/views/TaskListView/TasksListView'
+import { TaskListProvider, useTaskList } from '../../../../../contexts/task-list.context'
+import ListDetailsPageLoading from './ListDetailsPageLoading'
 
-export default function ListDetailsPage() {
-  const contentClassName = 'p-0 min-h-[calc(100dvh-6.5rem)] overflow-y-auto';
+function ListDetailsContent() {
+  const { state } = useTaskList()
+  
+  if (state.isLoading) {
+    return <ListDetailsPageLoading />
+  }
+
+  const contentClassName = 'p-0 min-h-[calc(100dvh-6.5rem)] overflow-y-auto'
+  
   return (
     <AppBody withoutPadding>
       <div className='flex flex-col h-full'>
@@ -42,5 +52,13 @@ export default function ListDetailsPage() {
         </Tabs>
       </div>
     </AppBody>
+  )
+}
+
+export default function ListDetailsPage() {
+  return (
+    <TaskListProvider>
+      <ListDetailsContent />
+    </TaskListProvider>
   )
 }

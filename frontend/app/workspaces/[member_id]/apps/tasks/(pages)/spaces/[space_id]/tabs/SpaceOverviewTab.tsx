@@ -16,7 +16,7 @@ import { useTasksSpace } from '../../../../contexts/tasks-space.context'
 import { useTasksApp } from '../../../../contexts/tasks-app.context'
 import SectionPlaceholder from '@/components/placeholders/SectionPlaceholder'
 import useCommon from '@/hooks/use-common'
-import type { TaskList } from '@/types/spaces.types'
+import type { TaskList } from '@/types/tasks.types'
 
 function TaskListCard({ list }: { list: TaskList }) {
     const router = useRouter()

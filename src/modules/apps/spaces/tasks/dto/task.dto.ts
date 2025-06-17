@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { z } from 'zod';
 import { TaskPriority, TaskStatus } from '../schemas/task.schema';
 
@@ -40,7 +41,10 @@ export const updateTaskSchema = z.object({
 });
 
 export const getTasksByListQuerySchema = z.object({
-  groupBy: z.enum(['status', 'priority']).optional().default('status'),
+  groupBy: z
+    .enum(['status', 'priority', 'due_date'])
+    .optional()
+    .default('status'),
   meMode: z
     .string()
     .optional()
@@ -50,6 +54,15 @@ export const getTasksByListQuerySchema = z.object({
     .string()
     .transform((val) => new Date(val))
     .pipe(z.date())
+    .optional(),
+  status: z
+    .enum(['todo', 'in_progress', 'in_review', 'completed', 'canceled'])
+    .optional(),
+  priority: z
+    .enum(['urgent', 'high', 'normal', 'low', 'none'])
+    .optional(),
+  due_status: z
+    .enum(['overdue', 'today', 'tomorrow', 'this_week', 'later', 'none'])
     .optional(),
 });
 

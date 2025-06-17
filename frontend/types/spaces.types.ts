@@ -1,3 +1,5 @@
+import { TaskList } from './tasks.types'
+
 export interface SpaceParticipantMember {
   _id: string
   firstName: string
@@ -87,14 +89,6 @@ export interface TasksAppContextType {
   fetchNextPage: () => void
   hasNextPage: boolean
   isFetchingNextPage: boolean
-}
-
-export interface TaskList {
-  _id: string
-  name: string
-  isPrivate: boolean
-  createdAt: string
-  updatedAt: string
 }
 
 export interface SpaceDetailsParticipant {

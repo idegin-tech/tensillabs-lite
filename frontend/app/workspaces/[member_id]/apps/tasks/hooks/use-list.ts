@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import useCommon from '@/hooks/use-common'
-import type { TaskList } from '@/types/spaces.types'
+import type { TaskList } from '@/types/tasks.types'
 
 interface GetListsResponse {
   success: boolean

@@ -125,8 +125,15 @@ export class TaskService {
         queryParams,
         currentMemberId,
       );
-    } else {
+    } else if (queryParams.groupBy === 'priority') {
       return this.getTasksGroupedByPriority(
+        listId,
+        workspaceId,
+        queryParams,
+        currentMemberId,
+      );
+    } else {
+      return this.getTasksGroupedByDueDate(
         listId,
         workspaceId,
         queryParams,
@@ -146,6 +153,7 @@ export class TaskService {
       workspace: Types.ObjectId;
       isDeleted: boolean;
       assignee?: Types.ObjectId;
+      status?: string;
       'timeframe.end'?: {
         $gte: Date;
         $lt: Date;
@@ -172,9 +180,9 @@ export class TaskService {
     const grouped: GroupedTasks = {};
 
     for (const status of Object.values(TaskStatus)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const statusFilter = { ...filter, status };
       const tasks = await this.taskModel
-        .find({ ...filter, status } as any)
+        .find(statusFilter as any)
         .populate('assignee', 'firstName lastName primaryEmail')
         .populate('createdBy', 'firstName lastName primaryEmail')
         .sort({ createdAt: -1 })
@@ -201,6 +209,8 @@ export class TaskService {
       workspace: Types.ObjectId;
       isDeleted: boolean;
       assignee?: Types.ObjectId;
+      priority?: string;
+      $or?: any[];
       'timeframe.end'?: {
         $gte: Date;
         $lt: Date;
@@ -229,7 +239,7 @@ export class TaskService {
     const priorities = [...Object.values(TaskPriority), 'unassigned'];
 
     for (const priority of priorities) {
-      let priorityFilter: any;
+      let priorityFilter: TaskFilter;
       if (priority === 'unassigned') {
         priorityFilter = {
           ...filter,
@@ -239,9 +249,8 @@ export class TaskService {
         priorityFilter = { ...filter, priority };
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const tasks = await this.taskModel
-        .find(priorityFilter)
+        .find(priorityFilter as any)
         .populate('assignee', 'firstName lastName primaryEmail')
         .populate('createdBy', 'firstName lastName primaryEmail')
         .sort({ createdAt: -1 })
@@ -249,6 +258,99 @@ export class TaskService {
         .exec();
 
       grouped[priority] = {
+        count: tasks.length,
+        tasks,
+      };
+    }
+
+    return grouped;
+  }
+
+  async getTasksGroupedByDueDate(
+    listId: Types.ObjectId,
+    workspaceId: Types.ObjectId,
+    queryParams: GetTasksByListQueryDto,
+    currentMemberId?: Types.ObjectId,
+  ): Promise<GroupedTasks> {
+    interface TaskFilter {
+      list: Types.ObjectId;
+      workspace: Types.ObjectId;
+      isDeleted: boolean;
+      assignee?: Types.ObjectId;
+      'timeframe.end'?: any;
+      $or?: any[];
+      timeframe?: any;
+    }
+
+    const baseFilter: TaskFilter = {
+      list: listId,
+      workspace: workspaceId,
+      isDeleted: false,
+    };
+
+    if (queryParams.meMode && currentMemberId) {
+      baseFilter.assignee = currentMemberId;
+    }
+
+    const grouped: GroupedTasks = {};
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() + (6 - today.getDay())); // End of current week (Saturday)
+
+    const dueStatusFilters: Record<string, TaskFilter> = {
+      overdue: {
+        ...baseFilter,
+        'timeframe.end': { $lt: today },
+      },
+      today: {
+        ...baseFilter,
+        'timeframe.end': {
+          $gte: today,
+          $lt: tomorrow,
+        },
+      },
+      tomorrow: {
+        ...baseFilter,
+        'timeframe.end': {
+          $gte: tomorrow,
+          $lt: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000),
+        },
+      },
+      this_week: {
+        ...baseFilter,
+        'timeframe.end': {
+          $gte: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000),
+          $lte: endOfWeek,
+        },
+      },
+      later: {
+        ...baseFilter,
+        'timeframe.end': { $gt: endOfWeek },
+      },
+      none: {
+        ...baseFilter,
+        $or: [
+          { 'timeframe.end': null },
+          { 'timeframe.end': { $exists: false } },
+          { timeframe: null },
+          { timeframe: { $exists: false } },
+        ],
+      },
+    };
+
+    for (const [dueStatus, filter] of Object.entries(dueStatusFilters)) {
+      const tasks = await this.taskModel
+        .find(filter as any)
+        .populate('assignee', 'firstName lastName primaryEmail')
+        .populate('createdBy', 'firstName lastName primaryEmail')
+        .sort({ 'timeframe.end': 1, createdAt: -1 })
+        .limit(50)
+        .exec();
+
+      grouped[dueStatus] = {
         count: tasks.length,
         tasks,
       };
