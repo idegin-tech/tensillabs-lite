@@ -15,7 +15,7 @@ export default function TasksListView() {
         <>
             <div>
                 <TasksListOptions />
-                <div className='grid grid-cols-1 gap-6 pb-60 h-[calc(100dvh-9.5rem)] overflow-y-auto relative'>
+                <div className='grid grid-cols-1 pb-60 h-[calc(100dvh-9.5rem)] overflow-y-auto relative'>
                     <div className="space-y-1 px-3 pt-6">
                         <h1 className="text-2xl font-bold text-foreground">
                             {state.activeList?.name || 'Task List'}
@@ -23,7 +23,8 @@ export default function TasksListView() {
                         <p className="text-muted-foreground">
                             {state.activeList?.description || 'Manage and track your tasks organized by status'}
                         </p>
-                    </div>                    <div className='grid grid-cols-1'>                        
+                    </div>                    
+                    <div className='grid grid-cols-1'>                        
                         {state.groupBy === 'none' ? (
                             <EachTaskGroup
                                 key="no-group"

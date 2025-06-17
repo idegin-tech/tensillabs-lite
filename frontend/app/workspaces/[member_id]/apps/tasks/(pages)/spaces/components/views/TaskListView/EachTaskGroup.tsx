@@ -121,7 +121,7 @@ export default function EachTaskGroup({
     }
 
     return (
-        <div>
+        <>
             <div className='px-3 sticky top-0 z-50 h-16 flex items-center bg-gradient-to-tr from-background to-sidebar'>
                 <header
                     className='border-b border-border flex justify-between items-center gap-2 p-2 cursor-pointer bg-card transition-colors duration-200 rounded-lg w-full'
@@ -160,7 +160,7 @@ export default function EachTaskGroup({
             <div
                 className={cn(
                     'transition-all duration-300 ease-in-out',
-                    isExpanded ? 'max-h-[2000px] opacity-100 mb-16' : 'max-h-0 opacity-0'
+                    isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                 )}
             >
                 {tableVisible && (
@@ -186,7 +186,8 @@ export default function EachTaskGroup({
                         )}
                     </div>
                 )}
-            </div>            {showCreateTask && (
+            </div>            
+            {showCreateTask && (
                 <CreateTaskPopup
                     isOpen={showCreateTask}
                     onClose={handleCreateTaskClose}
@@ -194,6 +195,6 @@ export default function EachTaskGroup({
                     groupInfo={getGroupInfoForCreate()}
                 />
             )}
-        </div>
+        </>
     )
 }

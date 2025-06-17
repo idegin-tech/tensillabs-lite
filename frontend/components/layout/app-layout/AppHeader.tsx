@@ -18,7 +18,7 @@ import WorkspaceSearch from './WorkspaceSearch';
 export default function AppHeader() {
     return (
         <>
-            <header className="flex h-12 shrink-0 items-center gap-2 border-b select-none">
+            <header className="flex h-app-header shrink-0 items-center gap-2 border-b select-none">
                 <div className="flex items-center gap-2 px-4 w-full">
                     <SidebarTrigger className="-ml-1" />
                     <div className='flex items-center'>

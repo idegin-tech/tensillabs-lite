@@ -43,11 +43,15 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   --height-app-body: var(--app-body);
+  --height-app-header: var(--app-header);
+  --height-app-header-sm: var(--app-header-sm);
 }
 
 :root {
 
   --app-body: calc(100dvh - 3rem - 16px);
+  --app-header: 3rem;
+  --app-header-sm: 2.5rem;
 
 
   --radius: 0.625rem;
