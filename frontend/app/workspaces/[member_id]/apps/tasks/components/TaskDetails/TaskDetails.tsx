@@ -1,11 +1,14 @@
 import React from 'react'
 import EachTaskDetailsProperty from './EachTaskDetailsProperty'
-import { TbUsers } from 'react-icons/tb'
+import { TbCalendar, TbCircleDashed, TbFlag3, TbUsers } from 'react-icons/tb'
 import TaskDetailsTabs from './TaskDetailsTabs'
+import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty } from '../TaskProperties'
+import { TaskStatus, TaskPriority } from '@/types/tasks.types'
 
 export default function TaskDetails() {
+    return null;
     return (
-        <div className='bg-popover select-none shadow-lg w-[800px] border-l z-[100] fixed right-0 bottom-0 h-app-body grid grid-cols-1 space-y-6 md:mb-[8px]'>
+        <div className='bg-popover select-none shadow-lg w-[700px] border-l z-50 fixed right-0 bottom-0 h-app-body grid grid-cols-1 space-y-6 md:mb-[8px]'>
             <div>
                 <header className='border-b h-app-header-sm'></header>
                 <div className='flex'>
@@ -19,30 +22,29 @@ export default function TaskDetails() {
                                 </h1>
                             </div>
 
-                            <div className='grid grid-cols-2 gap-3'>
-                                <EachTaskDetailsProperty
-                                    Icon={<TbUsers />}
-                                    label='Assignees'
+                            <div className='grid grid-cols-2 gap-y-16'>                                <EachTaskDetailsProperty
+                                    Icon={<TbCircleDashed />}
+                                    label='Status'
                                 >
-                                    HOw va na
+                                    <TaskStatusProperty value={TaskStatus.TODO} />
+                                </EachTaskDetailsProperty>
+                                <EachTaskDetailsProperty
+                                    Icon={<TbFlag3 />}
+                                    label='Priority'
+                                >
+                                    <TaskPriorityProperty value={TaskPriority.HIGH} />
+                                </EachTaskDetailsProperty>
+                                <EachTaskDetailsProperty
+                                    Icon={<TbCalendar />}
+                                    label='Timeframe'
+                                >
+                                    <TaskTimeframeProperty value={{ start: '2024-07-23', end: '2024-07-29' }} />
                                 </EachTaskDetailsProperty>
                                 <EachTaskDetailsProperty
                                     Icon={<TbUsers />}
                                     label='Assignees'
                                 >
-                                    HOw va na
-                                </EachTaskDetailsProperty>
-                                <EachTaskDetailsProperty
-                                    Icon={<TbUsers />}
-                                    label='Assignees'
-                                >
-                                    HOw va na
-                                </EachTaskDetailsProperty>
-                                <EachTaskDetailsProperty
-                                    Icon={<TbUsers />}
-                                    label='Assignees'
-                                >
-                                    HOw va na
+                                    <span>No assignees</span>
                                 </EachTaskDetailsProperty>
                             </div>
                         </div>

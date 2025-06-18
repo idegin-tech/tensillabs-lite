@@ -36,7 +36,6 @@ export default function WorkspaceSearch() {
     const [open, setOpen] = useState(false)
     const isMobile = useIsMobile()
 
-    // Keyboard shortcut handler
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
             if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -77,7 +76,7 @@ export default function WorkspaceSearch() {
                     )}
                 </PopoverTrigger>
                 <PopoverContent 
-                    className={"max-w-screen md:w-[670px] p-0"} 
+                    className={"max-w-screen md:w-[670px] p-0 z-[200]"} 
                     align={isMobile ? "center" : "center"}
                     // side={isMobile ? "bottom" : "bottom"}
                     sideOffset={-40}

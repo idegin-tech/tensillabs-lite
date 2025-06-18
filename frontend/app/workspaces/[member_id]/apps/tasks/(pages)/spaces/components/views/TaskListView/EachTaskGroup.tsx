@@ -122,7 +122,7 @@ export default function EachTaskGroup({
 
     return (
         <>
-            <div className='px-3 sticky top-0 z-50 h-16 flex items-center bg-gradient-to-tr from-background to-sidebar'>
+            <div className='px-3 sticky top-0 z-40 h-16 flex items-center bg-gradient-to-tr from-background to-sidebar'>
                 <header
                     className='border-b border-border flex justify-between items-center gap-2 p-2 cursor-pointer bg-card transition-colors duration-200 rounded-lg w-full'
                     onClick={handleExpansionToggle}
@@ -159,7 +159,7 @@ export default function EachTaskGroup({
             </div>
             <div
                 className={cn(
-                    'transition-all duration-300 ease-in-out',
+                    'transition-all duration-300 ease-in-out z-0',
                     isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                 )}
             >
