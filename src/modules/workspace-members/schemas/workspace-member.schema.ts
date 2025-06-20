@@ -25,7 +25,7 @@ export class WorkspaceMember {
   @Prop({
     type: Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
   })
   user: Types.ObjectId;
 

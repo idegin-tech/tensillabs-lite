@@ -4,7 +4,7 @@ import * as mongoosePaginate from 'mongoose-paginate-v2';
 
 export type SpaceParticipantDocument = SpaceParticipant & Document;
 
-export enum SpaceRole {
+export enum SpacePermission {
   ADMIN = 'admin',
   REGULAR = 'regular',
 }
@@ -42,11 +42,11 @@ export class SpaceParticipant {
 
   @Prop({
     type: String,
-    enum: Object.values(SpaceRole),
+    enum: Object.values(SpacePermission),
     required: true,
-    default: SpaceRole.REGULAR,
+    default: SpacePermission.REGULAR,
   })
-  role: SpaceRole;
+  permissions: SpacePermission;
 
   @Prop({
     type: String,

@@ -29,7 +29,7 @@ export interface SpaceParticipant {
   space: Space
   member: string
   workspace: string
-  role: string
+  permissions: string
   status: string
   createdAt: string
   updatedAt: string
@@ -96,7 +96,7 @@ export interface SpaceDetailsParticipant {
   firstName: string
   lastName: string
   primaryEmail: string
-  role: string
+  permissions: string
   status: string
   joinedAt: string
 }
@@ -122,4 +122,80 @@ export interface TasksSpaceState {
 export interface TasksSpaceContextType {
   state: TasksSpaceState
   refetchSpace: () => void
+}
+
+export interface SpaceParticipantWithMember {
+  _id: string
+  member: {
+    _id: string
+    firstName: string
+    lastName: string
+    middleName?: string
+    primaryEmail: string
+    secondaryEmail?: string
+    permission: string
+    status: string
+    bio?: string
+    workPhone?: string
+    mobilePhone?: string
+    avatarURL?: {
+      sm: string
+      original: string
+    }
+    primaryRole?: {
+      _id: string
+      name: string
+      description?: string
+      color?: string
+      isActive: boolean
+    }
+    secondaryRoles?: Array<{
+      _id: string
+      name: string
+      description?: string
+      color?: string
+      isActive: boolean
+    }>
+    primaryTeam?: {
+      _id: string
+      name: string
+      description?: string
+      color?: string
+      isActive: boolean
+    }
+    secondaryTeams?: Array<{
+      _id: string
+      name: string
+      description?: string
+      color?: string
+      isActive: boolean
+    }>
+    lastActiveAt?: string
+    invitedBy?: string
+  }
+  workspace: string
+  space: string
+  permissions: string
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PaginatedSpaceParticipants {
+  docs: SpaceParticipantWithMember[]
+  totalDocs: number
+  limit: number
+  page: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
+  pagingCounter: number
+  prevPage?: number
+  nextPage?: number
+}
+
+export interface GetSpaceParticipantsResponse {
+  success: boolean
+  message: string
+  payload: PaginatedSpaceParticipants | SpaceParticipantWithMember[]
 }

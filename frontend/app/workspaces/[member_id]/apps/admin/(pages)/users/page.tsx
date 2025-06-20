@@ -49,6 +49,8 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { WorkspaceMember } from '@/types/workspace.types'
 import { useWorkspaceMembers } from '@/hooks/use-workspace-members'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
 
 interface UsersTableProps {
     users: WorkspaceMember[]
@@ -62,7 +64,9 @@ interface UsersTableProps {
 function UsersTable({ users, isLoading, onViewUser, onEditUser, onSuspendUser, onDeleteUser }: UsersTableProps) {
     if (isLoading) {
         return <TablePlaceholder rows={10} columns={6} />
-    } const getStatusBadge = (status: string) => {
+    };
+    
+    const getStatusBadge = (status: string) => {
         switch (status) {
             case 'active':
                 return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
@@ -241,6 +245,9 @@ function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageC
 }
 
 export default function UsersPage() {
+    const params = useParams()
+    const member_id = params.member_id as string
+    
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -367,7 +374,7 @@ export default function UsersPage() {
                     subHeading="Get started by inviting your first team member to join this workspace."
                     ctaButton={{
                         label: "Invite User",
-                        onClick: () => { },
+                        onClick: () => window.location.href = `/workspaces/${member_id}/apps/admin/users/invite`,
                         icon: TbPlus
                     }}
                 />
@@ -414,7 +421,7 @@ export default function UsersPage() {
 
     return (
         <AppBody>
-            <div className="space-y-8">
+            <div className="space-y-8 container mx-auto">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">Users</h1>
@@ -433,15 +440,16 @@ export default function UsersPage() {
                         >
                             <TbRefresh className={cn("h-4 w-4", isLoading && "animate-spin")} />
                             Refresh
-                        </Button>
-                        <Button
-                            onClick={() => { }}
-                            className="h-10 flex items-center gap-2"
-                            disabled={isLoading}
-                        >
-                            <TbPlus className="h-4 w-4" />
-                            Invite User
-                        </Button>
+                        </Button>                        
+                        <Link href={`/workspaces/${member_id}/apps/admin/users/invite`}>
+                            <Button
+                                className="h-10 flex items-center gap-2"
+                                disabled={isLoading}
+                            >
+                                <TbPlus className="h-4 w-4" />
+                                Invite User
+                            </Button>
+                        </Link>
                     </div>
                 </div>
 

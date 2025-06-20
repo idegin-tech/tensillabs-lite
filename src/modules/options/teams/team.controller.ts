@@ -40,11 +40,11 @@ import {
 
 @Controller('teams')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
-@RequirePermission(MemberPermissions.MANAGER)
 export class TeamController {
   constructor(private readonly teamService: TeamService) {}
 
   @Post()
+  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(createTeamSchema))
   async create(
     @Body() createTeamDto: CreateTeamDto,
@@ -60,6 +60,7 @@ export class TeamController {
   }
 
   @Get()
+  @RequirePermission(MemberPermissions.REGULAR)
   @UsePipes(new ZodValidationPipe(paginationSchema))
   async findAll(
     @Query() pagination: PaginationDto,
@@ -71,6 +72,7 @@ export class TeamController {
   }
 
   @Put(':id')
+  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(updateTeamSchema))
   async update(
     @Param('id') id: string,
@@ -91,6 +93,7 @@ export class TeamController {
   }
 
   @Patch(':id/trash')
+  @RequirePermission(MemberPermissions.MANAGER)
   async moveToTrash(
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },
@@ -108,6 +111,7 @@ export class TeamController {
   }
 
   @Patch(':id/toggle-active')
+  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(toggleActiveSchema))
   async toggleActive(
     @Param('id') id: string,

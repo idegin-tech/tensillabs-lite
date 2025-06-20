@@ -10,6 +10,7 @@ import {
   UseGuards,
   UsePipes,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Types } from 'mongoose';
@@ -25,6 +26,7 @@ import { ZodValidationPipe } from '../../lib/validation.pipe';
 import {
   inviteMemberSchema,
   InviteMemberDto,
+  acceptInvitationSchema,
 } from './dto/workspace-member.dto';
 import { paginationSchema, PaginationDto } from './dto/pagination.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -62,8 +64,8 @@ export class WorkspaceMemberController {
     @CurrentUser() user: UserDocument,
   ) {
     console.log('my-memberships WAS CALLED', user._id);
-    const memberships = await this.workspaceMemberService.findByUserId(
-      user._id as Types.ObjectId,
+    const memberships = await this.workspaceMemberService.findByUserEmail(
+      user.email,
       pagination,
     );
 
@@ -104,5 +106,26 @@ export class WorkspaceMemberController {
       'Member dependencies retrieved successfully',
       memberWithWorkspace,
     );
+  }
+
+  @Post('accept-invitation')
+  async acceptInvitation(
+    @Body() rawBody: any,
+    @CurrentUser() user: UserDocument,
+  ) {
+    const validationResult = acceptInvitationSchema.safeParse(rawBody);
+    if (!validationResult.success) {
+      console.log('Validation failed:', validationResult.error);
+      throw new BadRequestException(validationResult.error.errors);
+    }
+
+    const acceptInvitationDto = validationResult.data;
+
+    const member = await this.workspaceMemberService.acceptInvitation(
+      new Types.ObjectId(acceptInvitationDto.memberId),
+      user._id as Types.ObjectId,
+    );
+
+    return createSuccessResponse('Invitation accepted successfully', member);
   }
 }

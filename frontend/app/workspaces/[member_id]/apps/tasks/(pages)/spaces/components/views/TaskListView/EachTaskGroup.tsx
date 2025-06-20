@@ -40,8 +40,8 @@ export default function EachTaskGroup({
     }
 
     const { data: tasksData, isLoading: isApiLoading } = useGetTasksByGroup(
-        listId, 
-        groupParams, 
+        listId,
+        groupParams,
         isExpanded
     )
 
@@ -82,17 +82,17 @@ export default function EachTaskGroup({
 
     const handleTaskCreated = (newTask: Task) => {
         setLocalTasks(prev => [newTask, ...prev])
-        
+
         queryClient.invalidateQueries({
             queryKey: [`tasks-by-group`, listId]
         })
-        
+
         setShowCreateTask(false)
     }
 
     const handleCreateTaskClose = () => {
         setShowCreateTask(false)
-        
+
         queryClient.invalidateQueries({
             queryKey: [`tasks-by-group`, listId]
         })
@@ -122,7 +122,7 @@ export default function EachTaskGroup({
 
     return (
         <>
-            <div className='px-3 sticky top-0 z-40 h-16 flex items-center bg-gradient-to-tr from-background to-sidebar'>
+            <div className='px-3 sticky top-0 z-40 h-10 flex items-center bg-gradient-to-tr from-background to-sidebar'>
                 <header
                     className='border-b border-border flex justify-between items-center gap-2 p-2 cursor-pointer bg-card transition-colors duration-200 rounded-lg w-full'
                     onClick={handleExpansionToggle}
@@ -157,36 +157,40 @@ export default function EachTaskGroup({
                     </div>
                 </header>
             </div>
-            <div
-                className={cn(
-                    'transition-all duration-300 ease-in-out z-0',
-                    isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                )}
-            >
-                {tableVisible && (
-                    <div className='px-3'>
-                        {isApiLoading && page === 1 ? (
-                            <TablePlaceholder rows={3} columns={6} showHeader={true} />
-                        ) : (
-                            <>
-                                <TasksTable tasks={displayTasks} />
-                                {hasMore && (
-                                    <div className="flex justify-center py-4">
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={handleLoadMore}
-                                            disabled={isApiLoading}
-                                        >
-                                            {isApiLoading ? 'Loading...' : 'Load 20 more'}
-                                        </Button>
-                                    </div>
+            {
+                isExpanded && <>
+                    <div
+                        className={cn(
+                            'transition-all duration-300 ease-in-out z-0',
+                            isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                        )}
+                    >
+                        {tableVisible && (
+                            <div className='px-3'>
+                                {isApiLoading && page === 1 ? (
+                                    <TablePlaceholder rows={3} columns={6} showHeader={true} />
+                                ) : (
+                                    <>
+                                        <TasksTable tasks={displayTasks} />
+                                        {hasMore && (
+                                            <div className="flex justify-center py-4">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={handleLoadMore}
+                                                    disabled={isApiLoading}
+                                                >
+                                                    {isApiLoading ? 'Loading...' : 'Load 20 more'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
-                            </>
+                            </div>
                         )}
                     </div>
-                )}
-            </div>            
+                </>
+            }
             {showCreateTask && (
                 <CreateTaskPopup
                     isOpen={showCreateTask}

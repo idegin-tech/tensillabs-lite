@@ -7,6 +7,7 @@ import {
   Get,
   Body,
   Param,
+  Query,
   UseGuards,
   Req,
   BadRequestException,
@@ -21,7 +22,6 @@ import {
 } from '../../../workspace-members/guards/workspace-member.guard';
 import { MemberPermissions } from '../../../workspace-members/enums/member-permissions.enum';
 import { SpaceParticipationGuard } from '../guards/space-participation.guard';
-import { SpaceAdminGuard } from '../guards/space-admin.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
 import {
@@ -30,6 +30,10 @@ import {
   InviteParticipantDto,
   UpdateParticipantDto,
 } from './dto/space-participant.dto';
+import {
+  paginationSchema,
+  PaginationDto,
+} from '../../../workspace-members/dto/pagination.dto';
 
 @Controller('spaces/:spaceId/participants')
 @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
@@ -40,7 +44,6 @@ export class SpaceParticipantController {
   ) {}
 
   @Post()
-  @UseGuards(SpaceAdminGuard)
   async inviteParticipant(
     @Param('spaceId') spaceId: string,
     @Body(new ZodValidationPipe(inviteParticipantSchema))
@@ -69,7 +72,7 @@ export class SpaceParticipantController {
   }
 
   @Put(':participantId')
-  @UseGuards(SpaceAdminGuard)
+  @RequirePermission(MemberPermissions.MANAGER)
   async updateParticipant(
     @Param('participantId') participantId: string,
     @Body(new ZodValidationPipe(updateParticipantSchema))
@@ -100,6 +103,7 @@ export class SpaceParticipantController {
   @Get()
   async getSpaceParticipants(
     @Param('spaceId') spaceId: string,
+    @Query(new ZodValidationPipe(paginationSchema)) pagination: PaginationDto,
     @Req()
     req: Request & {
       workspaceMember: any;
@@ -115,6 +119,7 @@ export class SpaceParticipantController {
       await this.spaceParticipantService.getSpaceParticipants(
         new Types.ObjectId(spaceId),
         req.workspace._id,
+        pagination,
       );
 
     return createSuccessResponse(

@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Space, SpaceDocument } from '../schemas/space.schema';
 import { CreateSpaceDto, UpdateSpaceDto } from '../dto/space.dto';
 import { SpaceParticipantService } from '../space-participants/services/space-participant.service';
+import { ListDocument } from '../lists/schemas/list.schema';
 
 @Injectable()
 export class SpaceService {
@@ -67,37 +68,32 @@ export class SpaceService {
       throw new NotFoundException('Space not found');
     }
 
-    const [lists, recentParticipants] = await Promise.all([
-      this.spaceModel.db
-        .collection('lists')
-        .find({
-          space: spaceId,
-          workspace: workspaceId,
-          isDeleted: false,
-        })
-        .sort({ createdAt: -1 })
-        .toArray(),
-      this.spaceParticipantService.getSpaceParticipants(spaceId, workspaceId),
-    ]);
+    const lists = await this.spaceModel.db
+      .collection('lists')
+      .find({
+        space: spaceId,
+        workspace: workspaceId,
+        isDeleted: false,
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
 
     return {
       space: space.toObject(),
-      lists: lists.map((list) => ({
-        _id: list._id,
-        name: list.name,
-        isPrivate: list.isPrivate,
-        createdAt: list.createdAt,
-        updatedAt: list.updatedAt,
-      })),
-      recentParticipants: recentParticipants.slice(0, 20).map((p: any) => ({
-        _id: p.member._id,
-        firstName: p.member.firstName,
-        lastName: p.member.lastName,
-        primaryEmail: p.member.primaryEmail,
-        role: p.role,
-        status: p.status,
-        joinedAt: p.createdAt,
-      })),
+      lists: lists.map((list) => {
+        const listDoc = list as any as ListDocument & {
+          _id: Types.ObjectId;
+          createdAt: Date;
+          updatedAt: Date;
+        };
+        return {
+          _id: listDoc._id,
+          name: listDoc.name,
+          isPrivate: listDoc.isPrivate,
+          createdAt: listDoc.createdAt,
+          updatedAt: listDoc.updatedAt,
+        };
+      }),
     };
   }
 }

@@ -32,10 +32,8 @@ export class WorkspaceController {
     );
 
     return createSuccessResponse('Workspace created successfully', {
-      workspace: {
-        id: result.workspace._id,
-        name: result.workspace.name,
-      },
+      workspace: result.workspace,
+      member: result.member,
     });
   }
 }

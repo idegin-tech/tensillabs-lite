@@ -2,14 +2,8 @@ export interface Workspace {
   _id: string
   name: string
   description?: string
-  logoURL?: {
-    sm: string
-    original: string
-  }
-  bannerURL?: {
-    sm: string
-    original: string
-  }
+  logoURL?: string;
+  bannerURL?: string;
   createdBy: string
   createdAt: string
   updatedAt: string
@@ -23,7 +17,7 @@ export interface WorkspaceMember {
     timezone: string
     isEmailVerified: boolean
   }
-  workspace: string | Workspace
+  workspace: Workspace
   avatarURL: {
     sm: string
     original: string

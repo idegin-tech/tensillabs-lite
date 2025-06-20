@@ -14,9 +14,14 @@ interface UseRolesParams {
   isActive?: string
 }
 
-export function useRoles(params: UseRolesParams = {}) {
+interface UseRolesOptions {
+  enabled?: boolean
+}
+
+export function useRoles(params: UseRolesParams = {}, options: UseRolesOptions = {}) {
   const { member_id } = useCommon()
   const { page = 1, limit = 10, search = '', sortBy = '-createdAt', isActive } = params
+  const { enabled = true } = options
   
   const buildEndpoint = () => {
     const searchParams = new URLSearchParams({
@@ -36,9 +41,8 @@ export function useRoles(params: UseRolesParams = {}) {
       headers: {
         'x-member-id': member_id
       }
-    }),
-    staleTime: 5 * 60 * 1000,
-    enabled: !!member_id,
+    }),    staleTime: 5 * 60 * 1000,
+    enabled: !!member_id && enabled,
     refetchOnReconnect: true,
     refetchOnWindowFocus: false,
   })

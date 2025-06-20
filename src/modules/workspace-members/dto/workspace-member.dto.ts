@@ -22,6 +22,14 @@ export const inviteMemberSchema = z.object({
     .max(20, 'Office phone must not exceed 20 characters')
     .trim()
     .optional(),
+  primaryRole: z.string().trim().optional(),
+  primaryTeam: z.string().trim().optional(),
 });
 
 export type InviteMemberDto = z.infer<typeof inviteMemberSchema>;
+
+export const acceptInvitationSchema = z.object({
+  memberId: z.string().min(1, 'Member ID is required'),
+});
+
+export type AcceptInvitationDto = z.infer<typeof acceptInvitationSchema>;

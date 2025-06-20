@@ -14,9 +14,14 @@ interface UseTeamsParams {
   isActive?: string
 }
 
-export function useTeams(params: UseTeamsParams = {}) {
+interface UseTeamsOptions {
+  enabled?: boolean
+}
+
+export function useTeams(params: UseTeamsParams = {}, options: UseTeamsOptions = {}) {
   const { member_id } = useCommon()
   const { page = 1, limit = 10, search = '', sortBy = '-createdAt', isActive } = params
+  const { enabled = true } = options
   
   const buildEndpoint = () => {
     const searchParams = new URLSearchParams({
@@ -35,9 +40,8 @@ export function useTeams(params: UseTeamsParams = {}) {
       headers: {
         'x-member-id': member_id
       }
-    }),
-    staleTime: 5 * 60 * 1000,
-    enabled: !!member_id,
+    }),    staleTime: 5 * 60 * 1000,
+    enabled: !!member_id && enabled,
     refetchOnReconnect: true,
     refetchOnWindowFocus: false,
   })

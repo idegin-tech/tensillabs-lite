@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
 import React, { useEffect } from 'react'
 import {
   TbUsers,
@@ -17,9 +16,9 @@ import {
 } from 'react-icons/tb'
 import { useTasksApp } from '../contexts/tasks-app.context'
 import { useInView } from 'react-intersection-observer'
-import { useRouter } from 'next/navigation'
 import useCommon from '@/hooks/use-common'
 import type { Space } from '@/types/spaces.types'
+import { useRouter } from 'next13-progressbar'
 
 function SpaceCard({ space }: { space: Space }) {
   const router = useRouter()
@@ -35,7 +34,7 @@ function SpaceCard({ space }: { space: Space }) {
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div
-              className="h-12 w-12 rounded-lg text-white shadow-sm flex items-center justify-center"
+              className="h-12 min-w-12 w-12 rounded-lg text-white shadow-sm flex items-center justify-center"
               style={{ backgroundColor: colorClass }}
             >
               <i className={`fas ${space.icon} text-xl`}></i>
@@ -239,12 +238,6 @@ export default function TaskHomePage() {
                 icon={TbFolderX}
                 heading="No spaces yet"
                 subHeading="Get started by creating your first space. Organize your tasks and collaborate with your team more effectively."
-                ctaButton={{
-                  label: "Create Your First Space",
-                  onClick: () => updateState({ showCreateSpace: true }),
-                  variant: "default",
-                  icon: TbPlus
-                }}
                 fullWidth
               />
             </div>

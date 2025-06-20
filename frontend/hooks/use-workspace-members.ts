@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '@/lib/api'
-import { PaginatedWorkspaceMembers } from '@/types/workspace.types'
+import { PaginatedWorkspaceMembers, WorkspaceMember } from '@/types/workspace.types'
 import useCommon from './use-common'
 
 interface UseWorkspaceMembersParams {
@@ -12,6 +12,16 @@ interface UseWorkspaceMembersParams {
   search?: string
   status?: string
   permission?: string
+}
+
+interface InviteMemberData {
+  primaryEmail: string
+  firstName: string
+  lastName: string
+  middleName?: string
+  workPhone?: string
+  primaryRole?: string
+  primaryTeam?: string
 }
 
 export function useWorkspaceMembers(params: UseWorkspaceMembersParams = {}) {
@@ -67,4 +77,33 @@ export function useWorkspaceMembers(params: UseWorkspaceMembersParams = {}) {
     error: query.error,
     refetch: query.refetch,
   }
+}
+
+export function useInviteMember() {
+  const { member_id } = useCommon()
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: WorkspaceMember }, ApiError, InviteMemberData>({
+    mutationFn: (data: InviteMemberData) =>
+      api.post<{ success: boolean; payload: WorkspaceMember }>('/workspace-members/invite', data, {
+        headers: {
+          'x-member-id': member_id
+        }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace-members'] })
+    },
+  })
+}
+
+export function useAcceptInvitation() {
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: WorkspaceMember }, ApiError, { memberId: string }>({
+    mutationFn: (data: { memberId: string }) =>
+      api.post<{ success: boolean; payload: WorkspaceMember }>('/workspace-members/accept-invitation', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace-memberships'] })
+    },
+  })
 }

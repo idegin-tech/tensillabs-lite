@@ -41,11 +41,11 @@ import { ZodValidationPipe } from '../../../lib/validation.pipe';
 
 @Controller('roles')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
-@RequirePermission(MemberPermissions.MANAGER)
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @Post()
+  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(createRoleSchema))
   async create(
     @Body() createRoleDto: CreateRoleDto,
@@ -61,6 +61,7 @@ export class RoleController {
   }
 
   @Get()
+  @RequirePermission(MemberPermissions.REGULAR)
   @UsePipes(new ZodValidationPipe(paginationSchema))
   async findAll(
     @Query() pagination: PaginationDto,
@@ -72,6 +73,7 @@ export class RoleController {
   }
 
   @Put(':id')
+  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(updateRoleSchema))
   async update(
     @Param('id') id: string,
@@ -92,6 +94,7 @@ export class RoleController {
   }
 
   @Patch(':id/trash')
+  @RequirePermission(MemberPermissions.MANAGER)
   async moveToTrash(
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },
@@ -109,6 +112,7 @@ export class RoleController {
   }
 
   @Patch(':id/toggle-active')
+  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(toggleActiveSchema))
   async toggleActive(
     @Param('id') id: string,

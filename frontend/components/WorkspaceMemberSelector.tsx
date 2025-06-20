@@ -1,18 +1,18 @@
 import React from 'react'
 import InputSelector, { InputSelectorData } from './InputSelector'
-import { useOffices } from '@/hooks/use-offices'
+import { useWorkspaceMembers } from '@/hooks/use-workspace-members'
 import { BaseSelectorProps } from '@/types/selector.types'
 
-interface OfficeSelectorProps extends BaseSelectorProps {}
+interface WorkspaceMemberSelectorProps extends BaseSelectorProps {}
 
-export default function OfficeSelector({
+export default function WorkspaceMemberSelector({
     value,
     onChange,
-    placeholder = "Select an office...",
+    placeholder = "Select a member...",
     disabled = false,
     className,
     isMulti = false
-}: OfficeSelectorProps) {
+}: WorkspaceMemberSelectorProps) {
     const [searchTerm, setSearchTerm] = React.useState('')
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState('')
     const [isOpen, setIsOpen] = React.useState(false)
@@ -25,20 +25,19 @@ export default function OfficeSelector({
         return () => clearTimeout(timer)
     }, [searchTerm])
 
-    const { offices, isLoading, error, refetch } = useOffices({
+    const { members, isLoading, error, refetch } = useWorkspaceMembers({
         search: debouncedSearchTerm,
-        limit: 50
-    }, {
-        enabled: isOpen
-    });
+        limit: 50,
+        status: 'active'
+    })
     
     const options: InputSelectorData[] = React.useMemo(() => {
-        return offices.map(office => ({
-            label: office.name,
-            value: office._id,
-            description: office.address || office.description || 'No address provided'
+        return members.map(member => ({
+            label: `${member.firstName} ${member.lastName}`,
+            value: member._id,
+            description: member.primaryEmail
         }))
-    }, [offices])
+    }, [members])
 
     const handleSearchChange = (search: string) => {
         setSearchTerm(search)
@@ -50,9 +49,13 @@ export default function OfficeSelector({
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open)
+        if (open && !debouncedSearchTerm) {
+            refetch()
+        }
     }
 
-    return (        <InputSelector
+    return (
+        <InputSelector
             options={options}
             value={value}
             onChange={onChange}
@@ -63,8 +66,8 @@ export default function OfficeSelector({
             isLoading={isLoading}
             hasError={!!error}
             onRetry={handleRetry}
-            searchPlaceholder="Search offices..."
-            emptyMessage="No offices found."
+            searchPlaceholder="Search members..."
+            emptyMessage="No members found."
             onSearchChange={handleSearchChange}
             onOpenChange={handleOpenChange}
             isMulti={isMulti}

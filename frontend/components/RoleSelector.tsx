@@ -1,18 +1,18 @@
 import React from 'react'
 import InputSelector, { InputSelectorData } from './InputSelector'
-import { useOffices } from '@/hooks/use-offices'
+import { useRoles } from '@/hooks/use-roles'
 import { BaseSelectorProps } from '@/types/selector.types'
 
-interface OfficeSelectorProps extends BaseSelectorProps {}
+interface RoleSelectorProps extends BaseSelectorProps {}
 
-export default function OfficeSelector({
+export default function RoleSelector({
     value,
     onChange,
-    placeholder = "Select an office...",
+    placeholder = "Select a role...",
     disabled = false,
     className,
     isMulti = false
-}: OfficeSelectorProps) {
+}: RoleSelectorProps) {
     const [searchTerm, setSearchTerm] = React.useState('')
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState('')
     const [isOpen, setIsOpen] = React.useState(false)
@@ -23,22 +23,21 @@ export default function OfficeSelector({
         }, 400)
 
         return () => clearTimeout(timer)
-    }, [searchTerm])
-
-    const { offices, isLoading, error, refetch } = useOffices({
+    }, [searchTerm]);    const { roles, isLoading, error, refetch } = useRoles({
         search: debouncedSearchTerm,
-        limit: 50
+        limit: 50,
+        isActive: 'true'
     }, {
         enabled: isOpen
     });
     
     const options: InputSelectorData[] = React.useMemo(() => {
-        return offices.map(office => ({
-            label: office.name,
-            value: office._id,
-            description: office.address || office.description || 'No address provided'
+        return roles.map(role => ({
+            label: role.name,
+            value: role._id,
+            description: role.description || 'No description'
         }))
-    }, [offices])
+    }, [roles])
 
     const handleSearchChange = (search: string) => {
         setSearchTerm(search)
@@ -52,7 +51,8 @@ export default function OfficeSelector({
         setIsOpen(open)
     }
 
-    return (        <InputSelector
+    return (
+        <InputSelector
             options={options}
             value={value}
             onChange={onChange}
@@ -63,8 +63,8 @@ export default function OfficeSelector({
             isLoading={isLoading}
             hasError={!!error}
             onRetry={handleRetry}
-            searchPlaceholder="Search offices..."
-            emptyMessage="No offices found."
+            searchPlaceholder="Search roles..."
+            emptyMessage="No roles found."
             onSearchChange={handleSearchChange}
             onOpenChange={handleOpenChange}
             isMulti={isMulti}

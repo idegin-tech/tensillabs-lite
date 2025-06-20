@@ -1,22 +1,18 @@
 import React from 'react'
 import InputSelector, { InputSelectorData } from './InputSelector'
 import { useClients } from '@/hooks/use-clients'
+import { BaseSelectorProps } from '@/types/selector.types'
 
-interface ClientsSelectorProps {
-    value?: InputSelectorData
-    onChange: (value: InputSelectorData) => void
-    placeholder?: string
-    disabled?: boolean
-    className?: string
-}
+interface ClientsSelectorProps extends BaseSelectorProps {}
 
 export default function ClientsSelector({
     value,
     onChange,
     placeholder = "Select a client...",
     disabled = false,
-    className
-}: ClientsSelectorProps) {    const [searchTerm, setSearchTerm] = React.useState('')
+    className,
+    isMulti = false
+}: ClientsSelectorProps) {const [searchTerm, setSearchTerm] = React.useState('')
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState('')
     const [isOpen, setIsOpen] = React.useState(false)
 
@@ -70,8 +66,7 @@ export default function ClientsSelector({
         setIsOpen(open)
     }
 
-    return (
-        <InputSelector
+    return (        <InputSelector
             options={options}
             value={value}
             onChange={onChange}
@@ -86,6 +81,7 @@ export default function ClientsSelector({
             emptyMessage="No clients found."
             onSearchChange={handleSearchChange}
             onOpenChange={handleOpenChange}
+            isMulti={isMulti}
         />
     )
 }

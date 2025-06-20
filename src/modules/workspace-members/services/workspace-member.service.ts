@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Injectable,
@@ -169,7 +165,43 @@ export class WorkspaceMemberService {
 
     const query: FilterQuery<WorkspaceMemberDocument> = {
       user: userId,
-      status: MemberStatus.ACTIVE,
+      status: { $in: [MemberStatus.ACTIVE, MemberStatus.PENDING] },
+    };
+
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { primaryEmail: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const restPaginationOptions = { ...paginationOptions };
+    delete restPaginationOptions.populate;
+
+    return await this.workspaceMemberModel.paginate(query, {
+      ...restPaginationOptions,
+      populate: {
+        path: 'workspace',
+        select:
+          'name description logoURL bannerURL createdBy createdAt updatedAt',
+      },
+    });
+  }
+
+  async findByUserEmail(
+    userEmail: string,
+    pagination?: PaginationDto,
+  ): Promise<PaginateResult<WorkspaceMemberDocument>> {
+    if (!pagination) {
+      pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
+    }
+
+    const { search, paginationOptions } = extractPaginationOptions(pagination);
+
+    const query: FilterQuery<WorkspaceMemberDocument> = {
+      primaryEmail: userEmail,
+      status: { $in: [MemberStatus.ACTIVE, MemberStatus.PENDING] },
     };
 
     if (search) {
@@ -269,9 +301,43 @@ export class WorkspaceMemberService {
       permission: Permission.REGULAR,
       status: MemberStatus.PENDING,
       workPhone: inviteMemberDto.workPhone || null,
+      primaryRole: inviteMemberDto.primaryRole
+        ? new Types.ObjectId(inviteMemberDto.primaryRole)
+        : null,
+      primaryTeam: inviteMemberDto.primaryTeam
+        ? new Types.ObjectId(inviteMemberDto.primaryTeam)
+        : null,
       invitedBy: invitingMember.user,
     });
 
     return await workspaceMember.save();
+  }
+
+  async acceptInvitation(
+    memberId: Types.ObjectId,
+    userId: Types.ObjectId,
+  ): Promise<WorkspaceMemberDocument> {
+    const member = await this.workspaceMemberModel.findById(memberId).exec();
+
+    if (!member) {
+      throw new BadRequestException('Invitation not found');
+    }
+
+    if (member.status !== MemberStatus.PENDING) {
+      throw new BadRequestException('Invitation is not pending');
+    }
+
+    if (member.user && member.user.toString() !== userId.toString()) {
+      throw new BadRequestException('Invalid user for this invitation');
+    }
+
+    member.status = MemberStatus.ACTIVE;
+    member.lastActiveAt = new Date();
+
+    if (!member.user) {
+      member.user = userId;
+    }
+
+    return await member.save();
   }
 }

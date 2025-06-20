@@ -3,11 +3,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import {
-  Task,
-  TaskDocument,
-  TaskPriority,
-} from '../schemas/task.schema';
+import { Task, TaskDocument, TaskPriority } from '../schemas/task.schema';
 import {
   UpdateTaskDto,
   CreateTasksDto,

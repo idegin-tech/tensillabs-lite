@@ -1,18 +1,18 @@
 import React from 'react'
 import InputSelector, { InputSelectorData } from './InputSelector'
-import { useOffices } from '@/hooks/use-offices'
+import { useTeams } from '@/hooks/use-teams'
 import { BaseSelectorProps } from '@/types/selector.types'
 
-interface OfficeSelectorProps extends BaseSelectorProps {}
+interface TeamSelectorProps extends BaseSelectorProps {}
 
-export default function OfficeSelector({
+export default function TeamSelector({
     value,
     onChange,
-    placeholder = "Select an office...",
+    placeholder = "Select a team...",
     disabled = false,
     className,
     isMulti = false
-}: OfficeSelectorProps) {
+}: TeamSelectorProps) {
     const [searchTerm, setSearchTerm] = React.useState('')
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState('')
     const [isOpen, setIsOpen] = React.useState(false)
@@ -22,23 +22,23 @@ export default function OfficeSelector({
             setDebouncedSearchTerm(searchTerm)
         }, 400)
 
-        return () => clearTimeout(timer)
-    }, [searchTerm])
+        return () => clearTimeout(timer)    }, [searchTerm])
 
-    const { offices, isLoading, error, refetch } = useOffices({
+    const { teams, isLoading, error, refetch } = useTeams({
         search: debouncedSearchTerm,
-        limit: 50
+        limit: 50,
+        isActive: 'true'
     }, {
         enabled: isOpen
     });
     
     const options: InputSelectorData[] = React.useMemo(() => {
-        return offices.map(office => ({
-            label: office.name,
-            value: office._id,
-            description: office.address || office.description || 'No address provided'
+        return teams.map(team => ({
+            label: team.name,
+            value: team._id,
+            description: team.description || 'No description'
         }))
-    }, [offices])
+    }, [teams])
 
     const handleSearchChange = (search: string) => {
         setSearchTerm(search)
@@ -52,7 +52,8 @@ export default function OfficeSelector({
         setIsOpen(open)
     }
 
-    return (        <InputSelector
+    return (
+        <InputSelector
             options={options}
             value={value}
             onChange={onChange}
@@ -63,8 +64,8 @@ export default function OfficeSelector({
             isLoading={isLoading}
             hasError={!!error}
             onRetry={handleRetry}
-            searchPlaceholder="Search offices..."
-            emptyMessage="No offices found."
+            searchPlaceholder="Search teams..."
+            emptyMessage="No teams found."
             onSearchChange={handleSearchChange}
             onOpenChange={handleOpenChange}
             isMulti={isMulti}

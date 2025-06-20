@@ -110,7 +110,8 @@ export default function LoginPage() {
               <p className="text-sm text-destructive">{error}</p>
             </div>
           )}          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">              <FormField<LoginForm>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">              
+              <FormField<LoginForm>
                 control={form.control}
                 name="email"
                 render={({ field }) => (

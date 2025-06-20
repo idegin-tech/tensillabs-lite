@@ -4,8 +4,9 @@ import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command'
-import { Check, ChevronDown, Loader2, AlertCircle, Building2 } from 'lucide-react'
+import { Check, ChevronDown, Loader2, AlertCircle, Building2, X } from 'lucide-react'
 import { Skeleton } from './ui/skeleton'
+import { Badge } from './ui/badge'
 
 // Placeholder SVG component for when no image is available
 const PlaceholderImage = ({ className }: { className?: string }) => (
@@ -31,11 +32,11 @@ export type InputSelectorData = {
 
 type Props = {
     options: InputSelectorData[];
-    onChange: (value: InputSelectorData) => void;
+    onChange: (value: InputSelectorData | InputSelectorData[]) => void;
     placeholder?: string;
     disabled?: boolean;
     className?: string;
-    value?: InputSelectorData;
+    value?: InputSelectorData | InputSelectorData[];
     showImage?: boolean;
     isLoading?: boolean;
     hasError?: boolean;
@@ -44,6 +45,7 @@ type Props = {
     emptyMessage?: string;
     onSearchChange?: (search: string) => void;
     onOpenChange?: (open: boolean) => void;
+    isMulti?: boolean;
 }
 
 export default function InputSelector({
@@ -55,17 +57,18 @@ export default function InputSelector({
     value = undefined,
     showImage = false,
     isLoading = false,
-    hasError = false,
-    onRetry,
+    hasError = false,    onRetry,
     searchPlaceholder = 'Search options...',
     emptyMessage = 'No options found.',
     onSearchChange,
-    onOpenChange
-}: Props) {    const [open, setOpen] = React.useState(false)
+    onOpenChange,
+    isMulti = false
+}: Props) {
+    const [open, setOpen] = React.useState(false)
     const [searchValue, setSearchValue] = React.useState('')
 
     const handleOpenChange = (newOpen: boolean) => {
-        setOpen(newOpen)
+        setOpen(newOpen)          
         onOpenChange?.(newOpen)
     }
 
@@ -81,14 +84,64 @@ export default function InputSelector({
     const handleSelect = (selectedValue: string) => {
         const selectedOption = options.find(option => option.value === selectedValue)
         if (selectedOption) {
-            onChange(selectedOption)
-            handleOpenChange(false)
-            setSearchValue('')
+            if (isMulti) {
+                const currentValues = Array.isArray(value) ? value : []
+                const isAlreadySelected = currentValues.some(v => v.value === selectedOption.value)
+                
+                if (isAlreadySelected) {
+                    const newValues = currentValues.filter(v => v.value !== selectedOption.value)
+                    onChange(newValues)
+                } else {
+                    onChange([...currentValues, selectedOption])
+                }
+            } else {                onChange(selectedOption)
+                handleOpenChange(false)
+                setSearchValue('')
+            }
         }
     }
 
     const renderTriggerContent = () => {
-        if (value) {
+        if (isMulti && Array.isArray(value) && value.length > 0) {
+            if (value.length === 1) {
+                const singleValue = value[0]
+                return (
+                    <div className="flex items-center gap-2 flex-1">
+                        {showImage && (
+                            <div className="flex-shrink-0">
+                                {singleValue.imageURL ? (
+                                    <div 
+                                        className="h-6 w-6 rounded-full bg-muted bg-cover bg-center"
+                                        style={{ backgroundImage: `url(${singleValue.imageURL})` }}
+                                    />
+                                ) : (
+                                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                                        <PlaceholderImage className="h-3 w-3" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        <div className="flex flex-col items-start flex-1 min-w-0">
+                            <span className="text-sm font-medium truncate">{singleValue.label}</span>
+                            {singleValue.description && (
+                                <span className="text-xs text-muted-foreground truncate">
+                                    {singleValue.description}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )
+            } else {
+                const remaining = value.length - 1
+                return (
+                    <div className="flex items-center gap-2 flex-1">
+                        <span className="text-sm font-medium truncate">
+                            {value[0].label}{remaining > 0 && `, +${remaining} more...`}
+                        </span>
+                    </div>
+                )
+            }
+        } else if (!isMulti && value && !Array.isArray(value)) {
             return (
                 <div className="flex items-center gap-2 flex-1">
                     {showImage && (
@@ -97,7 +150,8 @@ export default function InputSelector({
                                 <div 
                                     className="h-6 w-6 rounded-full bg-muted bg-cover bg-center"
                                     style={{ backgroundImage: `url(${value.imageURL})` }}
-                                />) : (
+                                />
+                            ) : (
                                 <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
                                     <PlaceholderImage className="h-3 w-3" />
                                 </div>
@@ -205,11 +259,17 @@ export default function InputSelector({
                                             {option.description}
                                         </span>
                                     )}
-                                </div>
-                                <Check
+                                </div>                                <Check
                                     className={cn(
                                         "ml-auto h-4 w-4",
-                                        value?.value === option.value ? "opacity-100" : "opacity-0"
+                                        (() => {
+                                            if (isMulti && Array.isArray(value)) {
+                                                return value.some(v => v.value === option.value) ? "opacity-100" : "opacity-0"
+                                            } else if (!isMulti && value && !Array.isArray(value)) {
+                                                return value.value === option.value ? "opacity-100" : "opacity-0"
+                                            }
+                                            return "opacity-0"
+                                        })()
                                     )}
                                 />
                             </CommandItem>
@@ -227,10 +287,9 @@ export default function InputSelector({
                     <Button
                         variant="outline"
                         role="combobox"
-                        aria-expanded={open}
-                        className={cn(
+                        aria-expanded={open}                        className={cn(
                             "w-full justify-between h-auto min-h-9 px-3 py-2",
-                            !value && "text-muted-foreground",
+                            (!value || (Array.isArray(value) && value.length === 0)) && "text-muted-foreground",
                             disabled && "cursor-not-allowed opacity-50"
                         )}
                         disabled={disabled}

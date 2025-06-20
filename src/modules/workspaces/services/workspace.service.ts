@@ -1,9 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, PaginateModel } from 'mongoose';
 import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
 import { CreateWorkspaceDto } from '../dto/workspace.dto';
 import { WorkspaceMemberService } from 'src/modules/workspace-members/services/workspace-member.service';
+import { WorkspaceMemberDocument } from 'src/modules/workspace-members/schemas/workspace-member.schema';
 import { WalletService } from 'src/modules/billing/wallets/services/wallet.service';
 import { UserDocument } from 'src/modules/users/schemas/user.schema';
 
@@ -20,18 +21,10 @@ export class WorkspaceService {
   async createWorkspace(
     createWorkspaceDto: CreateWorkspaceDto,
     user: UserDocument,
-  ): Promise<{ workspace: WorkspaceDocument; member: any }> {
-    const existingWorkspace = await this.workspaceModel.findOne({
-      name: createWorkspaceDto.name,
-      createdBy: user._id,
-    });
-
-    if (existingWorkspace) {
-      throw new BadRequestException(
-        'A workspace with this name already exists',
-      );
-    }
-
+  ): Promise<{
+    workspace: WorkspaceDocument;
+    member: WorkspaceMemberDocument;
+  }> {
     const workspace = new this.workspaceModel({
       ...createWorkspaceDto,
       createdBy: user._id,

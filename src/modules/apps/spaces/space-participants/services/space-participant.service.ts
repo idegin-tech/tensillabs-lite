@@ -16,7 +16,7 @@ import {
 import {
   SpaceParticipant,
   SpaceParticipantDocument,
-  SpaceRole,
+  SpacePermission,
   ParticipantStatus,
 } from '../schemas/space-participant.schema';
 import {
@@ -48,7 +48,7 @@ export class SpaceParticipantService {
       space: spaceId,
       member: memberId,
       workspace: workspaceId,
-      role: SpaceRole.ADMIN,
+      permissions: SpacePermission.ADMIN,
       status: ParticipantStatus.ACTIVE,
     });
 
@@ -76,7 +76,7 @@ export class SpaceParticipantService {
       space: spaceId,
       member: new Types.ObjectId(inviteParticipantDto.memberId),
       workspace: workspaceId,
-      role: SpaceRole.REGULAR,
+      permissions: inviteParticipantDto.permissions || SpacePermission.REGULAR,
       status: ParticipantStatus.ACTIVE,
     });
 
@@ -94,10 +94,18 @@ export class SpaceParticipantService {
         workspace: workspaceId,
         status: ParticipantStatus.ACTIVE,
       })
+      .populate('space')
       .exec();
 
     if (!participant) {
       throw new NotFoundException('Participant not found');
+    }
+
+    const space = participant.space as any as SpaceDocument;
+    if (space.createdBy.equals(participant.member)) {
+      throw new ForbiddenException(
+        'Cannot update space owner permissions or status',
+      );
     }
 
     return await this.spaceParticipantModel
@@ -112,15 +120,35 @@ export class SpaceParticipantService {
   async getSpaceParticipants(
     spaceId: Types.ObjectId,
     workspaceId: Types.ObjectId,
-  ): Promise<SpaceParticipantDocument[]> {
-    return await this.spaceParticipantModel
-      .find({
-        space: spaceId,
-        workspace: workspaceId,
-        status: ParticipantStatus.ACTIVE,
-      })
-      .populate('member', 'firstName lastName primaryEmail')
-      .exec();
+    pagination?: PaginationDto,
+  ): Promise<PaginateResult<SpaceParticipantDocument>> {
+    if (!pagination) {
+      pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
+    }
+
+    const { search, paginationOptions } = extractPaginationOptions(pagination);
+
+    const query: FilterQuery<SpaceParticipantDocument> = {
+      space: spaceId,
+      workspace: workspaceId,
+      status: ParticipantStatus.ACTIVE,
+    };
+
+    if (search) {
+      query.$or = [
+        { 'member.firstName': { $regex: search, $options: 'i' } },
+        { 'member.lastName': { $regex: search, $options: 'i' } },
+        { 'member.primaryEmail': { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    return await this.spaceParticipantModel.paginate(query, {
+      ...paginationOptions,
+      populate: {
+        path: 'member',
+        select: 'firstName lastName primaryEmail permission',
+      },
+    });
   }
 
   async getSpacesByParticipant(

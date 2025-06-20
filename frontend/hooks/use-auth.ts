@@ -18,6 +18,13 @@ export interface LoginCredentials {
     password: string
 }
 
+export interface RegisterCredentials {
+    email: string
+    password: string
+    confirmPassword: string
+    timezone: string
+}
+
 interface AuthResponse {
     success: boolean
     message: string
@@ -69,6 +76,22 @@ export function useAuthActions() {
         },
     })
 
+    const registerMutation = useMutation<AuthResponse, ApiError, RegisterCredentials>({
+        mutationFn: (credentials: RegisterCredentials) =>
+            api.post<AuthResponse>('/auth/register', credentials),
+        onSuccess: (response) => {
+            queryClient.setQueryData(['auth', 'me'], response)
+            queryClient.invalidateQueries({ queryKey: ['auth'] })
+            queryClient.invalidateQueries({ queryKey: ['workspace-memberships'] })
+            router.push('/')
+            setError(null)
+        },
+        onError: (error: ApiError) => {
+            const errorMessage = error.message || 'Registration failed'
+            setError(errorMessage)
+        },
+    })
+
     const logoutMutation = useMutation<any, ApiError, void>({
         mutationFn: () => api.post('/auth/logout'),
         onSuccess: () => {
@@ -93,6 +116,16 @@ export function useAuthActions() {
         }
     }
 
+    const register = async (credentials: RegisterCredentials) => {
+        setError(null)
+        try {
+            await registerMutation.mutateAsync(credentials)
+            return { success: true }
+        } catch (error: any) {
+            return { success: false, error: error.message || 'Registration failed' }
+        }
+    }
+
     const logout = async () => {
         setError(null)
         return logoutMutation.mutateAsync()
@@ -102,8 +135,9 @@ export function useAuthActions() {
 
     return {
         login,
+        register,
         logout,
-        isLoading: loginMutation.isPending || logoutMutation.isPending,
+        isLoading: loginMutation.isPending || registerMutation.isPending || logoutMutation.isPending,
         error,
         clearError,
     }
