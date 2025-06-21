@@ -31,6 +31,7 @@ export default function TaskParticipantsSelector({
   const [open, setOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const [pendingValue, setPendingValue] = useState<TaskAssignee[]>(value)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -38,6 +39,10 @@ export default function TaskParticipantsSelector({
     }, 300)
     return () => clearTimeout(timer)
   }, [searchTerm])
+
+  useEffect(() => {
+    setPendingValue(value)
+  }, [value])
 
   const { members, isLoading } = useWorkspaceMembers({
     search: debouncedSearchTerm,
@@ -70,26 +75,32 @@ export default function TaskParticipantsSelector({
     primaryEmail: member.primaryEmail,
     avatarURL: member.avatarURL
   })
-
   const isSelected = (memberId: string) => {
-    return value.some(assignee => assignee._id === memberId)
+    return pendingValue.some(assignee => assignee._id === memberId)
   }
 
   const handleSelect = (member: WorkspaceMember) => {
     const assignee = convertMemberToAssignee(member)
     if (isSelected(member._id)) {
-      onChange(value.filter(a => a._id !== member._id))
+      setPendingValue(pendingValue.filter(a => a._id !== member._id))
     } else {
-      onChange([...value, assignee])
+      setPendingValue([...pendingValue, assignee])
     }
   }
 
   const handleRemove = (assigneeId: string, e?: React.MouseEvent) => {
     e?.preventDefault()
     e?.stopPropagation()
-    onChange(value.filter(a => a._id !== assigneeId))
+    setPendingValue(pendingValue.filter(a => a._id !== assigneeId))
   }
 
+  const handleOpenChange = (open: boolean) => {
+    setOpen(open)
+    
+    if (!open) {
+      onChange(pendingValue)
+    }
+  }
   const renderSelectedAvatars = () => {
     if (value.length === 0) return null
 
@@ -122,7 +133,7 @@ export default function TaskParticipantsSelector({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -196,14 +207,12 @@ export default function TaskParticipantsSelector({
               </>
             )}
           </CommandList>
-        </Command>
-
-        {value.length > 0 && (
+        </Command>        {pendingValue.length > 0 && (
           <div className="border-t p-3">
             <div className="text-xs text-muted-foreground mb-2">
-              Assigned ({value.length})
+              Assigned ({pendingValue.length})
             </div>
-            <div className="flex flex-wrap gap-1">              {value.map((assignee) => (
+            <div className="flex flex-wrap gap-1">              {pendingValue.map((assignee) => (
                 <Badge key={assignee._id} variant="secondary" className="gap-1">                  <Avatar className="h-4 w-4">
                   <AvatarImage
                     src={assignee.avatarURL?.sm || undefined}

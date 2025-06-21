@@ -196,7 +196,7 @@ export default function WorkspacesPage() {
                                                                 <div className="flex items-center space-x-4">
                                                                     <div 
                                                                     className="bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors h-20 w-20 bg-center bg-cover"
-                                                                    style={{ backgroundImage: `url(${member.workspace.logoURL})`}}
+                                                                    style={{ backgroundImage: `url(${member.workspace.logoURL || '/placeholders/logo.jpg'})`}}
                                                                     >
                                                                     </div>
 

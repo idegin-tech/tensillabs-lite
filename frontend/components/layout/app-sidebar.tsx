@@ -4,7 +4,6 @@ import * as React from "react"
 import {
   BookOpen,
   Bot,
-  Command,
   Frame,
   LifeBuoy,
   Map,
@@ -169,12 +168,17 @@ export function AppSidebar({
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
                 <a href="#">
-                  <div
-                    className="bg-muted flex aspect-square size-8 items-center justify-center rounded-lg bg-center bg-cover"
-                       style={{ backgroundImage: `url(${workspace?.logoURL})` }}
-                  >
-                    {/* <Command className="size-4" /> */}
-                  </div>
+                  {
+                    workspace?.logoURL ?
+                      <div
+                        className="bg-muted flex aspect-square size-8 items-center justify-center rounded-lg bg-center bg-cover"
+                        style={{ backgroundImage: `url(${workspace?.logoURL || '/brand/icon.svg'})` }}
+                      /> : <img
+                        src='/brand/icon.svg'
+                        alt='logo'
+                        className="size-8"
+                      />
+                  }
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{workspace?.name}</span>
                     <span className="truncate text-xs">Workspace</span>

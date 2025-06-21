@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { TbCalendar } from 'react-icons/tb'
 import { TaskPropertyProps } from '.'
 import {
@@ -21,6 +21,13 @@ interface TaskTimeframe {
 export default function TaskTimeframeProperty({ onChange, value }: TaskPropertyProps) {
   const [internalValue, setInternalValue] = useState<TaskTimeframe | undefined>(value)
   const [isOpen, setIsOpen] = useState(false)
+  const [pendingValue, setPendingValue] = useState<TaskTimeframe | undefined>(value)
+
+  useEffect(() => {
+    setInternalValue(value)
+    setPendingValue(value)
+  }, [value])
+  
   const formatTimeframe = (timeframe?: TaskTimeframe) => {
     if (!timeframe?.start && !timeframe?.end) return 'No timeframe'
     
@@ -36,6 +43,15 @@ export default function TaskTimeframeProperty({ onChange, value }: TaskPropertyP
     }
       return 'No timeframe'
   }
+
+  const handlePopoverOpenChange = (open: boolean) => {
+    setIsOpen(open)
+    
+    if (!open && pendingValue !== internalValue) {
+      setInternalValue(pendingValue)
+      onChange?.(pendingValue)
+    }
+  }
   
   const handleDateRangeChange = (range: DateRange | undefined) => {
     let newTimeframe: TaskTimeframe | undefined
@@ -45,26 +61,30 @@ export default function TaskTimeframeProperty({ onChange, value }: TaskPropertyP
         start: range?.from?.toISOString(),
         end: range?.to?.toISOString()
       }
-      setInternalValue(newTimeframe)
     } else {
       newTimeframe = undefined
-      setInternalValue(undefined)
     }
     
-    onChange?.(newTimeframe)
+    setPendingValue(newTimeframe)
   }
 
+  const handleClearTimeframe = () => {
+    setPendingValue(undefined)
+    setInternalValue(undefined)
+    onChange?.(undefined)
+    setIsOpen(false)
+  }
   const getCurrentDateRange = (): DateRange | undefined => {
-    if (!internalValue) return undefined
+    if (!pendingValue) return undefined
     
     return {
-      from: internalValue.start ? new Date(internalValue.start) : undefined,
-      to: internalValue.end ? new Date(internalValue.end) : undefined
+      from: pendingValue.start ? new Date(pendingValue.start) : undefined,
+      to: pendingValue.end ? new Date(pendingValue.end) : undefined
     }
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handlePopoverOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" className="w-full h-8 justify-start p-1 border-none shadow-none">
           <div className="flex items-center gap-2">
@@ -81,14 +101,11 @@ export default function TaskTimeframeProperty({ onChange, value }: TaskPropertyP
           numberOfMonths={2}
           className="rounded-md border"
         />
-        <div className="p-3 border-t">          <Button
+        <div className="p-3 border-t">
+          <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              setInternalValue(undefined)
-              onChange?.(undefined)
-              setIsOpen(false)
-            }}
+            onClick={handleClearTimeframe}
             className="w-full"
           >
             Clear timeframe
