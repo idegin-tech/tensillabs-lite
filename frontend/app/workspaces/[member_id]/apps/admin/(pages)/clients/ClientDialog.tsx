@@ -108,15 +108,18 @@ export default function ClientDialog({ client, open, onOpenChange, onSubmit, isL
         if (!newOpen && !isLoading) {
             form.reset()
             setSelectedOffices([])
-        }
-        onOpenChange(newOpen)
+        }        onOpenChange(newOpen)
     }
 
-    const handleAddOffice = (office: InputSelectorData) => {
-        const exists = selectedOffices.some(selected => selected.value === office.value)
-        if (!exists) {
-            setSelectedOffices(prev => [...prev, office])
-        }
+    const handleAddOffice = (value: InputSelectorData | InputSelectorData[]) => {
+        const offices = Array.isArray(value) ? value : [value]
+        
+        offices.forEach(office => {
+            const exists = selectedOffices.some(selected => selected.value === office.value)
+            if (!exists) {
+                setSelectedOffices(prev => [...prev, office])
+            }
+        })
     }
 
     const handleRemoveOffice = (officeId: string) => {

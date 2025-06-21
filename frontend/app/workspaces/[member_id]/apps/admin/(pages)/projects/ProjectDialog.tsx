@@ -85,9 +85,7 @@ export default function ProjectDialog({ project, open, onOpenChange, onSubmit, i
             name: data.name,
             description: data.description,
             client: data.client
-        }
-
-        // Remove undefined values
+        }        // Remove undefined values
         Object.keys(submitData).forEach(key => {
             if (submitData[key] === undefined) {
                 delete submitData[key]
@@ -97,8 +95,11 @@ export default function ProjectDialog({ project, open, onOpenChange, onSubmit, i
         onSubmit(submitData)
     }
 
-    const handleClientChange = (client: InputSelectorData) => {
-        form.setValue('client', client.value, { shouldValidate: true })
+    const handleClientChange = (value: InputSelectorData | InputSelectorData[]) => {
+        const client = Array.isArray(value) ? value[0] : value
+        if (client) {
+            form.setValue('client', client.value, { shouldValidate: true })
+        }
     }
 
     const getSelectedClient = (): InputSelectorData | undefined => {
