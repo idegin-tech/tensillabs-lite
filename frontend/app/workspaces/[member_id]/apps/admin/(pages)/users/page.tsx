@@ -117,7 +117,7 @@ function UsersTable({ users, isLoading, onViewUser, onEditUser, onSuspendUser, o
                             <TableCell className="py-4">
                                 <div className="flex items-center space-x-3">
                                     <Avatar className="h-9 w-9 ring-2 ring-background">
-                                        <AvatarImage src={user.avatarURL.sm} alt={`${user.firstName} ${user.lastName}`} />
+                                        <AvatarImage src={user.avatarURL?.sm || undefined} alt={`${user.firstName} ${user.lastName}`} />
                                         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
                                             {getInitials(user.firstName, user.lastName)}
                                         </AvatarFallback>

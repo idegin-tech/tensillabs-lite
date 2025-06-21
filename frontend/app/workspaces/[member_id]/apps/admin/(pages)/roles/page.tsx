@@ -130,9 +130,8 @@ function RolesTable({ roles, isLoading, onEditRole, onToggleActive, onDeleteRole
                             </TableCell>
                             <TableCell className="py-4">
                                 <div className="flex items-center space-x-3">
-                                    <Avatar className="h-7 w-7 ring-2 ring-background">
-                                        <AvatarImage 
-                                            src={typeof role.createdBy === 'object' ? role.createdBy.avatarURL?.sm : ''} 
+                                    <Avatar className="h-7 w-7 ring-2 ring-background">                                        <AvatarImage 
+                                            src={typeof role.createdBy === 'object' ? role.createdBy.avatarURL?.sm || undefined : undefined} 
                                             alt={getCreatorName(role.createdBy)} 
                                         />
                                         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">

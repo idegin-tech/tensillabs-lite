@@ -15,6 +15,11 @@ import { Button } from "@/components/ui/button"
 export default function TaskStatusProperty({ onChange, value }: TaskPropertyProps) {
   const [internalValue, setInternalValue] = useState<TaskStatus>(value || TaskStatus.TODO)
 
+  const handleStatusChange = (status: TaskStatus) => {
+    setInternalValue(status)
+    onChange?.(status)
+  }
+
   const getStatusIcon = (status: TaskStatus) => {
     switch (status) {
       case TaskStatus.COMPLETED:
@@ -46,11 +51,10 @@ export default function TaskStatusProperty({ onChange, value }: TaskPropertyProp
           </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[150px]">
-        {statusOptions.map((status) => (
+      <DropdownMenuContent align="start" className="w-[150px]">        {statusOptions.map((status) => (
           <DropdownMenuItem 
             key={status} 
-            onClick={() => setInternalValue(status)}
+            onClick={() => handleStatusChange(status)}
             className={internalValue === status ? "bg-accent" : ""}
           >
             <div className="flex items-center gap-2">

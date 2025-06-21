@@ -60,15 +60,18 @@ const getCommonPinningStyles = (column: Column<Task>): CSSProperties => {
 
 interface TasksTableProps {
     tasks: Task[]
+    onTaskUpdate?: (taskId: string, updates: Partial<Task>) => void
 }
 
-export default function TasksTable({ tasks }: TasksTableProps) {
+export default function TasksTable({ tasks, onTaskUpdate }: TasksTableProps) {
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
     const { state, updateState } = useTaskList();
-    const columns = useMemo(() => createColumns(), [])
+    const columns = useMemo(() => createColumns({ 
+        onLocalUpdate: onTaskUpdate 
+    }), [onTaskUpdate])
     const table = useReactTable({
         data: tasks,
         columns,

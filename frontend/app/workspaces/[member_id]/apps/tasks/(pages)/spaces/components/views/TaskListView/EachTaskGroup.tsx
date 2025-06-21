@@ -15,9 +15,6 @@ import { useQueryClient } from '@tanstack/react-query'
 
 export default function EachTaskGroup({
     title = "To Do",
-    status = TaskStatus.TODO,
-    tasks = [],
-    isLoading = false,
     icon: Icon = TbLayoutList,
     color = "bg-primary/10 text-primary",
     groupConfig
@@ -98,6 +95,14 @@ export default function EachTaskGroup({
         })
     }
 
+    const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
+        setLocalTasks(prev => 
+            prev.map(task => 
+                task._id === taskId ? { ...task, ...updates } : task
+            )
+        )
+    }
+
     const getGroupInfoForCreate = () => {
         if (!groupConfig) return undefined
 
@@ -161,17 +166,23 @@ export default function EachTaskGroup({
                 isExpanded && <>
                     <div
                         className={cn(
-                            'transition-all duration-300 ease-in-out z-0',
+                            'transition-all duration-300 ease-in-out z-0 pt-3',
                             isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                         )}
                     >
                         {tableVisible && (
                             <div className='px-3'>
                                 {isApiLoading && page === 1 ? (
-                                    <TablePlaceholder rows={3} columns={6} showHeader={true} />
-                                ) : (
+                                    <TablePlaceholder
+                                        rows={3}
+                                        columns={6}
+                                        showHeader={true}
+                                    />                                ) : (
                                     <>
-                                        <TasksTable tasks={displayTasks} />
+                                        <TasksTable 
+                                            tasks={displayTasks} 
+                                            onTaskUpdate={handleTaskUpdate}
+                                        />
                                         {hasMore && (
                                             <div className="flex justify-center py-4">
                                                 <Button

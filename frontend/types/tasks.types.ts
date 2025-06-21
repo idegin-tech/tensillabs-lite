@@ -58,9 +58,6 @@ export interface TaskGrouping {
 
 export interface TaskGroupProps {
   title?: string
-  status?: TaskStatus
-  tasks?: Task[]
-  isLoading?: boolean
   icon?: React.ComponentType<{ className?: string }>
   color?: string
   groupConfig?: TaskGrouping

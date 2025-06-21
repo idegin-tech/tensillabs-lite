@@ -1,12 +1,16 @@
 import { ColumnDef } from "@tanstack/react-table"
-import { TbUser, TbPlus } from 'react-icons/tb'
+import { TbPlus } from 'react-icons/tb'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Task, TaskStatus, TaskPriority } from '@/types/tasks.types'
-import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty } from "../../../../../components/TaskProperties"
+import TaskColumnRenderer from '../../../../../components/TaskColumnRenderer'
+
+interface CreateColumnsProps {
+  onLocalUpdate?: (taskId: string, updates: Partial<Task>) => void
+}
 
 
-export const createColumns = (): ColumnDef<Task>[] => [{
+export const createColumns = ({ onLocalUpdate }: CreateColumnsProps = {}): ColumnDef<Task>[] => [{
     id: "select",
     header: ({ table }) => (
         <Checkbox
@@ -55,12 +59,14 @@ export const createColumns = (): ColumnDef<Task>[] => [{
     header: "Status",
     minSize: 150,
     maxSize: 400,
-    enableResizing: true,
-    cell: ({ row }) => {
+    enableResizing: true,    cell: ({ row }) => {
         const status = row.getValue("status") as TaskStatus
         return (
-            <TaskStatusProperty
+            <TaskColumnRenderer
+                accessorKey="status"
                 value={status}
+                task={row.original}
+                onLocalUpdate={onLocalUpdate}
             />
         )
     },
@@ -70,11 +76,14 @@ export const createColumns = (): ColumnDef<Task>[] => [{
     header: "Priority",
     minSize: 150,
     maxSize: 400,
-    enableResizing: true, cell: ({ row }) => {
+    enableResizing: true,    cell: ({ row }) => {
         const priority = row.getValue("priority") as TaskPriority
         return (
-            <TaskPriorityProperty
+            <TaskColumnRenderer
+                accessorKey="priority"
                 value={priority}
+                task={row.original}
+                onLocalUpdate={onLocalUpdate}
             />
         )
     },
@@ -84,11 +93,14 @@ export const createColumns = (): ColumnDef<Task>[] => [{
     header: "Timeframe",
     minSize: 200,
     maxSize: 400,
-    enableResizing: true, cell: ({ row }) => {
+    enableResizing: true,    cell: ({ row }) => {
         const timeframe = row.getValue("timeframe") as Task['timeframe']
         return (
-            <TaskTimeframeProperty
+            <TaskColumnRenderer
+                accessorKey="timeframe"
                 value={timeframe}
+                task={row.original}
+                onLocalUpdate={onLocalUpdate}
             />
         )
     },
@@ -98,21 +110,16 @@ export const createColumns = (): ColumnDef<Task>[] => [{
     header: "Assignee",
     minSize: 200,
     maxSize: 480,
-    enableResizing: true,
-    cell: ({ row }) => {
+    enableResizing: true,    cell: ({ row }) => {
         const assignee = row.original.assignee
-        if (assignee.length === 0) {
-            return <span className="text-sm text-muted-foreground">Unassigned</span>
-        }
-        const firstAssignee = assignee[0]
         return (
-            <div className="flex items-center gap-2">
-                <TbUser className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{`${firstAssignee.firstName} ${firstAssignee.lastName}`}</span>
-                {assignee.length > 1 && (
-                    <span className="text-xs text-muted-foreground">+{assignee.length - 1}</span>
-                )}
-            </div>)
+            <TaskColumnRenderer
+                accessorKey="assignee"
+                value={assignee}
+                task={row.original}
+                onLocalUpdate={onLocalUpdate}
+            />
+        )
     },
 },
 {

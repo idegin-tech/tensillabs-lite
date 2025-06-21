@@ -34,19 +34,24 @@ export default function TaskTimeframeProperty({ onChange, value }: TaskPropertyP
     } else if (endDate) {
       return `Until ${format(endDate, 'MMM d')}`
     }
-    
-    return 'No timeframe'
+      return 'No timeframe'
   }
+  
   const handleDateRangeChange = (range: DateRange | undefined) => {
+    let newTimeframe: TaskTimeframe | undefined
+    
     if (range?.from || range?.to) {
-      const newTimeframe: TaskTimeframe = {
+      newTimeframe = {
         start: range?.from?.toISOString(),
         end: range?.to?.toISOString()
       }
       setInternalValue(newTimeframe)
     } else {
+      newTimeframe = undefined
       setInternalValue(undefined)
     }
+    
+    onChange?.(newTimeframe)
   }
 
   const getCurrentDateRange = (): DateRange | undefined => {
@@ -76,12 +81,12 @@ export default function TaskTimeframeProperty({ onChange, value }: TaskPropertyP
           numberOfMonths={2}
           className="rounded-md border"
         />
-        <div className="p-3 border-t">
-          <Button
+        <div className="p-3 border-t">          <Button
             variant="outline"
             size="sm"
             onClick={() => {
               setInternalValue(undefined)
+              onChange?.(undefined)
               setIsOpen(false)
             }}
             className="w-full"

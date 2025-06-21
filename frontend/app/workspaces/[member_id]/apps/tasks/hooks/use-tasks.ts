@@ -47,6 +47,29 @@ interface GetTasksByGroupParams {
   due_status?: string
 }
 
+interface UpdateTasksResponse {
+  success: boolean
+  message: string
+  payload: Task
+}
+
+interface UpdateTaskData {
+  status?: TaskStatus
+  priority?: TaskPriority
+  timeframe?: {
+    start?: string
+    end?: string
+  }
+  assignee?: string[]
+  name?: string
+  description?: string
+}
+
+interface UpdateTaskRequest {
+  taskId: string
+  data: UpdateTaskData
+}
+
 export function useCreateTasks(listId: string) {
   const { member_id } = useCommon()
 
@@ -84,4 +107,18 @@ export function useGetTasksByGroup(listId: string, params: GetTasksByGroupParams
     enabled,
     staleTime: 1000 * 60 * 5,
   })
+}
+
+export function useUpdateTask(listId: string) {
+  const { member_id } = useCommon()
+
+  return useApiMutation<UpdateTasksResponse, UpdateTaskRequest>(
+    async ({ taskId, data }) => {
+      return api.put<UpdateTasksResponse>(`/lists/${listId}/tasks/${taskId}`, data, {
+        headers: {
+          'x-member-id': member_id,
+        },
+      })
+    }
+  )
 }

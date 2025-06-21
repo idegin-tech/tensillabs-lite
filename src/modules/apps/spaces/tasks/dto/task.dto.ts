@@ -38,6 +38,16 @@ export const updateTaskSchema = z.object({
     .trim()
     .nullable()
     .optional(),
+  priority: z.nativeEnum(TaskPriority).nullable().optional(),
+  status: z.nativeEnum(TaskStatus).optional(),
+  timeframe: z
+    .object({
+      start: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+      end: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+    })
+    .nullable()
+    .optional(),
+  assignee: z.array(z.string()).optional(),
 });
 
 export const getTasksByListQuerySchema = z.object({

@@ -48,10 +48,12 @@ export default function TaskPriorityProperty({ onChange, value }: TaskPropertyPr
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[150px]">
-        {priorityOptions.map((priority) => (
-          <DropdownMenuItem 
+        {priorityOptions.map((priority) => (          <DropdownMenuItem 
             key={priority || 'none'} 
-            onClick={() => setInternalValue(priority)}
+            onClick={() => {
+              setInternalValue(priority)
+              onChange?.(priority)
+            }}
             className={internalValue === priority ? "bg-accent" : ""}
           >
             <div className="flex items-center gap-2">

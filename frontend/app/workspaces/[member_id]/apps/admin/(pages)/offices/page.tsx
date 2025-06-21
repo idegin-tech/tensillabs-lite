@@ -134,9 +134,8 @@ function OfficesTable({ offices, isLoading, onEditOffice, onToggleActive, onDele
                             </TableCell>
                             <TableCell className="py-4 max-w-[250px] truncate">
                                 <div className="flex items-center space-x-3">
-                                    <Avatar className="h-7 w-7 ring-2 ring-background">
-                                        <AvatarImage 
-                                            src={typeof office.createdBy === 'object' ? office.createdBy.avatarURL?.sm : ''} 
+                                    <Avatar className="h-7 w-7 ring-2 ring-background">                                        <AvatarImage 
+                                            src={typeof office.createdBy === 'object' ? office.createdBy.avatarURL?.sm || undefined : undefined} 
                                             alt={getCreatorName(office.createdBy)} 
                                         />
                                         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">

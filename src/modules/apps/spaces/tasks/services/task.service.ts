@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -81,6 +82,22 @@ export class TaskService {
 
     if (updateTaskDto.description !== undefined) {
       task.description = updateTaskDto.description;
+    }
+
+    if (updateTaskDto.status !== undefined) {
+      task.status = updateTaskDto.status;
+    }
+
+    if (updateTaskDto.priority !== undefined) {
+      task.priority = updateTaskDto.priority;
+    }
+
+    if (updateTaskDto.timeframe !== undefined) {
+      task.timeframe = updateTaskDto.timeframe;
+    }
+
+    if (updateTaskDto.assignee !== undefined) {
+      task.assignee = updateTaskDto.assignee.map(id => new Types.ObjectId(id));
     }
 
     return await task.save();

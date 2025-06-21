@@ -129,9 +129,8 @@ function TeamsTable({ teams, isLoading, onEditTeam, onToggleActive, onDeleteTeam
                                 <div className="flex items-center space-x-2">
                                     {typeof team.createdBy === 'object' && team.createdBy ? (
                                         <>
-                                            <Avatar className="h-6 w-6">
-                                                <AvatarImage 
-                                                    src={team.createdBy.avatarURL?.sm} 
+                                            <Avatar className="h-6 w-6">                                                <AvatarImage 
+                                                    src={team.createdBy.avatarURL?.sm || undefined} 
                                                     alt={`${team.createdBy.firstName} ${team.createdBy.lastName}`} 
                                                 />
                                                 <AvatarFallback className="text-xs bg-muted">

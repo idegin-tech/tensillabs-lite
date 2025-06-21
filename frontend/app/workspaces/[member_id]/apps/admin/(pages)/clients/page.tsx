@@ -137,9 +137,8 @@ function ClientsTable({ clients, isLoading, onEditClient, onToggleActive, onDele
                             </TableCell>
                             <TableCell className="py-4">
                                 <div className="flex items-center space-x-3">
-                                    <Avatar className="h-7 w-7 ring-2 ring-background">
-                                        <AvatarImage
-                                            src={typeof client.createdBy === 'object' ? client.createdBy.avatarURL?.sm : ''}
+                                    <Avatar className="h-7 w-7 ring-2 ring-background">                                        <AvatarImage
+                                            src={typeof client.createdBy === 'object' ? client.createdBy.avatarURL?.sm || undefined : undefined}
                                             alt={getCreatorName(client.createdBy)}
                                         />
                                         <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
