@@ -31,7 +31,7 @@ export default function TasksListView() {
                         </p>
                     </div>
                     <br />
-                    <div className='grid grid-cols-1 gap-0'>
+                    <div className='flex flex-col'>
                         {state.groupBy === 'none' ? (
                             <EachTaskGroup
                                 key="no-group"

@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Check, ChevronDown, Loader2, X, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useWorkspaceMembers } from '@/hooks/use-workspace-members'
 import type { WorkspaceMember } from '@/types/workspace.types'
@@ -18,6 +19,7 @@ interface TaskParticipantsSelectorProps {
   disabled?: boolean
   className?: string
   maxVisible?: number
+  avatarSize?: 'sm' | 'md' | 'lg'
 }
 
 export default function TaskParticipantsSelector({
@@ -26,7 +28,8 @@ export default function TaskParticipantsSelector({
   placeholder = "Assign to...",
   disabled = false,
   className,
-  maxVisible = 3
+  maxVisible = 3,
+  avatarSize = 'sm'
 }: TaskParticipantsSelectorProps) {
   const [open, setOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -43,6 +46,31 @@ export default function TaskParticipantsSelector({
   useEffect(() => {
     setPendingValue(value)
   }, [value])
+
+  const getAvatarSizeClasses = () => {
+    switch (avatarSize) {
+      case 'sm':
+        return 'h-6 w-6'
+      case 'md':
+        return 'h-8 w-8'
+      case 'lg':
+        return 'h-10 w-10'
+      default:
+        return 'h-6 w-6'
+    }
+  }
+
+  const getAvatarSpacing = () => {
+    switch (avatarSize) {
+      case 'sm':
+        return '-space-x-2'
+      case 'md':
+        return '-space-x-2'
+      case 'lg':
+        return '-space-x-3'
+      default:
+        return '-space-x-2'
+    }  }
 
   const { members, isLoading } = useWorkspaceMembers({
     search: debouncedSearchTerm,
@@ -126,6 +154,7 @@ export default function TaskParticipantsSelector({
       onChange(pendingValue)
     }
   }
+  
   const renderSelectedAvatars = () => {
     if (value.length === 0) return null
 
@@ -133,24 +162,35 @@ export default function TaskParticipantsSelector({
     const remainingCount = value.length - maxVisible
 
     return (
-      <div className="flex items-center gap-1">
-        <div className="flex -space-x-2">          
-          {visibleAssignees.map((assignee) => (<Avatar key={assignee._id} className="h-6 w-6 border-2 border-background">
-            <AvatarImage
-              src={assignee.avatarURL?.sm || undefined}
-              alt={`${assignee.firstName} ${assignee.lastName}`}
-            />            <AvatarFallback className="text-xs bg-primary/10 text-primary font-medium">
-              {getAssigneeInitials(assignee)}
-            </AvatarFallback>
-          </Avatar>
-          ))}
+      <TooltipProvider>
+        <div className="flex items-center gap-1">
+          <div className={cn("flex", getAvatarSpacing())}>          
+            {visibleAssignees.map((assignee) => (
+              <Tooltip key={assignee._id}>
+                <TooltipTrigger asChild>
+                  <Avatar className={cn(getAvatarSizeClasses(), "border-2 border-background")}>
+                    <AvatarImage
+                      src={assignee.avatarURL?.sm || undefined}
+                      alt={`${assignee.firstName} ${assignee.lastName}`}
+                    />            
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-medium">
+                      {getAssigneeInitials(assignee)}
+                    </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{getAssigneeDisplayName(assignee)}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+          {remainingCount > 0 && (
+            <Badge variant="secondary" className="h-6 min-w-6 text-xs">
+              +{remainingCount}
+            </Badge>
+          )}
         </div>
-        {remainingCount > 0 && (
-          <Badge variant="secondary" className="h-6 min-w-6 text-xs">
-            +{remainingCount}
-          </Badge>
-        )}
-      </div>
+      </TooltipProvider>
     )
   }
 

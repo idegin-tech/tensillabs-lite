@@ -2,7 +2,7 @@
 import AppBody from '@/components/layout/app-layout/AppBody'
 import React from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TbChartPie, TbLayoutList, TbMenu3 } from 'react-icons/tb'
+import { TbChartPie, TbFile, TbLayoutList, TbMenu3 } from 'react-icons/tb'
 import TasksListView from '../../../components/views/TaskListView/TasksListView'
 import { TaskListProvider, useTaskList } from '../../../../../contexts/task-list.context'
 import ListDetailsPageLoading from './ListDetailsPageLoading'
@@ -26,6 +26,9 @@ function ListDetailsContent() {
             </TabsTrigger>
             <TabsTrigger value="timeline" className='max-w-[150px]'>
               <TbMenu3 /> Timeline
+            </TabsTrigger>
+            <TabsTrigger value="files" className='max-w-[150px]'>
+              <TbFile /> Files
             </TabsTrigger>
             <TabsTrigger value="report" className='max-w-[150px]'>
               <TbChartPie /> Report

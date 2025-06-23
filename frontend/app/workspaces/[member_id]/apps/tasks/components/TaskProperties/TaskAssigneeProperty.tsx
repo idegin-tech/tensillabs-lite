@@ -23,6 +23,7 @@ export default function TaskAssigneeProperty({ onChange, value }: TaskPropertyPr
             onChange={handleAssigneeChange}
             placeholder="Unassigned"
             maxVisible={5}
+            avatarSize="lg"
         />
     )
 }
