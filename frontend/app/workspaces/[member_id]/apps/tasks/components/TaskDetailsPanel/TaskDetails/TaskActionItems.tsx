@@ -1,9 +1,11 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { TbCheck, TbDots, TbEdit, TbTrash, TbPlus } from 'react-icons/tb'
+import { TbCheck, TbDots, TbEdit, TbTrash, TbPlus, TbX } from 'react-icons/tb'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { useCreateChecklist, useUpdateChecklist, useDeleteChecklist } from '../../../hooks/use-checklists'
 import { toast } from 'sonner'
@@ -142,151 +144,183 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
       handleStartEdit(item)
     }
   }
-
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium">Checklist ({localChecklist.filter(item => item.isDone).length}/{localChecklist.length})</h3>
+        <h3 className="font-medium text-lg">
+          Checklist ({localChecklist.filter(item => item.isDone).length}/{localChecklist.length})
+        </h3>
         {taskId && !isAddingNew && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => setIsAddingNew(true)}
-            className="h-8"
+            className="h-8 gap-2"
           >
-            <TbPlus className="h-4 w-4 mr-1" />
+            <TbPlus className="h-4 w-4" />
             Add Item
           </Button>
         )}
       </div>
 
-      {isAddingNew && (
-        <div className="flex items-center space-x-3 p-3 rounded-lg border bg-background">
-          <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />
-          <Input
-            value={newItemText}
-            onChange={(e) => setNewItemText(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e)}
-            placeholder="Enter checklist item..."
-            className="text-sm border-none p-0 h-auto bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-            autoFocus
-            onBlur={() => {
-              if (!newItemText.trim()) {
-                setIsAddingNew(false)
-              }
-            }}
-          />
-          <div className="flex gap-1">
-            <Button size="sm" variant="ghost" onClick={handleAddNew} disabled={!newItemText.trim()}>
-              Add
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => {
-              setIsAddingNew(false)
-              setNewItemText('')
-            }}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {localChecklist.map((item) => (
-        <div
-          key={item._id}
-          className="group flex items-center space-x-3 p-3 rounded-lg border bg-background hover:bg-accent/50 transition-colors"
-        >
-          <button
-            onClick={() => handleToggleComplete(item)}
-            className={cn(
-              "flex items-center justify-center w-5 h-5 rounded-full border-2 transition-all duration-200 hover:scale-110",
-              item.isDone
-                ? "bg-green-500 border-green-500 text-white"
-                : "border-muted-foreground/30 hover:border-green-500"
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-[50px] text-center">Done</TableHead>
+              <TableHead className='max-w-[200px]'>Task</TableHead>
+              <TableHead className="w-[80px] text-center">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isAddingNew && (
+              <TableRow className="bg-accent/30">
+                <TableCell className="text-center">
+                  <Checkbox disabled className="opacity-30" />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={newItemText}
+                    onChange={(e) => setNewItemText(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e)}
+                    placeholder="Enter checklist item..."
+                    className="border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8"
+                    autoFocus
+                  />
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex gap-1 justify-center">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={handleAddNew} 
+                      disabled={!newItemText.trim()}
+                      className="h-6 w-6 p-0"
+                    >
+                      <TbCheck className="h-3 w-3" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => {
+                        setIsAddingNew(false)
+                        setNewItemText('')
+                      }}
+                      className="h-6 w-6 p-0"
+                    >
+                      <TbX className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
             )}
-          >
-            {item.isDone && <TbCheck className="h-3 w-3" />}
-          </button>
 
-          <div className="flex-1 min-w-0">
-            {editingItem === item._id ? (
-              <Input
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, item)}
-                onBlur={() => handleSaveEdit(item)}
-                className="text-sm border-none p-0 h-auto bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-                autoFocus
-              />
-            ) : (
-              <span
+            {localChecklist.map((item) => (
+              <TableRow 
+                key={item._id} 
                 className={cn(
-                  "text-sm cursor-pointer transition-all duration-200",
-                  item.isDone
-                    ? "line-through text-muted-foreground"
-                    : "text-foreground hover:text-accent-foreground"
+                  "group transition-colors hover:bg-accent/50",
+                  item.isDone && "bg-muted/30"
                 )}
-                onDoubleClick={() => handleDoubleClick(item)}
               >
-                {item.name}
-              </span>
+                <TableCell className="text-center">
+                  <Checkbox
+                    checked={item.isDone}
+                    onCheckedChange={() => handleToggleComplete(item)}
+                    className={cn(
+                      "transition-all duration-200",
+                      item.isDone && "data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                    )}
+                  />
+                </TableCell>
+                <TableCell className='max-w-[100px]'>
+                  {editingItem === item._id ? (
+                    <Input
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, item)}
+                      onBlur={() => handleSaveEdit(item)}
+                      className="border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8"
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className={cn(
+                        "cursor-pointer transition-all duration-200 block py-1 text-wrap",
+                        item.isDone
+                          ? "line-through text-muted-foreground"
+                          : "text-foreground hover:text-accent-foreground"
+                      )}
+                      onDoubleClick={() => handleDoubleClick(item)}
+                    >
+                      {item.name}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-center">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-60 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                      >
+                        <TbDots className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem
+                        onClick={() => handleToggleComplete(item)}
+                        className="flex items-center gap-2"
+                      >
+                        <TbCheck className="h-4 w-4" />
+                        {item.isDone ? 'Mark as Undone' : 'Mark as Done'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleStartEdit(item)}
+                        className="flex items-center gap-2"
+                        disabled={item.isDone}
+                      >
+                        <TbEdit className="h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteItem(item)}
+                        className="flex items-center gap-2 text-destructive"
+                      >
+                        <TbTrash className="h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+
+            {localChecklist.length === 0 && !isAddingNew && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center py-12">
+                  <div className="text-muted-foreground">
+                    <TbCheck className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm mb-2">No checklist items yet</p>
+                    {taskId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsAddingNew(true)}
+                        className="gap-2"
+                      >
+                        <TbPlus className="h-4 w-4" />
+                        Add first item
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
             )}
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-              >
-                <TbDots className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem
-                onClick={() => handleToggleComplete(item)}
-                className="flex items-center gap-2"
-              >
-                <TbCheck className="h-4 w-4" />
-                {item.isDone ? 'Mark as Undone' : 'Mark as Done'}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleStartEdit(item)}
-                className="flex items-center gap-2"
-                disabled={item.isDone}
-              >
-                <TbEdit className="h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleDeleteItem(item)}
-                className="flex items-center gap-2 text-destructive"
-              >
-                <TbTrash className="h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ))}
-
-      {localChecklist.length === 0 && !isAddingNew && (
-        <div className="text-center py-8 text-muted-foreground">
-          <TbCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No checklist items yet</p>
-          {taskId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsAddingNew(true)}
-              className="mt-2"
-            >
-              <TbPlus className="h-4 w-4 mr-1" />
-              Add first item
-            </Button>
-          )}
-        </div>
-      )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }

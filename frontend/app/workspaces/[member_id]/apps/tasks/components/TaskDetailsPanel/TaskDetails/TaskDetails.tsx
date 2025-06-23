@@ -9,16 +9,16 @@ import TaskActionItems from './TaskActionItems'
 import TaskDetailsAttachments from './TaskDetailsAttachments'
 
 interface ChecklistItem {
-  _id: string
-  name: string
-  isDone: boolean
-  task: string
-  workspace: string
-  space?: string
-  list?: string
-  createdBy: string
-  createdAt: string
-  updatedAt: string
+    _id: string
+    name: string
+    isDone: boolean
+    task: string
+    workspace: string
+    space?: string
+    list?: string
+    createdBy: string
+    createdAt: string
+    updatedAt: string
 }
 
 interface TaskDetailsProps {
@@ -81,10 +81,11 @@ export default function TaskDetails({ task, checklist }: TaskDetailsProps) {
                                 <TbPaperclip className="h-4 w-4 mr-2" />
                                 Attachments
                             </TabsTrigger>
-                        </TabsList>                        <TabsContent value="checklist" className="mt-4">
-                            <TaskActionItems 
-                                taskId={task?._id} 
-                                checklist={checklist || []} 
+                        </TabsList>
+                        <TabsContent value="checklist" className="mt-4">
+                            <TaskActionItems
+                                taskId={task?._id}
+                                checklist={checklist || []}
                             />
                         </TabsContent>
                         <TabsContent value="attachments" className="mt-4">
