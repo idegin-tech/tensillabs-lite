@@ -53,8 +53,8 @@ export default function TaskParticipantsSelector({
     const firstName = member.firstName?.trim() || ''
     const lastName = member.lastName?.trim() || ''
     const fullName = `${firstName} ${lastName}`.trim()
-    return fullName || member.primaryEmail || 'Unknown'
-  }
+    return fullName || member.primaryEmail || 'Unknown'  }
+  
   const getInitials = (member: WorkspaceMember) => {
     if (member.firstName && member.firstName.length > 0 && member.lastName && member.lastName.length > 0) {
       return `${member.firstName[0]}${member.lastName[0]}`.toUpperCase()
@@ -62,10 +62,35 @@ export default function TaskParticipantsSelector({
     if (member.firstName && member.firstName.length > 0) {
       return member.firstName[0].toUpperCase()
     }
+    if (member.lastName && member.lastName.length > 0) {
+      return member.lastName[0].toUpperCase()
+    }
     if (member.primaryEmail && member.primaryEmail.length > 0) {
       return member.primaryEmail[0].toUpperCase()
     }
-    return '?'
+    return 'U'  }
+
+  const getAssigneeDisplayName = (assignee: TaskAssignee) => {
+    const firstName = assignee.firstName?.trim() || ''
+    const lastName = assignee.lastName?.trim() || ''
+    const fullName = `${firstName} ${lastName}`.trim()
+    return fullName || assignee.primaryEmail || 'Unknown User'
+  }
+
+  const getAssigneeInitials = (assignee: TaskAssignee) => {
+    if (assignee.firstName && assignee.firstName.length > 0 && assignee.lastName && assignee.lastName.length > 0) {
+      return `${assignee.firstName[0]}${assignee.lastName[0]}`.toUpperCase()
+    }
+    if (assignee.firstName && assignee.firstName.length > 0) {
+      return assignee.firstName[0].toUpperCase()
+    }
+    if (assignee.lastName && assignee.lastName.length > 0) {
+      return assignee.lastName[0].toUpperCase()
+    }
+    if (assignee.primaryEmail && assignee.primaryEmail.length > 0) {
+      return assignee.primaryEmail[0].toUpperCase()
+    }
+    return 'U'
   }
 
   const convertMemberToAssignee = (member: WorkspaceMember): TaskAssignee => ({
@@ -115,10 +140,7 @@ export default function TaskParticipantsSelector({
               src={assignee.avatarURL?.sm || undefined}
               alt={`${assignee.firstName} ${assignee.lastName}`}
             />            <AvatarFallback className="text-xs bg-primary/10 text-primary font-medium">
-              {assignee.firstName && assignee.lastName && assignee.firstName.length > 0 && assignee.lastName.length > 0
-                ? `${assignee.firstName[0]}${assignee.lastName[0]}`.toUpperCase()
-                : (assignee.primaryEmail && assignee.primaryEmail.length > 0 ? assignee.primaryEmail[0].toUpperCase() : '?')
-              }
+              {getAssigneeInitials(assignee)}
             </AvatarFallback>
           </Avatar>
           ))}
@@ -218,16 +240,10 @@ export default function TaskParticipantsSelector({
                     src={assignee.avatarURL?.sm || undefined}
                     alt={`${assignee.firstName} ${assignee.lastName}`}
                   />                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                    {assignee.firstName && assignee.lastName && assignee.firstName.length > 0 && assignee.lastName.length > 0
-                      ? `${assignee.firstName[0]}${assignee.lastName[0]}`.toUpperCase()
-                      : (assignee.primaryEmail && assignee.primaryEmail.length > 0 ? assignee.primaryEmail[0].toUpperCase() : '?')
-                    }
+                    {getAssigneeInitials(assignee)}
                   </AvatarFallback>
                 </Avatar>                  <span className="text-xs">
-                    {assignee.firstName && assignee.lastName && assignee.firstName.length > 0 && assignee.lastName.length > 0
-                      ? `${assignee.firstName} ${assignee.lastName}`
-                      : assignee.primaryEmail
-                    }
+                    {getAssigneeDisplayName(assignee)}
                   </span>
                   <button
                     onClick={(e) => handleRemove(assignee._id, e)}

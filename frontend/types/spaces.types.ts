@@ -80,6 +80,7 @@ export interface TasksAppState {
   spaces: Space[]
   isLoading: boolean
   error: Error | null
+  activeTaskID: string | null
 }
 
 export interface TasksAppContextType {

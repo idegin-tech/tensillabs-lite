@@ -11,6 +11,7 @@ import CreateTaskPopup from '../../../../../components/CreateTaskPopup'
 import { useGetTasksByGroup } from '../../../../../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import { useTaskList } from '../../../../../contexts/task-list.context'
+import { useTasksApp } from '../../../../../contexts/tasks-app.context'
 import { useQueryClient } from '@tanstack/react-query'
 
 export default function EachTaskGroup({
@@ -18,10 +19,10 @@ export default function EachTaskGroup({
     icon: Icon = TbLayoutList,
     color = "bg-primary/10 text-primary",
     groupConfig
-}: TaskGroupProps) {
-    const params = useParams()
+}: TaskGroupProps) {    const params = useParams()
     const listId = params.list_id as string
     const { state } = useTaskList()
+    const { updateState: updateTasksAppState } = useTasksApp()
     const queryClient = useQueryClient()
     const [isExpanded, setIsExpanded] = useState(groupConfig?.defaultOpen ?? false)
     const [showCreateTask, setShowCreateTask] = useState(false)
@@ -96,11 +97,15 @@ export default function EachTaskGroup({
     }
 
     const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
-        setLocalTasks(prev => 
-            prev.map(task => 
+        setLocalTasks(prev =>
+            prev.map(task =>
                 task._id === taskId ? { ...task, ...updates } : task
             )
         )
+    }
+
+    const handleTaskClick = (taskId: string) => {
+        updateTasksAppState({ activeTaskID: taskId })
     }
 
     const getGroupInfoForCreate = () => {
@@ -177,11 +182,11 @@ export default function EachTaskGroup({
                                         rows={3}
                                         columns={6}
                                         showHeader={true}
-                                    />                                ) : (
-                                    <>
-                                        <TasksTable 
-                                            tasks={displayTasks} 
+                                    />) : (
+                                    <>                                        <TasksTable
+                                            tasks={displayTasks}
                                             onTaskUpdate={handleTaskUpdate}
+                                            onTaskClick={handleTaskClick}
                                         />
                                         {hasMore && (
                                             <div className="flex justify-center py-4">

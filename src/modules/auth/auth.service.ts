@@ -63,7 +63,6 @@ export class AuthService {
       );
     }
 
-    // Check if account is locked
     const isLocked = await this.userSecretsService.isAccountLocked(
       user._id as Types.ObjectId,
     );

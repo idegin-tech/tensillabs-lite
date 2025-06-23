@@ -3,24 +3,20 @@ import React from 'react'
 
 type Props = {
     children: React.ReactNode;
-    Icon: React.ReactNode;
     label: string;
 }
 
-export default function EachTaskDetailsProperty({ children, Icon, label }: Props) {
+export default function EachTaskDetailsProperty({ children, label }: Props) {
     return (
-        <div className='grid grid-cols-2'>
+        <div className='grid grid-cols-4 items-center gap-x-8 gap-y-10'>
 
             <div className='flex gap-2 items-center'>
-                <span className='text-lg text-muted-foreground'>
-                    {Icon}
-                </span>
                 <span>
                     {label}
                 </span>
             </div>
 
-            <div>
+            <div className='col-span-3'>
                 {children}
             </div>
 

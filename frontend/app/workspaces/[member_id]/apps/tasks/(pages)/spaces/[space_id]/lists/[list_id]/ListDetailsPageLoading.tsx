@@ -9,7 +9,7 @@ export default function ListDetailsPageLoading() {
   
   return (
     <AppBody withoutPadding>
-      <div className='flex flex-col h-full'>
+      <div className='flex flex-col h-full z-0'>
         <Tabs defaultValue="list" className='h-[calc(100dvh-var(--app-body)-4rem)]'>
           <TabsList className='h-10 min-h-10 border-b md:px-4 flex justify-start w-full max-w-screen overflow-x-auto'>
             <TabsTrigger value="list" className='max-w-[150px]'>
@@ -40,7 +40,7 @@ export default function ListDetailsPageLoading() {
               <div className='grid grid-cols-1 gap-1'>
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className="space-y-4">
-                    <div className='px-3 sticky top-0 z-50 bg-background h-16 flex items-center'>
+                    <div className='px-3 sticky top-0 z-10 bg-background h-16 flex items-center'>
                       <div className='border border-border flex justify-between items-center gap-2 p-4 bg-card rounded-lg w-full shadow-sm'>
                         <div className='flex items-center gap-3'>
                           <Skeleton className="h-8 w-8 rounded-lg" />

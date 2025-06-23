@@ -7,10 +7,11 @@ import TaskColumnRenderer from '../../../../../components/TaskColumnRenderer'
 
 interface CreateColumnsProps {
   onLocalUpdate?: (taskId: string, updates: Partial<Task>) => void
+  onTaskClick?: (taskId: string) => void
 }
 
 
-export const createColumns = ({ onLocalUpdate }: CreateColumnsProps = {}): ColumnDef<Task>[] => [{
+export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps = {}): ColumnDef<Task>[] => [{
     id: "select",
     header: ({ table }) => (
         <Checkbox
@@ -42,13 +43,17 @@ export const createColumns = ({ onLocalUpdate }: CreateColumnsProps = {}): Colum
     minSize: 400,
     maxSize: 500,
     enablePinning: true,
-    enableResizing: true,
-    cell: ({ row }) => {
+    enableResizing: true,    cell: ({ row }) => {
         const task = row.original
         return (
             <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{task.name}</p>
+                    <p 
+                        className="font-medium truncate cursor-pointer hover:underline" 
+                        onClick={() => onTaskClick?.(task._id)}
+                    >
+                        {task.name}
+                    </p>
                 </div>
             </div>
         )

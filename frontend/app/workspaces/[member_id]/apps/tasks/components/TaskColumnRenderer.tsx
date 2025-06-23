@@ -2,9 +2,7 @@
 
 import React from 'react'
 import { Task, TaskStatus, TaskPriority } from '@/types/tasks.types'
-import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty } from './TaskProperties'
-import TaskParticipantsSelector from './TaskParticipantsSelector'
-import { InputSelectorData } from '@/components/InputSelector'
+import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty, TaskAssigneeProperty } from './TaskProperties'
 import { useUpdateTask } from '../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
@@ -27,15 +25,17 @@ export default function TaskColumnRenderer({
   const listId = params.list_id as string
   const updateTask = useUpdateTask(listId)
   const queryClient = useQueryClient()
+  
   const handleUpdate = async (field: string, newValue: any) => {
     try {
       const updateData: Record<string, any> = { [field]: newValue }
       
       if (field === 'assignee' && Array.isArray(newValue)) {
         updateData.assignee = newValue.map((assignee: any) => assignee._id)
+        onLocalUpdate?.(task._id, { [field]: newValue })
+      } else {
+        onLocalUpdate?.(task._id, updateData)
       }
-
-      onLocalUpdate?.(task._id, updateData)
 
       const response = await updateTask.mutateAsync({
         taskId: task._id,
@@ -52,10 +52,10 @@ export default function TaskColumnRenderer({
       toast.error('Failed to update task', {
         description: error.message || 'An unexpected error occurred'
       })
-      
       onLocalUpdate?.(task._id, { [field]: value })
     }
   }
+  
   const renderProperty = () => {
     switch (accessorKey) {
       case 'status':
@@ -84,11 +84,9 @@ export default function TaskColumnRenderer({
 
       case 'assignee':
         return (
-          <TaskParticipantsSelector
+          <TaskAssigneeProperty
             value={value || []}
             onChange={(newValue) => handleUpdate('assignee', newValue)}
-            placeholder="Unassigned"
-            maxVisible={3}
           />
         )
 

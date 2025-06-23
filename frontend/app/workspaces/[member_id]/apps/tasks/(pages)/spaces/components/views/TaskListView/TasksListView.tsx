@@ -3,12 +3,19 @@ import React, { useState } from 'react'
 import EachTaskGroup from './EachTaskGroup'
 import TasksListOptions from './TasksListOptions'
 import { useTaskList } from '../../../../../contexts/task-list.context'
+import { useTasksApp } from '../../../../../contexts/tasks-app.context'
 import { taskGroupConfig } from '../../../../../task-app.config'
+import TaskDetailsPanel from '../../../../../components/TaskDetailsPanel/TaskDetailsPanel'
 
 export default function TasksListView() {
     const { state } = useTaskList();
+    const { state: tasksAppState, updateState: updateTasksAppState } = useTasksApp();
 
     const currentGroupConfig = state.groupBy === 'none' ? [] : (taskGroupConfig[state.groupBy] || [])
+
+    const handleCloseTaskDetails = () => {
+        updateTasksAppState({ activeTaskID: null })
+    }
 
     return (
         <>
@@ -44,10 +51,15 @@ export default function TasksListView() {
                                     />
                                 </div>
                             ))
-                        )}
-                    </div>
+                        )}                    </div>
                 </div>
             </div>
+            {tasksAppState.activeTaskID && (
+                <TaskDetailsPanel
+                    taskID={tasksAppState.activeTaskID}
+                    onClose={handleCloseTaskDetails}
+                />
+            )}
         </>
     )
 }

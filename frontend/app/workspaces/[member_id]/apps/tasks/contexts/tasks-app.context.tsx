@@ -14,13 +14,14 @@ import type {
 const TasksAppContext = createContext<TasksAppContextType | undefined>(undefined)
 
 export function TasksAppProvider({ children }: { children: ReactNode }) {
-    const { member_id } = useCommon()
+    const { member_id } = useCommon();
     const [state, setState] = useState<TasksAppState>({
         showCreateSpace: false,
         showCreateList: false,
         spaces: [],
         isLoading: true,
-        error: null
+        error: null,
+        activeTaskID: null
     })
 
     const spacesQuery = useInfiniteQuery({
