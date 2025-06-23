@@ -1,10 +1,11 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { TbLayoutList, TbChevronDown, TbChevronUp, TbPlus } from 'react-icons/tb'
+import { TbLayoutList, TbChevronDown, TbChevronUp, TbPlus, TbAlertTriangle, TbRefresh } from 'react-icons/tb'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import TablePlaceholder from '@/components/placeholders/TablePlaceholder'
+import SectionPlaceholder from '@/components/placeholders/SectionPlaceholder'
 import { TaskStatus, TaskGroupProps, Task } from '@/types/tasks.types'
 import TasksTable from './TasksTable'
 import CreateTaskPopup from '../../../../../components/CreateTaskPopup'
@@ -29,6 +30,7 @@ export default function EachTaskGroup({
     const [localTasks, setLocalTasks] = useState<Task[]>([])
     const [page, setPage] = useState(1)
     const [tableVisible, setTableVisible] = useState(isExpanded)
+    const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false)
 
     const groupParams = {
         page,
@@ -37,7 +39,7 @@ export default function EachTaskGroup({
         ...groupConfig?.query
     }
 
-    const { data: tasksData, isLoading: isApiLoading } = useGetTasksByGroup(
+    const { data: tasksData, isLoading: isApiLoading, error, refetch } = useGetTasksByGroup(
         listId,
         groupParams,
         isExpanded
@@ -51,8 +53,17 @@ export default function EachTaskGroup({
     useEffect(() => {
         if (apiTasks.length > 0) {
             setLocalTasks(apiTasks)
+            if (!hasInitiallyLoaded) {
+                setHasInitiallyLoaded(true)
+            }
         }
-    }, [apiTasks])
+    }, [apiTasks, hasInitiallyLoaded])
+
+    useEffect(() => {
+        if (tasksData && !hasInitiallyLoaded) {
+            setHasInitiallyLoaded(true)
+        }
+    }, [tasksData, hasInitiallyLoaded])
 
     useEffect(() => {
         if (isExpanded) {
@@ -65,13 +76,17 @@ export default function EachTaskGroup({
         }
     }, [isExpanded])
 
-    const handleAddTask = (e: React.MouseEvent) => {
-        e.stopPropagation()
+    const handleAddTask = (e: React.MouseEvent) => {        e.stopPropagation()
         setShowCreateTask(true)
     }
 
     const handleLoadMore = () => {
         setPage(prev => prev + 1)
+    }
+
+    const handleRetry = () => {
+        setHasInitiallyLoaded(false)
+        refetch()
     }
 
     const handleExpansionToggle = () => {
@@ -174,10 +189,22 @@ export default function EachTaskGroup({
                             'transition-all duration-300 ease-in-out z-0 pt-3',
                             isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                         )}
-                    >
-                        {tableVisible && (
+                    >                        {tableVisible && (
                             <div className='px-3'>
-                                {isApiLoading && page === 1 ? (
+                                {error && !hasInitiallyLoaded && page === 1 ? (
+                                    <SectionPlaceholder
+                                        variant="error"
+                                        icon={TbAlertTriangle}
+                                        heading="Failed to load tasks"
+                                        subHeading={`We couldn't load tasks for ${title}. Please check your connection and try again.`}
+                                        ctaButton={{
+                                            label: "Try Again",
+                                            onClick: handleRetry,
+                                            variant: "outline",
+                                            icon: TbRefresh
+                                        }}
+                                    />
+                                ) : isApiLoading && page === 1 ? (
                                     <TablePlaceholder
                                         rows={3}
                                         columns={6}

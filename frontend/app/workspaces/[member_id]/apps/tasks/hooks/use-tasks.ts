@@ -70,6 +70,28 @@ interface UpdateTaskRequest {
   data: UpdateTaskData
 }
 
+interface GetTaskDetailsResponse {
+  success: boolean
+  message: string
+  payload: {
+    task: Task
+    checklist: ChecklistItem[]
+  }
+}
+
+interface ChecklistItem {
+  _id: string
+  name: string
+  isDone: boolean
+  task: string
+  workspace: string
+  space?: string
+  list?: string
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
 export function useCreateTasks(listId: string) {
   const { member_id } = useCommon()
 
@@ -121,4 +143,22 @@ export function useUpdateTask(listId: string) {
       })
     }
   )
+}
+
+export function useGetTaskDetails(listId: string, taskId: string, enabled = true) {
+  const { member_id } = useCommon()
+
+  return useQuery({
+    queryKey: ['task-details', listId, taskId, member_id],
+    queryFn: async () => {
+      const response = await api.get<GetTaskDetailsResponse>(`/lists/${listId}/tasks/${taskId}`, {
+        headers: {
+          'x-member-id': member_id,
+        },
+      })
+      return response
+    },
+    enabled: !!(listId && taskId && member_id && enabled),
+    staleTime: 2 * 60 * 1000,
+  })
 }

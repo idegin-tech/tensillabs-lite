@@ -42,8 +42,14 @@ export const updateTaskSchema = z.object({
   status: z.nativeEnum(TaskStatus).optional(),
   timeframe: z
     .object({
-      start: z.string().optional().transform((val) => val ? new Date(val) : undefined),
-      end: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+      start: z
+        .string()
+        .optional()
+        .transform((val) => (val ? new Date(val) : undefined)),
+      end: z
+        .string()
+        .optional()
+        .transform((val) => (val ? new Date(val) : undefined)),
     })
     .nullable()
     .optional(),

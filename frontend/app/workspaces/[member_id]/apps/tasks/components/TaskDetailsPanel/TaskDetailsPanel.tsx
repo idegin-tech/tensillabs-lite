@@ -8,6 +8,8 @@ import TaskDetailsPanelLoading from './TaskDetailsPanelLoading'
 import { ScrollArea } from '@radix-ui/react-scroll-area'
 import { Button } from '@/components/ui/button'
 import { TbX } from 'react-icons/tb'
+import { useGetTaskDetails } from '../../hooks/use-tasks'
+import { useParams } from 'next/navigation'
 
 interface TaskDetailsPanelProps {
     taskID: string
@@ -16,31 +18,43 @@ interface TaskDetailsPanelProps {
 
 export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelProps) {
     const [activeTab, setActiveTab] = React.useState<'details' | 'chat' | 'activities'>('details')
-    const [isLoading, setIsLoading] = React.useState(true)
-
-    React.useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false)
-        }, 3000)
-
-        return () => clearTimeout(timer)
-    }, [])
+    const params = useParams()
+    const listId = params.list_id as string
+    
+    const { data: taskDetailsData, isLoading, error } = useGetTaskDetails(listId, taskID)
 
     const renderTabContent = () => {
+        if (!taskDetailsData?.payload) {
+            return <TaskDetails />
+        }
+
+        const { task, checklist } = taskDetailsData.payload
+
         switch (activeTab) {
             case 'details':
-                return <TaskDetails />
+                return <TaskDetails task={task} checklist={checklist} />
             case 'chat':
                 return <TaskChat />
             case 'activities':
                 return <TaskActivities />
             default:
-                return <TaskDetails />
+                return <TaskDetails task={task} checklist={checklist} />
         }
     }
 
     if (isLoading) {
         return <TaskDetailsPanelLoading />
+    }
+
+    if (error) {
+        return (
+            <div className='bg-popover/95 backdrop-blur-sm select-none shadow-2xl md:w-[700px] w-screen border-l z-50 fixed right-0 bottom-0 md:h-app-body h-screen grid grid-cols-1 md:mb-[8px]'>
+                <div className="flex flex-col h-full items-center justify-center p-4">
+                    <p className="text-destructive mb-4">Failed to load task details</p>
+                    <Button onClick={onClose} variant="outline">Close</Button>
+                </div>
+            </div>
+        )
     }
 
 

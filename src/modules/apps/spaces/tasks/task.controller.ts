@@ -120,6 +120,38 @@ export class TaskController {
     return createSuccessResponse('Tasks retrieved successfully', tasks);
   }
 
+  @Get(':taskId')
+  async getTaskDetails(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
+  ) {
+    if (!Types.ObjectId.isValid(listId)) {
+      throw new BadRequestException('Invalid list ID format');
+    }
+
+    if (!Types.ObjectId.isValid(taskId)) {
+      throw new BadRequestException('Invalid task ID format');
+    }
+
+    const taskDetails = await this.taskService.getTaskDetails(
+      new Types.ObjectId(listId),
+      new Types.ObjectId(taskId),
+      req.workspace._id,
+    );
+
+    return createSuccessResponse(
+      'Task details retrieved successfully',
+      taskDetails,
+    );
+  }
+
   @Delete(':taskId')
   async deleteTask(
     @Param('listId') listId: string,

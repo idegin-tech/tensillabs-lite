@@ -12,6 +12,7 @@ import {
 import { WorkspaceMembersModule } from '../../../workspace-members/workspace-members.module';
 import { AuthModule } from '../../../auth/auth.module';
 import { WorkspacesModule } from '../../../workspaces/workspaces.module';
+import { ChecklistModule } from '../../checklists/checklist.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { WorkspacesModule } from '../../../workspaces/workspaces.module';
     WorkspaceMembersModule,
     AuthModule,
     WorkspacesModule,
+    ChecklistModule,
   ],
   controllers: [TaskController],
   providers: [TaskService],

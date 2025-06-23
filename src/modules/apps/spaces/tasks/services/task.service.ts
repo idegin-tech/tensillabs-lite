@@ -11,6 +11,7 @@ import {
   GetTasksByGroupQueryDto,
   GetTasksByListQueryDto,
 } from '../dto/task.dto';
+import { ChecklistService } from '../../../checklists/services/checklist.service';
 
 export interface GroupedTasks {
   [key: string]: {
@@ -19,11 +20,17 @@ export interface GroupedTasks {
   };
 }
 
+export interface TaskDetailsResponse {
+  task: TaskDocument;
+  checklist: any[];
+}
+
 @Injectable()
 export class TaskService {
   constructor(
     @InjectModel(Task.name)
     private taskModel: Model<TaskDocument>,
+    private checklistService: ChecklistService,
   ) {}
 
   async createTasks(
@@ -97,7 +104,9 @@ export class TaskService {
     }
 
     if (updateTaskDto.assignee !== undefined) {
-      task.assignee = updateTaskDto.assignee.map(id => new Types.ObjectId(id));
+      task.assignee = updateTaskDto.assignee.map(
+        (id) => new Types.ObjectId(id),
+      );
     }
 
     return await task.save();
@@ -385,5 +394,36 @@ export class TaskService {
 
     task.isDeleted = true;
     return await task.save();
+  }
+
+  async getTaskDetails(
+    listId: Types.ObjectId,
+    taskId: Types.ObjectId,
+    workspaceId: Types.ObjectId,
+  ): Promise<TaskDetailsResponse> {
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        list: listId,
+        workspace: workspaceId,
+        isDeleted: false,
+      })
+      .populate('assignee', 'firstName lastName primaryEmail avatarURL')
+      .populate('createdBy', 'firstName lastName primaryEmail avatarURL')
+      .exec();
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const checklist = await this.checklistService.getChecklistsByTask(
+      taskId,
+      workspaceId,
+    );
+
+    return {
+      task,
+      checklist,
+    };
   }
 }
