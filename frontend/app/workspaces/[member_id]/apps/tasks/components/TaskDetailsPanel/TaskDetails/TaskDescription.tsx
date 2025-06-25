@@ -8,7 +8,7 @@ interface TaskDescriptionProps {
 
 export default function TaskDescription({ description }: TaskDescriptionProps) {
     return (
-        <div className='px-4'>
+        <div>
             <div className='flex items-center justify-between'>
                 <label>Description</label>
                 {!description && (
