@@ -29,17 +29,17 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
             return <TaskDetails />
         }
 
-        const { task, checklist } = taskDetailsData.payload
+        const { task, checklist, files } = taskDetailsData.payload
 
         switch (activeTab) {
             case 'details':
-                return <TaskDetails task={task} checklist={checklist} />
+                return <TaskDetails task={task} checklist={checklist} files={files} />
             case 'chat':
                 return <TaskChat />
             case 'activities':
                 return <TaskActivities />
             default:
-                return <TaskDetails task={task} checklist={checklist} />
+                return <TaskDetails task={task} checklist={checklist} files={files} />
         }
     }
 

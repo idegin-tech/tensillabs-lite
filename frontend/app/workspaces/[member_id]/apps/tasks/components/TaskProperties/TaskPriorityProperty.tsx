@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import { cn } from '@/lib/utils'
 
 export default function TaskPriorityProperty({ onChange, value }: TaskPropertyProps) {
   const [internalValue, setInternalValue] = useState<TaskPriority | undefined>(value)
@@ -40,7 +41,9 @@ export default function TaskPriorityProperty({ onChange, value }: TaskPropertyPr
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="w-[150px] h-8 justify-start p-1 font-normal">
+        <Button variant="ghost" className={cn("w-[150px] h-8 justify-start p-1 font-normal", {
+          "text-muted opacity-70": !internalValue,
+        })}>
           <div className="flex items-center gap-2">
             {getPriorityIcon(internalValue)}
             <span className="text-sm">{getPriorityLabel(internalValue)}</span>

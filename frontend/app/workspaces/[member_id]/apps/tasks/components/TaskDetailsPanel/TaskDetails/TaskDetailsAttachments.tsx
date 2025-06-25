@@ -1,23 +1,32 @@
 'use client'
-import React, { useState } from 'react'
-import { TbPaperclip, TbUpload, TbFile, TbFileText, TbPhoto, TbVideo, TbMusic, TbDownload, TbEdit, TbTrash, TbDots } from 'react-icons/tb'
+import React, { useState, useRef } from 'react'
+import { TbPaperclip, TbUpload, TbFile, TbFileText, TbPhoto, TbVideo, TbMusic, TbDownload, TbTrash, TbDots } from 'react-icons/tb'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useParams } from 'next/navigation'
+import { useUploadTaskFiles } from '@/hooks/use-task-files'
+import { toast } from 'sonner'
 
-interface Attachment {
-    id: string
+interface FileItem {
+    _id: string
     name: string
-    type: string
     size: number
-    url?: string
-    uploadedAt: string
+    mimeType: string
+    fileURL: string
+    fileKey: string
+    task: string
+    workspace: string
+    space: string
+    createdBy: string
+    createdAt: string
+    updatedAt: string
 }
 
 interface TaskDetailsAttachmentsProps {
-    attachments?: Attachment[]
-    onAttachmentsChange?: (attachments: Attachment[]) => void
+    files?: FileItem[]
+    taskId: string
 }
 
 const getFileIcon = (type: string) => {
@@ -41,39 +50,42 @@ const getFileTypeLabel = (type: string) => {
     return parts[parts.length - 1].toUpperCase()
 }
 
-export default function TaskDetailsAttachments({ attachments = [], onAttachmentsChange }: TaskDetailsAttachmentsProps) {
-    const [files, setFiles] = useState<Attachment[]>(attachments.length > 0 ? attachments : [
-        {
-            id: '1',
-            name: 'authentication-flow-diagram.png',
-            type: 'image/png',
-            size: 245760,
-            uploadedAt: '2024-01-15T10:30:00Z'
-        },
-        {
-            id: '2',
-            name: 'oauth-implementation-guide.pdf',
-            type: 'application/pdf',
-            size: 1048576,
-            uploadedAt: '2024-01-14T16:45:00Z'
-        },
-        {
-            id: '3',
-            name: 'api-documentation.docx',
-            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            size: 524288,
-            uploadedAt: '2024-01-13T09:15:00Z'
-        },
-        {
-            id: '4',
-            name: 'database-schema.sql',
-            type: 'application/sql',
-            size: 8192,
-            uploadedAt: '2024-01-12T14:20:00Z'
-        }
-    ])
-
+export default function TaskDetailsAttachments({ files = [], taskId }: TaskDetailsAttachmentsProps) {
+    const params = useParams()
+    const listId = params.list_id as string
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const [isDragOver, setIsDragOver] = useState(false)
+    
+    const uploadTaskFiles = useUploadTaskFiles(listId, taskId)
+
+    const handleFileUpload = (uploadFiles: File[]) => {
+        if (uploadFiles.length === 0) return
+
+        const oversizedFiles = uploadFiles.filter(file => file.size > 10 * 1024 * 1024)
+        if (oversizedFiles.length > 0) {
+            toast.error(`The following files exceed 10MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`)
+            return
+        }
+
+        uploadTaskFiles.mutate(uploadFiles, {
+            onSuccess: () => {
+                toast.success(`${uploadFiles.length} file(s) uploaded successfully`)
+            },
+            onError: (error: any) => {
+                toast.error(error.message || 'Failed to upload files')
+            }
+        })
+    }
+
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = Array.from(e.target.files || [])
+        if (selectedFiles.length > 0) {
+            handleFileUpload(selectedFiles)
+        }
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+        }
+    }
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault()
@@ -90,106 +102,88 @@ export default function TaskDetailsAttachments({ attachments = [], onAttachments
         setIsDragOver(false)
         
         const droppedFiles = Array.from(e.dataTransfer.files)
-        const newAttachments: Attachment[] = droppedFiles.map(file => ({
-            id: Date.now() + Math.random().toString(),
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            uploadedAt: new Date().toISOString()
-        }))
-        
-        const updatedFiles = [...files, ...newAttachments]
-        setFiles(updatedFiles)
-        onAttachmentsChange?.(updatedFiles)
+        if (droppedFiles.length > 0) {
+            handleFileUpload(droppedFiles)
+        }
     }
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFiles = Array.from(e.target.files || [])
-        const newAttachments: Attachment[] = selectedFiles.map(file => ({
-            id: Date.now() + Math.random().toString(),
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            uploadedAt: new Date().toISOString()
-        }))
-        
-        const updatedFiles = [...files, ...newAttachments]
-        setFiles(updatedFiles)
-        onAttachmentsChange?.(updatedFiles)
-        
-        e.target.value = ''
+    const handleDownloadFile = (file: FileItem) => {
+        if (file.fileURL) {
+            window.open(file.fileURL, '_blank')
+        }
     }
 
-    const handleDeleteFile = (fileId: string) => {
-        const updatedFiles = files.filter(file => file.id !== fileId)
-        setFiles(updatedFiles)
-        onAttachmentsChange?.(updatedFiles)
-    }
-
-    const handleDownloadFile = (file: Attachment) => {
-        console.log('Download file:', file.name)
-    }
-
-    const handleEditFile = (file: Attachment) => {
-        console.log('Edit file:', file.name)
+    const handleDeleteFile = async (fileId: string) => {
+        toast.info('File deletion not implemented yet')
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center">
+                    <TbPaperclip className="h-5 w-5 mr-2" />
+                    Attachments ({files.length})
+                </h3>
+                <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadTaskFiles.isPending}
+                    size="sm"
+                    variant="outline"
+                >
+                    <TbUpload className="h-4 w-4 mr-2" />
+                    {uploadTaskFiles.isPending ? 'Uploading...' : 'Upload Files'}
+                </Button>
+            </div>
+
+            <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileInputChange}
+                className="hidden"
+                accept="*/*"
+            />
+
             <div
                 className={cn(
-                    "border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200",
-                    isDragOver
-                        ? "border-primary bg-primary/5 scale-[1.02]"
-                        : "border-muted-foreground/30 hover:border-primary/50 hover:bg-accent/30"
+                    "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+                    isDragOver ? "border-primary bg-primary/5" : "border-border",
+                    uploadTaskFiles.isPending && "opacity-50"
                 )}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
             >
-                <div className="flex flex-col items-center space-y-4">
-                    <div className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center transition-colors",
-                        isDragOver ? "bg-primary text-primary-foreground" : "bg-muted"
-                    )}>
-                        <TbUpload className="h-6 w-6" />
-                    </div>
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium">
-                            {isDragOver ? "Drop files here" : "Drop files or click to upload"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                            Supports all file types up to 10MB
-                        </p>
-                    </div>                    <div className="relative">
-                        <Button variant="outline" size="sm" className="cursor-pointer">
-                            <TbPaperclip className="h-4 w-4 mr-2" />
-                            Choose Files
-                        </Button>
-                        <input
-                            type="file"
-                            multiple
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            onChange={handleFileSelect}
-                        />
-                    </div>
-                </div>
+                <TbUpload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-1">
+                    Drop files here or{' '}
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-primary hover:underline"
+                        disabled={uploadTaskFiles.isPending}
+                    >
+                        browse
+                    </button>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                    Maximum file size: 10MB each
+                </p>
             </div>
 
             {files.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
                     {files.map((file) => (
                         <div
-                            key={file.id}
-                            className="group flex items-start space-x-3 p-4 rounded-lg border bg-background hover:bg-accent/50 transition-colors"
+                            key={file._id}
+                            className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors group"
                         >
                             <div className="flex-shrink-0">
-                                {getFileIcon(file.type)}
+                                {getFileIcon(file.mimeType)}
                             </div>
                             
-                            <div className="flex-1 min-w-0 space-y-2">
-                                <div className="flex items-start justify-between">
-                                    <h4 className="text-sm font-medium text-foreground truncate pr-2">
+                            <div className="flex-grow min-w-0 space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-medium truncate pr-2">
                                         {file.name}
                                     </h4>
                                     <DropdownMenu>
@@ -211,14 +205,7 @@ export default function TaskDetailsAttachments({ attachments = [], onAttachments
                                                 Download
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                                onClick={() => handleEditFile(file)}
-                                                className="flex items-center gap-2"
-                                            >
-                                                <TbEdit className="h-4 w-4" />
-                                                Rename
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => handleDeleteFile(file.id)}
+                                                onClick={() => handleDeleteFile(file._id)}
                                                 className="flex items-center gap-2 text-destructive"
                                             >
                                                 <TbTrash className="h-4 w-4" />
@@ -230,7 +217,7 @@ export default function TaskDetailsAttachments({ attachments = [], onAttachments
                                 
                                 <div className="flex items-center space-x-2">
                                     <Badge variant="secondary" className="text-xs">
-                                        {getFileTypeLabel(file.type)}
+                                        {getFileTypeLabel(file.mimeType)}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground">
                                         {formatFileSize(file.size)}
@@ -238,7 +225,7 @@ export default function TaskDetailsAttachments({ attachments = [], onAttachments
                                 </div>
                                 
                                 <p className="text-xs text-muted-foreground">
-                                    Uploaded {new Date(file.uploadedAt).toLocaleDateString()}
+                                    Uploaded {new Date(file.createdAt).toLocaleDateString()}
                                 </p>
                             </div>
                         </div>
@@ -250,6 +237,7 @@ export default function TaskDetailsAttachments({ attachments = [], onAttachments
                 <div className="text-center py-8 text-muted-foreground">
                     <TbPaperclip className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No attachments yet</p>
+                    <p className="text-xs">Upload files to get started</p>
                 </div>
             )}
         </div>

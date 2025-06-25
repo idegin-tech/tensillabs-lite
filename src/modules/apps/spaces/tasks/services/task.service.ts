@@ -11,7 +11,8 @@ import {
   GetTasksByGroupQueryDto,
   GetTasksByListQueryDto,
 } from '../dto/task.dto';
-import { ChecklistService } from '../../../checklists/services/checklist.service';
+import { ChecklistService } from 'src/modules/checklists/services/checklist.service';
+import { FileService } from 'src/modules/files/services/file.service';
 
 export interface GroupedTasks {
   [key: string]: {
@@ -23,6 +24,7 @@ export interface GroupedTasks {
 export interface TaskDetailsResponse {
   task: TaskDocument;
   checklist: any[];
+  files: any[];
 }
 
 @Injectable()
@@ -31,6 +33,7 @@ export class TaskService {
     @InjectModel(Task.name)
     private taskModel: Model<TaskDocument>,
     private checklistService: ChecklistService,
+    private fileService: FileService,
   ) {}
 
   async createTasks(
@@ -421,9 +424,12 @@ export class TaskService {
       workspaceId,
     );
 
+    const files = await this.fileService.findByTask(taskId, workspaceId);
+
     return {
       task,
       checklist,
+      files,
     };
   }
 }

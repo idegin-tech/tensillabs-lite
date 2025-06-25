@@ -29,12 +29,28 @@ interface ChecklistItem {
     updatedAt: string
 }
 
+interface FileItem {
+    _id: string
+    name: string
+    size: number
+    mimeType: string
+    fileURL: string
+    fileKey: string
+    task: string
+    workspace: string
+    space: string
+    createdBy: string
+    createdAt: string
+    updatedAt: string
+}
+
 interface TaskDetailsProps {
     task?: Task
     checklist?: ChecklistItem[]
+    files?: FileItem[]
 }
 
-export default function TaskDetails({ task, checklist }: TaskDetailsProps) {
+export default function TaskDetails({ task, checklist, files }: TaskDetailsProps) {
     const params = useParams()
     const listId = params.list_id as string
     const { member_id } = useCommon()
@@ -172,7 +188,10 @@ export default function TaskDetails({ task, checklist }: TaskDetailsProps) {
                             />
                         </TabsContent>
                         <TabsContent value="attachments" className="mt-4">
-                            <TaskDetailsAttachments />
+                            <TaskDetailsAttachments 
+                                files={files} 
+                                taskId={task?._id || ''}
+                            />
                         </TabsContent>
                     </Tabs>
                 </div>

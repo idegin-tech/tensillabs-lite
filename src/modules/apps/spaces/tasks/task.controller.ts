@@ -13,7 +13,10 @@ import {
   UseGuards,
   Req,
   BadRequestException,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { Request } from 'express';
 import { Types } from 'mongoose';
 import { TaskService } from './services/task.service';
@@ -34,12 +37,18 @@ import {
   getTasksByGroupQuerySchema,
   GetTasksByGroupQueryDto,
 } from './dto/task.dto';
+import { UploadService, UploadedFile } from '../../../../lib/upload.lib';
+import { FileService } from '../../../files/services/file.service';
 
 @Controller('lists/:listId/tasks')
 @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
 @RequirePermission(MemberPermissions.REGULAR)
 export class TaskController {
-  constructor(private readonly taskService: TaskService) {}
+  constructor(
+    private readonly taskService: TaskService,
+    private readonly uploadService: UploadService,
+    private readonly fileService: FileService,
+  ) {}
 
   @Post()
   async createTasks(
@@ -179,5 +188,66 @@ export class TaskController {
     );
 
     return createSuccessResponse('Task deleted successfully', task);
+  }
+
+  @Post(':taskId/files')
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  async uploadTaskFiles(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @UploadedFiles() files: UploadedFile[],
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
+  ) {
+    if (!Types.ObjectId.isValid(listId)) {
+      throw new BadRequestException('Invalid list ID format');
+    }
+
+    if (!Types.ObjectId.isValid(taskId)) {
+      throw new BadRequestException('Invalid task ID format');
+    }
+
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+
+    const uploadPath = `/spaces/${req.space._id}/lists/${listId}/tasks/${taskId}`;
+
+    const uploadResults = await this.uploadService.uploadFiles(
+      files,
+      uploadPath,
+      String(req.workspace._id),
+    );
+
+    const savedFiles = [];
+    for (const uploadResult of uploadResults) {
+      const savedFile = await this.fileService.create(
+        {
+          name: uploadResult.originalName,
+          size: uploadResult.bytes,
+          mimeType: uploadResult.mimeType,
+          fileURL: uploadResult.secureUrl,
+          fileKey: uploadResult.publicId,
+          task: new Types.ObjectId(taskId),
+          space: req.space._id,
+        },
+        req.workspace._id,
+        req.workspaceMember._id,
+      );
+      savedFiles.push(savedFile);
+    }
+
+    return createSuccessResponse('Files uploaded successfully', savedFiles);
   }
 }

@@ -13,6 +13,7 @@ import { WorkspaceMembersModule } from './modules/workspace-members/workspace-me
 import { BillingModule } from './modules/billing/billing.module';
 import { AppsModule } from './modules/apps/apps.module';
 import { ProjectsModule } from './modules/projects/projects.module';
+import { FilesModule } from './modules/files/files.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
     ProjectsModule,
     AppsModule,
     BillingModule,
+    FilesModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'frontend', 'dist'),
       exclude: ['/api/v1*'],
