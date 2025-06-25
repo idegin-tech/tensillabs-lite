@@ -22,6 +22,7 @@ interface TaskListState {
     meMode: boolean
     isLoading: boolean
     error: Error | null
+    expandedGroup: string | null
 }
 
 interface TaskListContextType {
@@ -42,7 +43,8 @@ export function TaskListProvider({ children }: { children: ReactNode }) {
         groupBy: 'status',
         meMode: false,
         isLoading: true,
-        error: null
+        error: null,
+        expandedGroup: null
     })
 
     const listQuery = useQuery({
@@ -56,7 +58,7 @@ export function TaskListProvider({ children }: { children: ReactNode }) {
             return response
         },
         enabled: !!(listId && member_id),
-        staleTime: 5 * 60 * 1000,
+        staleTime: 90 * 1000,
     })
 
     useEffect(() => {
@@ -69,7 +71,15 @@ export function TaskListProvider({ children }: { children: ReactNode }) {
     }, [listQuery.data, listQuery.isLoading, listQuery.error])
 
     const updateState = (updates: Partial<TaskListState>) => {
-        setState(prev => ({ ...prev, ...updates }))
+        setState(prev => {
+            const newState = { ...prev, ...updates }
+            
+            if (updates.groupBy && updates.groupBy !== prev.groupBy) {
+                newState.expandedGroup = null
+            }
+            
+            return newState
+        })
     }
 
     const refetchList = () => {

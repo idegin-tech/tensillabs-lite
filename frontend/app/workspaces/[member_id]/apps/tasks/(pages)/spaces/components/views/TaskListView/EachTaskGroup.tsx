@@ -20,12 +20,16 @@ export default function EachTaskGroup({
     icon: Icon = TbLayoutList,
     color = "bg-primary/10 text-primary",
     groupConfig
-}: TaskGroupProps) {    const params = useParams()
+}: TaskGroupProps) {
+    const params = useParams()
     const listId = params.list_id as string
-    const { state } = useTaskList()
+    const { state, updateState } = useTaskList()
     const { updateState: updateTasksAppState } = useTasksApp()
     const queryClient = useQueryClient()
-    const [isExpanded, setIsExpanded] = useState(groupConfig?.defaultOpen ?? false)
+    
+    const groupKey = groupConfig ? `${groupConfig.groupKey}-${groupConfig.label}` : 'no-group'
+    const isExpanded = state.expandedGroup === groupKey
+    
     const [showCreateTask, setShowCreateTask] = useState(false)
     const [localTasks, setLocalTasks] = useState<Task[]>([])
     const [page, setPage] = useState(1)
@@ -56,6 +60,8 @@ export default function EachTaskGroup({
             if (!hasInitiallyLoaded) {
                 setHasInitiallyLoaded(true)
             }
+        } else if (apiTasks.length === 0 && hasInitiallyLoaded) {
+            setLocalTasks([])
         }
     }, [apiTasks, hasInitiallyLoaded])
 
@@ -76,7 +82,19 @@ export default function EachTaskGroup({
         }
     }, [isExpanded])
 
-    const handleAddTask = (e: React.MouseEvent) => {        e.stopPropagation()
+    const invalidateData = () => {
+        setPage(1)
+        setLocalTasks([])
+        setHasInitiallyLoaded(false)
+        queryClient.invalidateQueries({
+            queryKey: [`tasks-by-group`, listId, JSON.stringify(groupParams)],
+            exact: true
+        })
+        refetch()
+    }
+
+    const handleAddTask = (e: React.MouseEvent) => {
+        e.stopPropagation()
         setShowCreateTask(true)
     }
 
@@ -90,28 +108,51 @@ export default function EachTaskGroup({
     }
 
     const handleExpansionToggle = () => {
-        setIsExpanded(!isExpanded)
+        if (isExpanded) {
+            updateState({ expandedGroup: null })
+        } else {
+            updateState({ expandedGroup: groupKey })
+            setLocalTasks([])
+            setHasInitiallyLoaded(false)
+            queryClient.invalidateQueries({
+                queryKey: [`tasks-by-group`, listId, JSON.stringify(groupParams)]
+            })
+            setTimeout(() => {
+                refetch()
+            }, 100)
+        }
     }
 
     const handleTaskCreated = (newTask: Task) => {
         setLocalTasks(prev => [newTask, ...prev])
-
-        queryClient.invalidateQueries({
-            queryKey: [`tasks-by-group`, listId]
-        })
-
         setShowCreateTask(false)
     }
 
     const handleCreateTaskClose = () => {
         setShowCreateTask(false)
-
-        queryClient.invalidateQueries({
-            queryKey: [`tasks-by-group`, listId]
-        })
     }
 
     const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
+        const previousTask = localTasks.find(task => task._id === taskId)
+        
+        if (previousTask && state.groupBy !== 'none') {
+            const hasGroupingFieldChanged = 
+                (state.groupBy === 'status' && updates.status && updates.status !== previousTask.status) ||
+                (state.groupBy === 'priority' && updates.priority !== undefined && updates.priority !== previousTask.priority) ||
+                (state.groupBy === 'due_date' && updates.timeframe?.end !== previousTask.timeframe?.end)
+
+            if (hasGroupingFieldChanged) {
+                setLocalTasks(prev => prev.filter(task => task._id !== taskId))
+                setTimeout(() => {
+                    queryClient.invalidateQueries({
+                        queryKey: [`tasks-by-group`, listId],
+                        exact: false
+                    })
+                }, 500)
+                return
+            }
+        }
+
         setLocalTasks(prev =>
             prev.map(task =>
                 task._id === taskId ? { ...task, ...updates } : task
@@ -144,6 +185,17 @@ export default function EachTaskGroup({
             color
         }
     }
+
+    useEffect(() => {
+        const handleStorageChange = () => {
+            if (isExpanded) {
+                invalidateData()
+            }
+        }
+        
+        window.addEventListener('task-group-invalidated', handleStorageChange)
+        return () => window.removeEventListener('task-group-invalidated', handleStorageChange)
+    }, [isExpanded])
 
     return (
         <>
@@ -190,47 +242,48 @@ export default function EachTaskGroup({
                             isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                         )}
                     >                        {tableVisible && (
-                            <div className='px-3'>
-                                {error && !hasInitiallyLoaded && page === 1 ? (
-                                    <SectionPlaceholder
-                                        variant="error"
-                                        icon={TbAlertTriangle}
-                                        heading="Failed to load tasks"
-                                        subHeading={`We couldn't load tasks for ${title}. Please check your connection and try again.`}
-                                        ctaButton={{
-                                            label: "Try Again",
-                                            onClick: handleRetry,
-                                            variant: "outline",
-                                            icon: TbRefresh
-                                        }}
-                                    />
-                                ) : isApiLoading && page === 1 ? (
-                                    <TablePlaceholder
-                                        rows={3}
-                                        columns={6}
-                                        showHeader={true}
-                                    />) : (
-                                    <>                                        <TasksTable
-                                            tasks={displayTasks}
-                                            onTaskUpdate={handleTaskUpdate}
-                                            onTaskClick={handleTaskClick}
-                                        />
-                                        {hasMore && (
-                                            <div className="flex justify-center py-4">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={handleLoadMore}
-                                                    disabled={isApiLoading}
-                                                >
-                                                    {isApiLoading ? 'Loading...' : 'Load 20 more'}
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        )}
+                        <div className='px-3'>
+                            {error && !hasInitiallyLoaded && page === 1 ? (
+                                <SectionPlaceholder
+                                    variant="error"
+                                    icon={TbAlertTriangle}
+                                    heading="Failed to load tasks"
+                                    subHeading={`We couldn't load tasks for ${title}. Please check your connection and try again.`}
+                                    ctaButton={{
+                                        label: "Try Again",
+                                        onClick: handleRetry,
+                                        variant: "outline",
+                                        icon: TbRefresh
+                                    }}
+                                />
+                            ) : isApiLoading && page === 1 ? (
+                                <TablePlaceholder
+                                    rows={3}
+                                    columns={6}
+                                    showHeader={true}
+                                />) : (
+                                <>                                        
+                                <TasksTable
+                                    tasks={displayTasks}
+                                    onTaskUpdate={handleTaskUpdate}
+                                    onTaskClick={handleTaskClick}
+                                />
+                                    {hasMore && (
+                                        <div className="flex justify-center py-4">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleLoadMore}
+                                                disabled={isApiLoading}
+                                            >
+                                                {isApiLoading ? 'Loading...' : 'Load 20 more'}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
                     </div>
                 </>
             }

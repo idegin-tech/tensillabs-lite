@@ -109,7 +109,7 @@ export class Task {
 
   @Prop({
     trim: true,
-    maxlength: 1000,
+    maxlength: 98000,
     required: false,
     default: null,
   })

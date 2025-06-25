@@ -127,7 +127,9 @@ export function useGetTasksByGroup(listId: string, params: GetTasksByGroupParams
       },
     }),
     enabled,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1 * 1000 * 60, 
+    gcTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -159,6 +161,8 @@ export function useGetTaskDetails(listId: string, taskId: string, enabled = true
       return response
     },
     enabled: !!(listId && taskId && member_id && enabled),
-    staleTime: 2 * 60 * 1000,
+    staleTime: 1000 * 30,
+    gcTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
   })
 }

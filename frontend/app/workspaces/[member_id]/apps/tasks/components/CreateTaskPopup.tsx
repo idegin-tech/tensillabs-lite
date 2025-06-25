@@ -42,7 +42,7 @@ const taskFormSchema = z.object({
         .trim(),
     description: z
         .string()
-        .max(1000, 'Description must not exceed 1000 characters')
+        .max(98000, 'Description must not exceed 1000 characters')
         .trim()
         .optional()
         .or(z.literal('')),

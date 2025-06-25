@@ -1,5 +1,15 @@
 import { TaskGrouping } from "@/types/tasks.types";
-import { TbCircle, TbClock, TbAlertTriangle, TbCircleCheck, TbExclamationCircle, TbArrowUp, TbMinus, TbArrowDown, TbCalendarX, TbCalendarEvent, TbCalendar, TbClock2, TbDots } from 'react-icons/tb';
+import { TbCircle, TbClock, TbAlertTriangle, TbCircleCheck, TbX, TbExclamationCircle, TbArrowUp, TbMinus, TbArrowDown, TbCalendarX, TbCalendarEvent, TbCalendar, TbClock2, TbDots } from 'react-icons/tb';
+
+export const getDefaultExpandedGroup = (groupBy: string): string | null => {
+    const groupConfig = taskGroupConfig[groupBy]
+    if (!groupConfig) return null
+    
+    const defaultGroup = groupConfig.find(group => group.defaultOpen)
+    if (!defaultGroup) return null
+    
+    return `${defaultGroup.groupKey}-${defaultGroup.label}`
+}
 
 export const taskGroupConfig: Record<string, TaskGrouping[]> = {
     "status": [
@@ -31,6 +41,13 @@ export const taskGroupConfig: Record<string, TaskGrouping[]> = {
             icon: TbCircleCheck,
             color: 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400',
             query: { status: "completed" }
+        },
+        {
+            label: 'Canceled',
+            groupKey: 'status',
+            icon: TbX,
+            color: 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400',
+            query: { status: "canceled" }
         }
     ],
     "priority": [

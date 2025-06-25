@@ -7,6 +7,8 @@ import { useUpdateTask } from '../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useTaskList } from '../contexts/task-list.context'
+import { invalidateTaskGroups } from '../utils/cache-invalidation'
 
 interface TaskColumnRendererProps {
   accessorKey: string
@@ -25,8 +27,11 @@ export default function TaskColumnRenderer({
   const listId = params.list_id as string
   const updateTask = useUpdateTask(listId)
   const queryClient = useQueryClient()
+  const { state } = useTaskList()
   
   const handleUpdate = async (field: string, newValue: any) => {
+    const previousTask = { ...task }
+    
     try {
       const updateData: Record<string, any> = { [field]: newValue }
       
@@ -43,9 +48,17 @@ export default function TaskColumnRenderer({
       })
 
       if (response.success) {
-        queryClient.invalidateQueries({
-          queryKey: [`tasks-by-group`, listId]
-        })
+        const updatedTask = response.payload
+
+        if (field === 'status' || field === 'priority' || field === 'timeframe') {
+          invalidateTaskGroups({
+            listId,
+            groupBy: state.groupBy,
+            task: updatedTask,
+            previousTask,
+            queryClient
+          })
+        }
       }
     } catch (error: any) {
       console.error('Failed to update task:', error)

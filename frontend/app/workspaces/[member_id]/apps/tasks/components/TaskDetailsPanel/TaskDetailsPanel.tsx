@@ -51,7 +51,7 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
                 <div className="flex flex-col h-full">
                     <header className='border-b h-app-header-sm bg-background/50 backdrop-blur-sm flex items-center justify-between px-4'>
                         <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                            <div className="w-2 h-2 rounded-full bg-red-500"></div> 
                             <h2 className="font-semibold text-lg">Task Details</h2>
                         </div>
                         <Button
@@ -101,9 +101,10 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
                     </Button>
                 </header>
                 <div className='grid grid-cols-12 flex-1 overflow-hidden'>
-                    <ScrollArea className='col-span-10 md:col-span-11 overflow-y-auto overflow-x-hidden h-[calc(var(--app-body)]'>
+                    <ScrollArea className='col-span-10 md:col-span-11 overflow-y-auto overflow-x-hidden h-[calc(100vh-10vh)]'>
                         <div className='grid grid-cols-1'>
                             {renderTabContent()}
+                            <div className='h-20' />
                         </div>
                     </ScrollArea>
                     <TaskDetailsTabs

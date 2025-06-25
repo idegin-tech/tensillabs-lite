@@ -1,17 +1,39 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import EachTaskGroup from './EachTaskGroup'
 import TasksListOptions from './TasksListOptions'
 import { useTaskList } from '../../../../../contexts/task-list.context'
 import { useTasksApp } from '../../../../../contexts/tasks-app.context'
-import { taskGroupConfig } from '../../../../../task-app.config'
+import { taskGroupConfig, getDefaultExpandedGroup } from '../../../../../task-app.config'
 import TaskDetailsPanel from '../../../../../components/TaskDetailsPanel/TaskDetailsPanel'
+import { useQueryClient } from '@tanstack/react-query'
+import { useParams } from 'next/navigation'
+import { useGetTaskDetails } from '../../../../../hooks/use-tasks'
+import { invalidateTaskGroups } from '../../../../../utils/cache-invalidation'
 
 export default function TasksListView() {
-    const { state } = useTaskList();
+    const { state, updateState } = useTaskList();
     const { state: tasksAppState, updateState: updateTasksAppState } = useTasksApp();
+    const queryClient = useQueryClient()
+    const params = useParams()
+    const listId = params.list_id as string
+
+    const { data: taskDetailsData } = useGetTaskDetails(
+        listId, 
+        tasksAppState.activeTaskID || '', 
+        !!tasksAppState.activeTaskID
+    )
 
     const currentGroupConfig = state.groupBy === 'none' ? [] : (taskGroupConfig[state.groupBy] || [])
+
+    useEffect(() => {
+        if (state.groupBy !== 'none' && !state.expandedGroup) {
+            const defaultGroup = getDefaultExpandedGroup(state.groupBy)
+            if (defaultGroup) {
+                updateState({ expandedGroup: defaultGroup })
+            }
+        }
+    }, [state.groupBy, state.expandedGroup, updateState])
 
     const handleCloseTaskDetails = () => {
         updateTasksAppState({ activeTaskID: null })

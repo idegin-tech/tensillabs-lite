@@ -34,7 +34,7 @@ export const updateTaskSchema = z.object({
     .optional(),
   description: z
     .string()
-    .max(1000, 'Description must not exceed 1000 characters')
+    .max(98000, 'Description must not exceed 98000 characters')
     .trim()
     .nullable()
     .optional(),
@@ -88,7 +88,7 @@ export const createTaskSchema = z.object({
     .trim(),
   description: z
     .string()
-    .max(1000, 'Description must not exceed 1000 characters')
+    .max(98000, 'Description must not exceed 98000 characters')
     .trim()
     .optional()
     .or(z.literal('')),
