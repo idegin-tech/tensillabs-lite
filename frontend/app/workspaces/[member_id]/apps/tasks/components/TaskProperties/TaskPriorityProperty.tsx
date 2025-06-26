@@ -41,9 +41,7 @@ export default function TaskPriorityProperty({ onChange, value }: TaskPropertyPr
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className={cn("w-[150px] h-8 justify-start p-1 font-normal", {
-          "text-muted opacity-70": !internalValue,
-        })}>
+        <Button variant="ghost" className={"w-[150px] h-8 justify-start p-1 font-normal"}>
           <div className="flex items-center gap-2">
             {getPriorityIcon(internalValue)}
             <span className="text-sm">{getPriorityLabel(internalValue)}</span>
@@ -51,7 +49,8 @@ export default function TaskPriorityProperty({ onChange, value }: TaskPropertyPr
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[150px]">
-        {priorityOptions.map((priority) => (          <DropdownMenuItem 
+        {priorityOptions.map((priority) => (          
+          <DropdownMenuItem 
             key={priority || 'none'} 
             onClick={() => {
               setInternalValue(priority)

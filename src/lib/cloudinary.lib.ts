@@ -33,7 +33,6 @@ export class CloudinaryService {
           {
             public_id: fullPath,
             resource_type: 'auto',
-            folder: `tensillabs/${workspaceId}${path}`,
             use_filename: true,
             unique_filename: false,
           },

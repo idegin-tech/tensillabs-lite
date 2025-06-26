@@ -11,6 +11,8 @@ import { TbX, TbRefresh, TbAlertCircle } from 'react-icons/tb'
 import { useGetTaskDetails } from '../../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import SectionPlaceholder from '@/components/placeholders/SectionPlaceholder'
+import { useQueryClient } from '@tanstack/react-query'
+import { useTaskList } from '../../contexts/task-list.context'
 
 interface TaskDetailsPanelProps {
     taskID: string
@@ -21,14 +23,27 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
     const [activeTab, setActiveTab] = React.useState<'details' | 'chat' | 'activities'>('details')
     const params = useParams()
     const listId = params.list_id as string
+    const queryClient = useQueryClient()
+    const { state } = useTaskList()
     
     const { data: taskDetailsData, isLoading, error, refetch } = useGetTaskDetails(listId, taskID)
+
+    // Enhanced onClose handler that refreshes task groups when panel is closed
+    const handleClose = React.useCallback(() => {
+        queryClient.invalidateQueries({
+            queryKey: [`tasks-by-group`, listId],
+            exact: false
+        })
+        
+        onClose()
+    }, [onClose, queryClient, listId])
 
     const renderTabContent = () => {
         if (!taskDetailsData?.payload) {
             return <TaskDetails />
         }
 
+        //@ts-ignore
         const { task, checklist, files } = taskDetailsData.payload
 
         switch (activeTab) {
@@ -45,7 +60,8 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
 
     if (isLoading) {
         return <TaskDetailsPanelLoading />
-    }    if (error) {
+    }    
+    if (error) {
         return (
             <div className='bg-popover/95 backdrop-blur-sm select-none shadow-2xl md:w-[700px] w-screen border-l z-50 fixed right-0 bottom-0 md:h-app-body h-screen grid grid-cols-1 md:mb-[8px]'>
                 <div className="flex flex-col h-full">
@@ -57,7 +73,7 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="h-8 w-8 p-0"
                         >
                             <TbX className="h-4 w-4" />
@@ -94,7 +110,7 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="h-8 w-8 p-0"
                     >
                         <TbX className="h-4 w-4" />

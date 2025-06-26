@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { useParams } from 'next/navigation'
 import { useUploadTaskFiles } from '@/hooks/use-task-files'
 import { toast } from 'sonner'
-
+import FileThumbnailRenderer from '@/components/FileThumbnailRenderer'
 interface FileItem {
     _id: string
     name: string
@@ -29,25 +29,12 @@ interface TaskDetailsAttachmentsProps {
     taskId: string
 }
 
-const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) return <TbPhoto className="h-5 w-5 text-blue-500" />
-    if (type.startsWith('video/')) return <TbVideo className="h-5 w-5 text-purple-500" />
-    if (type.startsWith('audio/')) return <TbMusic className="h-5 w-5 text-green-500" />
-    if (type.includes('text') || type.includes('document')) return <TbFileText className="h-5 w-5 text-orange-500" />
-    return <TbFile className="h-5 w-5 text-gray-500" />
-}
-
 const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
-const getFileTypeLabel = (type: string) => {
-    const parts = type.split('/')
-    return parts[parts.length - 1].toUpperCase()
 }
 
 export default function TaskDetailsAttachments({ files = [], taskId }: TaskDetailsAttachmentsProps) {
@@ -171,15 +158,20 @@ export default function TaskDetailsAttachments({ files = [], taskId }: TaskDetai
             </div>
 
             {files.length > 0 && (
-                <div className="space-y-2">
+                <div className="gap-2 grid md:grid-cols-2">
                     {files.map((file) => (
                         <div
                             key={file._id}
                             className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors group"
                         >
-                            <div className="flex-shrink-0">
-                                {getFileIcon(file.mimeType)}
-                            </div>
+                            {/* <div className="flex-shrink-0 bg-card rounded-md h-10 w-10">
+                               
+                            </div> */}
+                            <FileThumbnailRenderer
+                                fileType={file.name}
+                                mimeType={file.mimeType}
+                                size={file.size}
+                            />
                             
                             <div className="flex-grow min-w-0 space-y-1">
                                 <div className="flex items-center justify-between">
@@ -216,17 +208,11 @@ export default function TaskDetailsAttachments({ files = [], taskId }: TaskDetai
                                 </div>
                                 
                                 <div className="flex items-center space-x-2">
-                                    <Badge variant="secondary" className="text-xs">
-                                        {getFileTypeLabel(file.mimeType)}
-                                    </Badge>
                                     <span className="text-xs text-muted-foreground">
                                         {formatFileSize(file.size)}
                                     </span>
                                 </div>
                                 
-                                <p className="text-xs text-muted-foreground">
-                                    Uploaded {new Date(file.createdAt).toLocaleDateString()}
-                                </p>
                             </div>
                         </div>
                     ))}

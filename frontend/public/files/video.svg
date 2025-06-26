@@ -1,0 +1,16 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="12" fill="#7C2D12"/>
+  <rect x="4" y="4" width="56" height="56" rx="8" fill="#DC2626"/>
+  <path d="M12 10 L40 10 L52 22 L52 52 L12 52 Z" fill="white" opacity="0.15"/>
+  <path d="M40 10 L40 22 L52 22" fill="white" opacity="0.1"/>
+  <rect x="16" y="26" width="26" height="16" rx="3" fill="white" opacity="0.2" stroke="white" stroke-opacity="0.3" stroke-width="0.5"/>
+  <circle cx="32" cy="34" r="5" fill="white" opacity="0.9"/>
+  <path d="M28 34 L35 30 L35 38 Z" fill="#DC2626"/>
+  <rect x="16" y="44" width="8" height="2" rx="1" fill="white" opacity="0.6"/>
+  <rect x="26" y="44" width="10" height="2" rx="1" fill="white" opacity="0.6"/>
+  <rect x="38" y="44" width="4" height="2" rx="1" fill="white" opacity="0.6"/>
+  <rect x="16" y="47" width="10" height="2" rx="1" fill="white" opacity="0.5"/>
+  <rect x="28" y="47" width="8" height="2" rx="1" fill="white" opacity="0.5"/>
+  <rect x="38" y="47" width="4" height="2" rx="1" fill="white" opacity="0.5"/>
+  <text x="32" y="20" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="white">MP4</text>
+</svg>

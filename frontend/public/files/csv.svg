@@ -1,0 +1,24 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="12" fill="#059669"/>
+  <rect x="4" y="4" width="56" height="56" rx="8" fill="#10B981"/>
+  <path d="M12 10 L40 10 L52 22 L52 52 L12 52 Z" fill="white" opacity="0.15"/>
+  <path d="M40 10 L40 22 L52 22" fill="white" opacity="0.1"/>
+  <g fill="white" opacity="0.8">
+    <rect x="16" y="26" width="8" height="2" rx="1"/>
+    <rect x="26" y="26" width="8" height="2" rx="1"/>
+    <rect x="36" y="26" width="6" height="2" rx="1"/>
+    <rect x="16" y="30" width="6" height="2" rx="1"/>
+    <rect x="24" y="30" width="10" height="2" rx="1"/>
+    <rect x="36" y="30" width="4" height="2" rx="1"/>
+    <rect x="16" y="34" width="10" height="2" rx="1"/>
+    <rect x="28" y="34" width="6" height="2" rx="1"/>
+    <rect x="36" y="34" width="6" height="2" rx="1"/>
+    <rect x="16" y="38" width="7" height="2" rx="1"/>
+    <rect x="25" y="38" width="9" height="2" rx="1"/>
+    <rect x="36" y="38" width="6" height="2" rx="1"/>
+    <rect x="16" y="42" width="8" height="2" rx="1"/>
+    <rect x="26" y="42" width="7" height="2" rx="1"/>
+    <rect x="35" y="42" width="7" height="2" rx="1"/>
+  </g>
+  <text x="32" y="20" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="white">CSV</text>
+</svg>

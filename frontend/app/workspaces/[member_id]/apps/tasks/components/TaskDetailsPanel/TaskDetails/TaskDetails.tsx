@@ -13,8 +13,6 @@ import { useParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import useCommon from '@/hooks/use-common'
-import { useTaskList } from '../../../contexts/task-list.context'
-import { invalidateTaskGroups } from '../../../utils/cache-invalidation'
 
 interface ChecklistItem {
     _id: string
@@ -56,7 +54,6 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
     const { member_id } = useCommon()
     const updateTaskMutation = useUpdateTask(listId)
     const queryClient = useQueryClient()
-    const { state } = useTaskList()
 
     const [taskName, setTaskName] = React.useState(task?.name || '')
     const taskStatus = task?.status;
@@ -72,11 +69,9 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
     const handleTaskUpdate = async (field: string, value: any) => {
         if (!task?._id) return
 
-        const previousTask = { ...task }
-
         try {
             const updateData: Record<string, any> = { [field]: value }
-            
+
             if (field === 'assignee' && Array.isArray(value)) {
                 updateData.assignee = value.map((assignee: any) => assignee._id)
             }
@@ -89,19 +84,9 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
             if (response.success) {
                 const updatedTask = response.payload
 
-                queryClient.setQueryData(['task-details', listId, task._id, member_id], 
+                queryClient.setQueryData(['task-details', listId, task._id, member_id],
                     (oldData: any) => oldData ? { ...oldData, payload: { ...oldData.payload, task: updatedTask } } : oldData
                 )
-
-                if (field === 'status' || field === 'priority' || field === 'timeframe') {
-                    invalidateTaskGroups({
-                        listId,
-                        groupBy: state.groupBy,
-                        task: updatedTask,
-                        previousTask,
-                        queryClient
-                    })
-                }
             }
 
         } catch (error: any) {
@@ -115,55 +100,55 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
         <div className="h-full">
             <div className='space-y-10 p-4'>
                 <div className='space-y-6'>
-                        <Textarea
-                            value={taskName}
-                            placeholder="Task name"
-                            autosize
-                            minRows={1}
-                            maxRows={3}
-                            onChange={(e) => setTaskName(e.target.value)}
-                            debounceMs={400}
-                            onDebouncedChange={(value) => handleTaskUpdate('name', value)}
-                            className="p-2 text-3xl font-bold leading-tight bg-transparent bg-none hover:bg-input border-0 shadow-none focus-visible:ring-0 resize-none focus:bg-input"
-                        />
+                    <Textarea
+                        value={taskName}
+                        placeholder="Enter task name"
+                        autosize
+                        minRows={1}
+                        maxRows={3}
+                        onChange={(e) => setTaskName(e.target.value)}
+                        debounceMs={600}
+                        onDebouncedChange={(value) => handleTaskUpdate('name', value)}
+                        className="p-2 text-3xl font-bold leading-tight bg-transparent bg-none hover:bg-input border-0 shadow-none focus-visible:ring-0 resize-none focus:bg-input"
+                    />
 
                     <div className='grid grid-cols-1 gap-y-6 gap-x-4'>
                         <EachTaskDetailsProperty
                             label='Status'
                         >
-                            <TaskStatusProperty 
-                                value={taskStatus} 
+                            <TaskStatusProperty
+                                value={taskStatus}
                                 onChange={(value) => handleTaskUpdate('status', value)}
                             />
                         </EachTaskDetailsProperty>
                         <EachTaskDetailsProperty
                             label='Priority'
                         >
-                            <TaskPriorityProperty 
-                                value={taskPriority} 
+                            <TaskPriorityProperty
+                                value={taskPriority}
                                 onChange={(value) => handleTaskUpdate('priority', value)}
                             />
                         </EachTaskDetailsProperty>
                         <EachTaskDetailsProperty
                             label='Timeframe'
                         >
-                            <TaskTimeframeProperty 
-                                value={taskTimeframe} 
+                            <TaskTimeframeProperty
+                                value={taskTimeframe}
                                 onChange={(value) => handleTaskUpdate('timeframe', value)}
                             />
                         </EachTaskDetailsProperty>
                         <EachTaskDetailsProperty
                             label='Assignees'
                         >
-                            <TaskAssigneeProperty 
-                                value={taskAssignees} 
+                            <TaskAssigneeProperty
+                                value={taskAssignees}
                                 onChange={(value) => handleTaskUpdate('assignee', value)}
                             />
                         </EachTaskDetailsProperty>
                     </div>
                 </div>
 
-                <TaskDescription 
+                <TaskDescription
                     description={taskDescription}
                     taskId={task?._id || ''}
                     onUpdate={(value) => handleTaskUpdate('description', value)}
@@ -188,8 +173,8 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
                             />
                         </TabsContent>
                         <TabsContent value="attachments" className="mt-4">
-                            <TaskDetailsAttachments 
-                                files={files} 
+                            <TaskDetailsAttachments
+                                files={files}
                                 taskId={task?._id || ''}
                             />
                         </TabsContent>
