@@ -2,6 +2,7 @@ import React from 'react'
 import EachTaskDetailsProperty from '../EachTaskDetailsProperty'
 import { TaskPriorityProperty, TaskStatusProperty, TaskTimeframeProperty, TaskAssigneeProperty } from '../../TaskProperties'
 import { TaskPriority, TaskStatus, Task } from '@/types/tasks.types'
+import { ChecklistItem } from '@/types/checklist.types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { TbCircleCheck, TbPaperclip } from 'react-icons/tb'
@@ -13,19 +14,6 @@ import { useParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import useCommon from '@/hooks/use-common'
-
-interface ChecklistItem {
-    _id: string
-    name: string
-    isDone: boolean
-    task: string
-    workspace: string
-    space?: string
-    list?: string
-    createdBy: string
-    createdAt: string
-    updatedAt: string
-}
 
 interface FileItem {
     _id: string

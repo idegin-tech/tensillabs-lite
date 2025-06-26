@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { TbCheck, TbDots, TbEdit, TbTrash, TbPlus, TbX } from 'react-icons/tb'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -9,19 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { useCreateChecklist, useUpdateChecklist, useDeleteChecklist } from '../../../hooks/use-checklists'
 import { toast } from 'sonner'
-
-interface ChecklistItem {
-  _id: string
-  name: string
-  isDone: boolean
-  task: string
-  workspace: string
-  space?: string
-  list?: string
-  createdBy: string
-  createdAt: string
-  updatedAt: string
-}
+import { ChecklistItem } from '@/types/checklist.types'
 
 interface TaskActionItemsProps {
   taskId?: string
@@ -29,19 +17,27 @@ interface TaskActionItemsProps {
 }
 
 export default function TaskActionItems({ taskId, checklist }: TaskActionItemsProps) {
-  const [localChecklist, setLocalChecklist] = useState<ChecklistItem[]>(checklist)
+  const [localChecklist, setLocalChecklist] = useState<ChecklistItem[]>([])
   const [editingItem, setEditingItem] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [newItemText, setNewItemText] = useState('')
   const [isAddingNew, setIsAddingNew] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const createMutation = useCreateChecklist()
   const updateMutation = useUpdateChecklist()
   const deleteMutation = useDeleteChecklist()
 
   useEffect(() => {
-    setLocalChecklist(checklist)
-  }, [checklist])
+    const sortedChecklist = [...checklist].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+    setLocalChecklist(sortedChecklist)
+    
+    if (taskId && sortedChecklist.length === 0) {
+      setIsAddingNew(true)
+    }
+  }, [checklist, taskId])
 
   const handleToggleComplete = async (item: ChecklistItem) => {
     const optimisticUpdate = localChecklist.map(checklistItem =>
@@ -66,7 +62,7 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
   }
 
   const handleSaveEdit = async (item: ChecklistItem) => {
-    if (editValue.trim() && editValue.trim() !== item.name) {
+    if (editValue.trim().length > 0 && editValue.trim() !== item.name) {
       const optimisticUpdate = localChecklist.map(checklistItem =>
         checklistItem._id === item._id ? { ...checklistItem, name: editValue.trim() } : checklistItem
       )
@@ -104,7 +100,7 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
   }
 
   const handleAddNew = async () => {
-    if (newItemText.trim() && taskId) {
+    if (newItemText.trim().length > 0 && taskId) {
       try {
         const response = await createMutation.mutateAsync({
           name: newItemText.trim(),
@@ -112,9 +108,12 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
         })
         
         const newItem = response.payload
-        setLocalChecklist([...localChecklist, newItem])
+        setLocalChecklist([newItem, ...localChecklist])
         setNewItemText('')
-        setIsAddingNew(false)
+        
+        setTimeout(() => {
+          inputRef.current?.focus()
+        }, 0)
       } catch (error) {
         toast.error('Failed to create checklist item')
       }
@@ -180,6 +179,7 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
                 </TableCell>
                 <TableCell>
                   <Input
+                    ref={inputRef}
                     value={newItemText}
                     onChange={(e) => setNewItemText(e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e)}
@@ -194,7 +194,7 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
                       size="sm" 
                       variant="ghost" 
                       onClick={handleAddNew} 
-                      disabled={!newItemText.trim()}
+                      disabled={!newItemText.trim() || newItemText.trim().length === 0}
                       className="h-6 w-6 p-0"
                     >
                       <TbCheck className="h-3 w-3" />

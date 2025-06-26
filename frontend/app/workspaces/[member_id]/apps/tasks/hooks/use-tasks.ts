@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import useCommon from '@/hooks/use-common'
 import { Task, TaskStatus, TaskPriority } from '@/types/tasks.types'
+import { ChecklistItem } from '@/types/checklist.types'
 import { ApiError } from '@/lib/api'
 
 interface CreateTasksResponse {
@@ -42,6 +43,7 @@ interface GetTasksByGroupParams {
   page?: number
   limit?: number
   meMode?: boolean
+  groupBy?: string
   status?: string
   priority?: string
   due_status?: string
@@ -77,19 +79,6 @@ interface GetTaskDetailsResponse {
     task: Task
     checklist: ChecklistItem[]
   }
-}
-
-interface ChecklistItem {
-  _id: string
-  name: string
-  isDone: boolean
-  task: string
-  workspace: string
-  space?: string
-  list?: string
-  createdBy: string
-  createdAt: string
-  updatedAt: string
 }
 
 export function useCreateTasks(listId: string) {

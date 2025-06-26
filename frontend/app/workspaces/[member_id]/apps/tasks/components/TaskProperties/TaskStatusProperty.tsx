@@ -17,7 +17,9 @@ export default function TaskStatusProperty({ onChange, value }: TaskPropertyProp
 
   const handleStatusChange = (status: TaskStatus) => {
     setInternalValue(status)
-    onChange?.(status)
+    setTimeout(() => {
+      onChange?.(status)
+    }, 50);
   }
 
   const getStatusIcon = (status: TaskStatus) => {
@@ -51,7 +53,8 @@ export default function TaskStatusProperty({ onChange, value }: TaskPropertyProp
           </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[150px]">        {statusOptions.map((status) => (
+      <DropdownMenuContent align="start" className="w-[150px]">        
+        {statusOptions.map((status) => (
           <DropdownMenuItem 
             key={status} 
             onClick={() => handleStatusChange(status)}

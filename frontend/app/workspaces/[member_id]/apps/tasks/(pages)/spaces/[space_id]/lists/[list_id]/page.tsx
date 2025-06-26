@@ -6,6 +6,7 @@ import { TbChartPie, TbFile, TbLayoutList, TbMenu3 } from 'react-icons/tb'
 import TasksListView from '../../../components/views/TaskListView/TasksListView'
 import { TaskListProvider, useTaskList } from '../../../../../contexts/task-list.context'
 import ListDetailsPageLoading from './ListDetailsPageLoading'
+import TaskTimelineGantt from '../../../../../components/TaskTimelineGantt'
 
 function ListDetailsContent() {
   const { state } = useTaskList()
@@ -44,7 +45,16 @@ function ListDetailsContent() {
             value="timeline"
             className={contentClassName}
           >
-            Let them know who is part of this space, and what their roles are. Add or remove participants as needed.
+            <TaskTimelineGantt />
+          </TabsContent>
+          <TabsContent
+            value="files"
+            className={contentClassName}
+          >
+            <div className="p-6 text-center">
+              <h3 className="text-lg font-semibold mb-2">Files</h3>
+              <p className="text-muted-foreground">File management functionality coming soon.</p>
+            </div>
           </TabsContent>
           <TabsContent
             value="report"

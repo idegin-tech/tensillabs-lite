@@ -12,7 +12,6 @@ import { useGetTaskDetails } from '../../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import SectionPlaceholder from '@/components/placeholders/SectionPlaceholder'
 import { useQueryClient } from '@tanstack/react-query'
-import { useTaskList } from '../../contexts/task-list.context'
 
 interface TaskDetailsPanelProps {
     taskID: string
@@ -24,11 +23,9 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
     const params = useParams()
     const listId = params.list_id as string
     const queryClient = useQueryClient()
-    const { state } = useTaskList()
     
     const { data: taskDetailsData, isLoading, error, refetch } = useGetTaskDetails(listId, taskID)
 
-    // Enhanced onClose handler that refreshes task groups when panel is closed
     const handleClose = React.useCallback(() => {
         queryClient.invalidateQueries({
             queryKey: [`tasks-by-group`, listId],

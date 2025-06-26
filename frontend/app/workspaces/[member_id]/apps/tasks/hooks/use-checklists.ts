@@ -4,49 +4,14 @@ import { useApiMutation } from '@/hooks/use-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import useCommon from '@/hooks/use-common'
-
-interface ChecklistItem {
-  _id: string
-  name: string
-  isDone: boolean
-  task: string
-  workspace: string
-  space?: string
-  list?: string
-  createdBy: string
-  createdAt: string
-  updatedAt: string
-}
-
-interface CreateChecklistResponse {
-  success: boolean
-  message: string
-  payload: ChecklistItem
-}
-
-interface UpdateChecklistResponse {
-  success: boolean
-  message: string
-  payload: ChecklistItem
-}
-
-interface DeleteChecklistResponse {
-  success: boolean
-  message: string
-  payload: ChecklistItem
-}
-
-interface CreateChecklistRequest {
-  name: string
-  task?: string
-  space?: string
-  list?: string
-}
-
-interface UpdateChecklistRequest {
-  name?: string
-  isDone?: boolean
-}
+import { 
+  ChecklistItem, 
+  CreateChecklistRequest, 
+  UpdateChecklistRequest, 
+  CreateChecklistResponse, 
+  UpdateChecklistResponse, 
+  DeleteChecklistResponse 
+} from '@/types/checklist.types'
 
 export function useCreateChecklist() {
   const { member_id } = useCommon()

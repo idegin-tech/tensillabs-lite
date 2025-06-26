@@ -1,7 +1,7 @@
 'use client'
 
 import { TaskPriority } from '@/types/tasks.types'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { TbFlag, TbFlag2Filled, TbFlagExclamation, TbFlagDown } from 'react-icons/tb'
 import { TaskPropertyProps } from '.'
 import {
@@ -11,10 +11,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { cn } from '@/lib/utils'
+
 
 export default function TaskPriorityProperty({ onChange, value }: TaskPropertyProps) {
   const [internalValue, setInternalValue] = useState<TaskPriority | undefined>(value)
+
+  useEffect(() => {
+    setInternalValue(value)
+  }, [value])
 
   const getPriorityIcon = (priority?: TaskPriority) => {
     switch (priority) {
@@ -54,7 +58,9 @@ export default function TaskPriorityProperty({ onChange, value }: TaskPropertyPr
             key={priority || 'none'} 
             onClick={() => {
               setInternalValue(priority)
-              onChange?.(priority)
+              setTimeout(() => {
+                onChange?.(priority)
+              }, 50);
             }}
             className={internalValue === priority ? "bg-accent" : ""}
           >
