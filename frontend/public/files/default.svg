@@ -1,0 +1,14 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="12" fill="#4B5563"/>
+  <rect x="4" y="4" width="56" height="56" rx="8" fill="#6B7280"/>
+  <path d="M12 10 L40 10 L52 22 L52 52 L12 52 Z" fill="white" opacity="0.15"/>
+  <path d="M40 10 L40 22 L52 22" fill="white" opacity="0.1"/>
+  <rect x="16" y="28" width="26" height="18" rx="3" fill="white" opacity="0.1" stroke="white" stroke-opacity="0.2" stroke-width="0.5"/>
+  <rect x="18" y="30" width="22" height="3" rx="1.5" fill="white" opacity="0.6"/>
+  <rect x="18" y="35" width="16" height="2" rx="1" fill="white" opacity="0.5"/>
+  <rect x="18" y="39" width="18" height="2" rx="1" fill="white" opacity="0.5"/>
+  <rect x="18" y="43" width="12" height="2" rx="1" fill="white" opacity="0.4"/>
+  <circle cx="32" cy="20" r="4" fill="white" opacity="0.3"/>
+  <circle cx="32" cy="20" r="2" fill="white" opacity="0.5"/>
+  <text x="32" y="57" font-family="Arial, sans-serif" font-size="8" font-weight="bold" text-anchor="middle" fill="white">FILE</text>
+</svg>
