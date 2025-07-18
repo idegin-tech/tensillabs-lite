@@ -24,6 +24,8 @@ import {
 import { Attendance } from './schemas/attendance.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { validateHRMSUser } from '../hrms-user/guards/hrms-user.guard';
+import { HrmsUserPermission } from '../hrms-user/hrms-user.schema';
 
 @Controller('hrms/attendance')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
@@ -96,11 +98,24 @@ export class AttendanceController {
   }
 
   @Get()
+  @UseGuards(validateHRMSUser([HrmsUserPermission.ADMIN, HrmsUserPermission.MANAGER]))
   async getAttendances(
     @Req() req: Request & { workspaceMember?: { _id: string | Types.ObjectId }, workspace?: { _id: string | Types.ObjectId } },
+    @Query('date') date: string,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
   ) {
+    if (!date) {
+      throw new BadRequestException('date query param is required (YYYY-MM-DD)');
+    }
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      throw new BadRequestException('Invalid date format, use YYYY-MM-DD');
+    }
+    const startOfDay = new Date(dateObj);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(dateObj);
+    endOfDay.setHours(23, 59, 59, 999);
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
     const workspaceMemberId = req.workspaceMember && req.workspaceMember._id
@@ -111,7 +126,9 @@ export class AttendanceController {
     if (!workspaceMemberId) {
       throw new BadRequestException('Workspace member ID is required');
     }
-    const filter: Record<string, unknown> = { member: workspaceMemberId };
+    const filter: Record<string, unknown> = {
+      clockIn: { $gte: startOfDay, $lte: endOfDay },
+    };
     if (req.workspace && req.workspace._id) {
       filter.workspace = typeof req.workspace._id === 'string'
         ? new Types.ObjectId(req.workspace._id)

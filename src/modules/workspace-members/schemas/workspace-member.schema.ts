@@ -168,7 +168,10 @@ export class WorkspaceMember {
 export const WorkspaceMemberSchema =
   SchemaFactory.createForClass(WorkspaceMember);
 
-WorkspaceMemberSchema.index({ user: 1, workspace: 1 }, { unique: true });
+WorkspaceMemberSchema.index(
+  { user: 1, workspace: 1 },
+  { unique: true, partialFilterExpression: { user: { $ne: null } } }
+);
 WorkspaceMemberSchema.index({ workspace: 1 });
 WorkspaceMemberSchema.index({ user: 1 });
 WorkspaceMemberSchema.index({ permission: 1 });

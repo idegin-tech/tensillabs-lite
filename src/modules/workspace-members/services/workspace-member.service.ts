@@ -21,6 +21,13 @@ import {
 } from '../schemas/workspace-member.schema';
 import { InviteMemberDto } from '../dto/workspace-member.dto';
 import { PaginationDto, extractPaginationOptions } from '../dto/pagination.dto';
+import { workspaceInvitationEmail } from '../workspace-member.email';
+import { useCTAMail } from '../../../lib/emil.lib';
+import { APP_CONFIG } from '../../../config/app.config';
+import {
+  Workspace,
+  WorkspaceDocument,
+} from '../../workspaces/schemas/workspace.schema';
 
 @Injectable()
 export class WorkspaceMemberService {
@@ -28,6 +35,8 @@ export class WorkspaceMemberService {
     @InjectModel(WorkspaceMember.name)
     private workspaceMemberModel: Model<WorkspaceMemberDocument> &
       PaginateModel<WorkspaceMemberDocument>,
+    @InjectModel(Workspace.name)
+    private workspaceModel: Model<WorkspaceDocument>,
   ) {}
 
   async initializeWorkspaceOwner(
@@ -310,7 +319,31 @@ export class WorkspaceMemberService {
       invitedBy: invitingMember.user,
     });
 
-    return await workspaceMember.save();
+    await workspaceMember.save();
+
+    const workspace = await this.workspaceModel.findById(workspaceId).lean();
+
+    try {
+      const { heading, body, ctaText, ctaUrl } = workspaceInvitationEmail({
+        firstName: inviteMemberDto.firstName,
+        workspaceName: workspace?.name || 'Workspace',
+      });
+
+      await useCTAMail({
+        to: inviteMemberDto.primaryEmail,
+        // subject: `Invitation to join ${workspace?.name || 'a workspace'} on ${APP_CONFIG.name}`,
+        heading,
+        body,
+        ctaText,
+        ctaUrl,
+        firstName: inviteMemberDto.firstName,
+        lastName: inviteMemberDto.lastName,
+      });
+    } catch (error) {
+      console.error('Failed to send invitation email:', error);
+    }
+
+    return workspaceMember;
   }
 
   async acceptInvitation(
