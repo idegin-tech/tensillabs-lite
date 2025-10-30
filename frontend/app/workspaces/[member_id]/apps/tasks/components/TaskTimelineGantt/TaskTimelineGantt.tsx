@@ -82,10 +82,8 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
             }
         }
 
-        gantt.templates.progress_text = function (start, end, task) {
-            const taskData = tasksWithTimeframes.find(t => t._id === task.id)
-            if (!taskData) return ''
-            return getStatusText(taskData.status)
+        gantt.templates.progress_text = function () {
+            return ''
         }
 
         gantt.init(ganttRef.current)
@@ -138,21 +136,6 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
                 priority: task.priority || 'normal'
             }
         })
-    }
-
-    const getStatusText = (status: string): string => {
-        switch (status) {
-            case 'completed':
-                return 'Completed'
-            case 'in_progress':
-                return 'In Progress'
-            case 'in_review':
-                return 'In Review'
-            case 'canceled':
-                return 'Canceled'
-            default:
-                return 'To Do'
-        }
     }
 
     if (isLoading) {
