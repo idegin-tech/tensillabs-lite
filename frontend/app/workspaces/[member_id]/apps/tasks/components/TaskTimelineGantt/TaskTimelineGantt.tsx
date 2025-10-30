@@ -60,6 +60,17 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
         gantt.config.drag_progress = false
         gantt.config.show_progress = true
         gantt.config.show_links = false
+        gantt.config.show_markers = true
+        gantt.config.show_progress = true
+
+        
+        gantt.plugins({
+            marker: true,
+            drag_timeline: true,
+            quick_info: true,
+            export_api: true,
+            tooltip: true
+        })
 
         gantt.config.columns = [
             { name: 'text', label: 'Task Name', width: 200, tree: true },
@@ -182,6 +193,16 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
             data: ganttTasks,
             links: []
         })
+
+        const today = new Date()
+        today.setHours(12, 0, 0, 0)
+        
+        gantt.addMarker({
+            start_date: today,
+            css: "today-marker",
+            text: "Today",
+            title: format(today, 'MMM dd, yyyy')
+        })
     }, [tasksWithTimeframes])
 
     const transformTasksToGanttFormat = (tasks: Task[]): GanttTask[] => {
@@ -247,9 +268,6 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
 
     return (
         <div className={`w-full h-full ${className}`}>
-            <style jsx global>{`
-            
-      `}</style>
             <div ref={ganttRef} className="w-full h-full min-h-[500px] grid grid-cols-1" />
         </div>
     )

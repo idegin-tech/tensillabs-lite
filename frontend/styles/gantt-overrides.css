@@ -10,6 +10,10 @@
 .gantt_layout_cell_border_left {
   border-left: 1px solid var(--border) !important;
 }
+.gantt_cal_quick_info {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
 .gantt_task_cell {
   border-right: 1px solid var(--border) !important;
 }
@@ -159,4 +163,73 @@
 
 .gantt_grid_data .gantt_cell {
   border-right: 1px solid var(--border) !important;
+}
+
+.today-marker {
+  background: linear-gradient(90deg, 
+    rgba(59, 130, 246, 0) 0%, 
+    rgba(59, 130, 246, 0.08) 25%, 
+    rgba(59, 130, 246, 0.12) 50%, 
+    rgba(59, 130, 246, 0.08) 75%, 
+    rgba(59, 130, 246, 0) 100%
+  ) !important;
+  border-left: none !important;
+  z-index: 0 !important;
+  position: relative !important;
+}
+
+.today-marker::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, 
+    rgba(59, 130, 246, 0.3) 0%, 
+    rgba(59, 130, 246, 0.8) 10%, 
+    rgba(59, 130, 246, 0.8) 90%, 
+    rgba(59, 130, 246, 0.3) 100%
+  );
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+.today-marker .gantt_marker_content {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+  padding: 4px 12px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  position: absolute !important;
+  top: -18px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3), 
+              0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  z-index: 110 !important;
+  letter-spacing: 0.025em !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.today-marker .gantt_marker_content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #2563eb;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.gantt_task_line {
+  position: relative;
+  z-index: 2 !important;
 }
