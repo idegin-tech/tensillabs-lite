@@ -45,6 +45,16 @@ export class Workspace {
     default: null,
   })
   bannerURL: string;
+
+  @Prop({
+    required: true,
+    trim: true,
+    unique: true,
+    lowercase: true,
+    maxlength: 100,
+    minlength: 2,
+  })
+  slug: string;
 }
 
 export const WorkspaceSchema = SchemaFactory.createForClass(Workspace);

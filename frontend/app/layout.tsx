@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import '../styles/gantt-overrides.css';
 import Providers from "@/components/Providers";
 import { APP_CONFIG } from "@/config/app.config";
 import { ThemeProvider } from "@/components/theme-provider";

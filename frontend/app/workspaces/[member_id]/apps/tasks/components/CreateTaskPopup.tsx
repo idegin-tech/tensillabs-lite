@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { format } from 'date-fns'
+import { CalendarIcon } from 'lucide-react'
 import { 
     Dialog, 
     DialogContent, 
@@ -27,7 +29,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import { TaskStatus, TaskPriority } from '@/types/tasks.types'
 import { useCreateTasks } from '../hooks/use-tasks'
@@ -49,8 +56,8 @@ const taskFormSchema = z.object({
     status: z.nativeEnum(TaskStatus),
     priority: z.nativeEnum(TaskPriority).optional(),
     timeframe: z.object({
-        start: z.string().optional(),
-        end: z.string().optional()
+        start: z.date().optional(),
+        end: z.date().optional()
     }).optional()
 })
 
@@ -85,17 +92,27 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
             status: groupInfo?.status || TaskStatus.TODO,
             priority: groupInfo?.priority,
             timeframe: {
-                start: '',
-                end: ''
-            }        },
+                start: undefined,
+                end: undefined
+            }
+        },
         mode: 'onChange',
     })
 
     const handleSubmit = async (data: TaskFormData) => {
         setIsSubmitting(true)
         try {
+            // Format dates to ISO strings for the API
+            const formattedData = {
+                ...data,
+                timeframe: data.timeframe ? {
+                    start: data.timeframe.start?.toISOString(),
+                    end: data.timeframe.end?.toISOString()
+                } : undefined
+            }
+
             const response = await createTasks.mutateAsync({
-                tasks: [data]
+                tasks: [formattedData]
             })
             
             if (response.payload && response.payload.length > 0) {
@@ -109,7 +126,8 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
             console.error('Failed to create task:', error)
             toast.error('Failed to create task')
         } finally {
-            setIsSubmitting(false)        }
+            setIsSubmitting(false)
+        }
     }
 
     const handleClose = () => {
@@ -125,8 +143,8 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                 status: groupInfo?.status || TaskStatus.TODO,
                 priority: groupInfo?.priority,
                 timeframe: {
-                    start: '',
-                    end: ''
+                    start: undefined,
+                    end: undefined
                 }
             })
         }
@@ -228,7 +246,7 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                                             <FormLabel>Status</FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                                                 <FormControl>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className="w-full">
                                                         <SelectValue placeholder="Select status" />
                                                     </SelectTrigger>
                                                 </FormControl>
@@ -259,7 +277,7 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                                                 disabled={isSubmitting}
                                             >
                                                 <FormControl>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className="w-full">
                                                         <SelectValue placeholder="Select priority" />
                                                     </SelectTrigger>
                                                 </FormControl>
@@ -283,15 +301,40 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                                     control={form.control}
                                     name="timeframe.start"
                                     render={({ field }) => (
-                                        <FormItem>
+                                        <FormItem className="flex flex-col">
                                             <FormLabel>Start Date</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="date"
-                                                    disabled={isSubmitting}
-                                                    {...field}
-                                                />
-                                            </FormControl>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                            variant="outline"
+                                                            className={cn(
+                                                                "w-full pl-3 text-left font-normal",
+                                                                !field.value && "text-muted-foreground"
+                                                            )}
+                                                            disabled={isSubmitting}
+                                                        >
+                                                            {field.value ? (
+                                                                format(field.value, "PPP")
+                                                            ) : (
+                                                                <span>Pick a date</span>
+                                                            )}
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={field.value}
+                                                        onSelect={field.onChange}
+                                                        disabled={(date) =>
+                                                            isSubmitting
+                                                        }
+                                                        initialFocus
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -301,21 +344,48 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                                     control={form.control}
                                     name="timeframe.end"
                                     render={({ field }) => (
-                                        <FormItem>
+                                        <FormItem className="flex flex-col">
                                             <FormLabel>Due Date</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="date"
-                                                    disabled={isSubmitting}
-                                                    {...field}
-                                                />
-                                            </FormControl>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                            variant="outline"
+                                                            className={cn(
+                                                                "w-full pl-3 text-left font-normal",
+                                                                !field.value && "text-muted-foreground"
+                                                            )}
+                                                            disabled={isSubmitting}
+                                                        >
+                                                            {field.value ? (
+                                                                format(field.value, "PPP")
+                                                            ) : (
+                                                                <span>Pick a date</span>
+                                                            )}
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={field.value}
+                                                        onSelect={field.onChange}
+                                                        disabled={(date) =>
+                                                            isSubmitting
+                                                        }
+                                                        initialFocus
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                             </div>
-                        </div>                        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
+                        </div>
+                        
+                        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -332,7 +402,8 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                             >
                                 {isSubmitting ? 'Creating...' : 'Create Task'}
                             </Button>
-                        </div>                    </form>
+                        </div>
+                    </form>
                 </Form>
             </DialogContent>
         </Dialog>
