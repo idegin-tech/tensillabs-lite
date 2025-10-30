@@ -10,6 +10,7 @@ import {
   UseGuards,
   Req,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Types } from 'mongoose';
@@ -24,6 +25,10 @@ import { SpaceParticipationGuard } from '../guards/space-participation.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
 import { createListSchema, CreateListDto } from './dto/list.dto';
+import {
+  getListFilesQuerySchema,
+  GetListFilesQueryDto,
+} from './dto/list-files.dto';
 
 @Controller('lists')
 @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
@@ -32,6 +37,7 @@ export class ListController {
   constructor(private readonly listService: ListService) {}
 
   @Get(':listId')
+  @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
   async getListDetails(
     @Param('listId') listId: string,
     @Req()
@@ -41,15 +47,41 @@ export class ListController {
     },
   ) {
     if (!Types.ObjectId.isValid(listId)) {
-      throw new BadRequestException('Invalid list ID format');
+      throw new BadRequestException('Invalid list ID');
     }
 
     const list = await this.listService.getListDetails(
       new Types.ObjectId(listId),
       req.workspace._id,
     );
-
     return createSuccessResponse('List details retrieved successfully', list);
+  }
+
+  @Get(':listId/files')
+  @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
+  async getListFiles(
+    @Param('listId') listId: string,
+    @Query(new ZodValidationPipe(getListFilesQuerySchema))
+    query: GetListFilesQueryDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    if (!Types.ObjectId.isValid(listId)) {
+      throw new BadRequestException('Invalid list ID');
+    }
+
+    const result = await this.listService.getListFiles(
+      new Types.ObjectId(listId),
+      req.workspace._id,
+      query,
+    );
+    return createSuccessResponse(
+      'List files retrieved successfully',
+      result,
+    );
   }
 }
 

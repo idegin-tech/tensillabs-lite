@@ -12,6 +12,8 @@ import {
 import { WorkspaceMembersModule } from '../../../workspace-members/workspace-members.module';
 import { AuthModule } from '../../../auth/auth.module';
 import { WorkspacesModule } from '../../../workspaces/workspaces.module';
+import { FilesModule } from '../../../files/files.module';
+import { File, FileSchema } from '../../../files/schemas/file.schema';
 
 @Module({
   imports: [
@@ -20,10 +22,12 @@ import { WorkspacesModule } from '../../../workspaces/workspaces.module';
       { name: Task.name, schema: TaskSchema },
       { name: Space.name, schema: SpaceSchema },
       { name: SpaceParticipant.name, schema: SpaceParticipantSchema },
+      { name: File.name, schema: FileSchema },
     ]),
     WorkspaceMembersModule,
     AuthModule,
     WorkspacesModule,
+    FilesModule,
   ],
   controllers: [ListController, SpaceListController],
   providers: [ListService],

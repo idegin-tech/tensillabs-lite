@@ -7,6 +7,7 @@ import TasksListView from '../../../components/views/TaskListView/TasksListView'
 import { TaskListProvider, useTaskList } from '../../../../../contexts/task-list.context'
 import ListDetailsPageLoading from './ListDetailsPageLoading'
 import TaskTimelineGantt from '../../../../../components/TaskTimelineGantt'
+import ListFilesTab from '../../../../../components/ListFilesTab'
 
 function ListDetailsContent() {
   const { state } = useTaskList()
@@ -51,10 +52,7 @@ function ListDetailsContent() {
             value="files"
             className={contentClassName}
           >
-            <div className="p-6 text-center">
-              <h3 className="text-lg font-semibold mb-2">Files</h3>
-              <p className="text-muted-foreground">File management functionality coming soon.</p>
-            </div>
+            <ListFilesTab />
           </TabsContent>
           <TabsContent
             value="report"

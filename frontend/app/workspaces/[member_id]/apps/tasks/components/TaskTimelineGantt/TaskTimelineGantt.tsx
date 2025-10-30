@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { gantt } from 'dhtmlx-gantt'
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
 import { Task } from '@/types/tasks.types'
 import { format } from 'date-fns'
 import { useParams } from 'next/navigation'
-import { useGetTasksByGroup } from '../../hooks/use-tasks'
+import { useGetTasksByGroup, useUpdateTask } from '../../hooks/use-tasks'
 import { useTaskList } from '../../contexts/task-list.context'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface TaskTimelineGanttProps {
     tasks?: Task[]
@@ -29,6 +30,9 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
     const params = useParams()
     const listId = params.list_id as string
     const { state } = useTaskList()
+    const queryClient = useQueryClient()
+    const updateTaskMutation = useUpdateTask(listId)
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     const { data: allTasksData, isLoading } = useGetTasksByGroup(
         listId,
@@ -43,6 +47,68 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
 
     const allTasks = allTasksData?.payload?.tasks || tasks
     const tasksWithTimeframes = allTasks.filter(task => task.timeframe?.start && task.timeframe?.end)
+
+    const debouncedUpdateTask = useCallback((taskId: string, startDate: Date, endDate: Date) => {
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current)
+        }
+
+        debounceTimerRef.current = setTimeout(async () => {
+            const queryKey = [`tasks-by-group`, listId, JSON.stringify({
+                page: 1,
+                limit: 100,
+                groupBy: 'none',
+                meMode: state.meMode
+            })]
+
+            const previousData = queryClient.getQueryData(queryKey)
+
+            queryClient.setQueryData(queryKey, (oldData: any) => {
+                if (!oldData) return oldData
+
+                return {
+                    ...oldData,
+                    payload: {
+                        ...oldData.payload,
+                        tasks: oldData.payload.tasks.map((task: any) =>
+                            task._id === taskId
+                                ? {
+                                    ...task,
+                                    timeframe: {
+                                        start: startDate.toISOString(),
+                                        end: endDate.toISOString()
+                                    }
+                                }
+                                : task
+                        )
+                    }
+                }
+            })
+
+            try {
+                await updateTaskMutation.mutateAsync({
+                    taskId,
+                    data: {
+                        timeframe: {
+                            start: startDate.toISOString(),
+                            end: endDate.toISOString()
+                        }
+                    }
+                })
+            } catch (error) {
+                console.error('Failed to update task:', error)
+                queryClient.setQueryData(queryKey, previousData)
+            }
+        }, 800)
+    }, [updateTaskMutation, queryClient, listId, state.meMode])
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current)
+            }
+        }
+    }, [])
 
     useEffect(() => {
         if (!ganttRef.current) return
@@ -113,17 +179,6 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
                 unit: gantt.config.duration_unit
             })
 
-            const updatedTask = {
-                _id: id,
-                name: task.text,
-                timeframe: {
-                    start: startDate,
-                    end: endDate
-                },
-                duration: task.duration,
-                mode: mode
-            }
-
             console.log('📅 Task Updated via Drag/Resize:', {
                 taskId: id,
                 taskName: task.text,
@@ -141,9 +196,10 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
                         ? Math.ceil((new Date(originalTask.timeframe.end).getTime() - new Date(originalTask.timeframe.start).getTime()) / (1000 * 60 * 60 * 24))
                         : 0,
                     new: task.duration
-                },
-                fullTask: updatedTask
+                }
             })
+
+            debouncedUpdateTask(String(id), startDate, endDate)
 
             return true
         })
@@ -157,7 +213,7 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
         return () => {
             gantt.clearAll()
         }
-    }, [tasksWithTimeframes])
+    }, [tasksWithTimeframes, debouncedUpdateTask])
 
     useEffect(() => {
         if (!tasksWithTimeframes.length) return
