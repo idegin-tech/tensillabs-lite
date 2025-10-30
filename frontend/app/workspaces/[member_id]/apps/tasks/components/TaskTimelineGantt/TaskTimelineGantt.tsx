@@ -54,7 +54,10 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
         gantt.config.row_height = 40
         gantt.config.grid_width = 350
         gantt.config.autofit = true
-        gantt.config.readonly = true
+        gantt.config.readonly = false
+        gantt.config.drag_move = true
+        gantt.config.drag_resize = true
+        gantt.config.drag_progress = false
         gantt.config.show_progress = true
         gantt.config.show_links = false
 
@@ -86,6 +89,58 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
             return ''
         }
 
+        gantt.attachEvent("onAfterTaskDrag", function(id, mode) {
+            const task = gantt.getTask(id)
+            const originalTask = tasksWithTimeframes.find(t => t._id === id)
+            
+            if (!originalTask || !task.start_date || !task.duration) return
+
+            const startDate = typeof task.start_date === 'string' ? new Date(task.start_date) : task.start_date
+            const endDate = gantt.calculateEndDate({
+                start_date: startDate as Date,
+                duration: task.duration as number,
+                unit: gantt.config.duration_unit
+            })
+
+            const updatedTask = {
+                _id: id,
+                name: task.text,
+                timeframe: {
+                    start: startDate,
+                    end: endDate
+                },
+                duration: task.duration,
+                mode: mode
+            }
+
+            console.log('📅 Task Updated via Drag/Resize:', {
+                taskId: id,
+                taskName: task.text,
+                mode: mode,
+                originalTimeframe: {
+                    start: originalTask.timeframe?.start,
+                    end: originalTask.timeframe?.end
+                },
+                newTimeframe: {
+                    start: startDate,
+                    end: endDate
+                },
+                duration: {
+                    original: originalTask.timeframe?.start && originalTask.timeframe?.end 
+                        ? Math.ceil((new Date(originalTask.timeframe.end).getTime() - new Date(originalTask.timeframe.start).getTime()) / (1000 * 60 * 60 * 24))
+                        : 0,
+                    new: task.duration
+                },
+                fullTask: updatedTask
+            })
+
+            return true
+        })
+
+        gantt.attachEvent("onTaskDrag", function(id, mode, task, original) {
+            return true
+        })
+
         gantt.init(ganttRef.current)
 
         return () => {
@@ -97,6 +152,30 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
         if (!tasksWithTimeframes.length) return
 
         const ganttTasks = transformTasksToGanttFormat(tasksWithTimeframes)
+
+        let earliestDate = new Date()
+        let latestDate = new Date()
+
+        tasksWithTimeframes.forEach(task => {
+            const startDate = new Date(task.timeframe!.start!)
+            const endDate = new Date(task.timeframe!.end!)
+            
+            if (startDate < earliestDate || earliestDate.getTime() === new Date().setHours(0, 0, 0, 0)) {
+                earliestDate = startDate
+            }
+            if (endDate > latestDate || latestDate.getTime() === new Date().setHours(0, 0, 0, 0)) {
+                latestDate = endDate
+            }
+        })
+
+        const paddedStartDate = new Date(earliestDate)
+        paddedStartDate.setDate(paddedStartDate.getDate() - 5)
+        
+        const paddedEndDate = new Date(latestDate)
+        paddedEndDate.setDate(paddedEndDate.getDate() + 10)
+
+        gantt.config.start_date = paddedStartDate
+        gantt.config.end_date = paddedEndDate
 
         gantt.clearAll()
         gantt.parse({
