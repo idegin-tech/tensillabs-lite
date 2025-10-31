@@ -1,17 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { getDatabaseConfig } from '../config/database.config';
 import { DatabaseHealthService } from './database-health.service';
 
 @Module({
   imports: [
-    MongooseModule.forRootAsync({
+    TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: getDatabaseConfig,
     }),
   ],
   providers: [DatabaseHealthService],
-  exports: [MongooseModule, DatabaseHealthService],
+  exports: [TypeOrmModule, DatabaseHealthService],
 })
 export class DatabaseModule {}

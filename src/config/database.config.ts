@@ -1,57 +1,30 @@
 import { ConfigService } from '@nestjs/config';
-import { MongooseModuleOptions } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export const getDatabaseConfig = (
   configService: ConfigService,
-): MongooseModuleOptions => {
-  // Get MongoDB URI from environment variables
-  const mongoUri = configService.get<string>('MONGODB_URI');
+): TypeOrmModuleOptions => {
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
 
-  // Default fallback for development
-  const defaultUri = 'mongodb://localhost:27017/tensillabs-lite';
-  const finalUri = mongoUri || defaultUri;
-
-  // Log connection (hide credentials for security)
-  console.log(
-    `Connecting to MongoDB: ${finalUri.replace(/\/\/.*@/, '//***:***@')}`,
-  );
-
-  return {
-    uri: finalUri,
+  const config: TypeOrmModuleOptions = {
+    type: 'postgres',
+    host: configService.get<string>('DATABASE_HOST', 'localhost'),
+    port: configService.get<number>('DATABASE_PORT', 5432),
+    username: configService.get<string>('DATABASE_USER', 'postgres'),
+    password: configService.get<string>('DATABASE_PASSWORD', 'postgres'),
+    database: configService.get<string>('DATABASE_NAME', 'tensillabs_lite'),
+    entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+    synchronize: !isProduction,
+    logging: !isProduction,
     retryAttempts: isProduction ? 5 : 3,
     retryDelay: isProduction ? 2000 : 1000,
-    connectTimeoutMS: 30000,
-    serverSelectionTimeoutMS: isProduction ? 10000 : 5000,
-    heartbeatFrequencyMS: 10000,
-    maxPoolSize: isProduction ? 10 : 5,
-    minPoolSize: isProduction ? 2 : 1,
-    maxIdleTimeMS: 30000,
-    bufferCommands: false,
-    socketTimeoutMS: 45000,
-    connectionFactory: (connection: Connection) => {
-      connection.on('connected', () => {
-        console.log('MongoDB connected successfully');
-      });
-
-      connection.on('disconnected', () => {
-        console.log('MongoDB disconnected');
-      });
-
-      connection.on('error', (error: Error) => {
-        console.error('MongoDB connection error:', error);
-      });
-
-      connection.on('reconnected', () => {
-        console.log('MongoDB reconnected');
-      });
-
-      connection.on('close', () => {
-        console.log('MongoDB connection closed');
-      });
-
-      return connection;
-    },
+    autoLoadEntities: true,
+    poolSize: isProduction ? 10 : 5,
   };
+
+  console.log(
+    `Connecting to PostgreSQL: ${config.username}@${config.host}:${config.port}/${config.database}`,
+  );
+
+  return config;
 };

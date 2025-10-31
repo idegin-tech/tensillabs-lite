@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -6,8 +5,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as session from 'express-session';
 import * as cookieParser from 'cookie-parser';
-import * as MongoDBStore from 'connect-mongodb-session';
+import * as connectPgSimple from 'connect-pg-simple';
 import * as express from 'express';
+import { Pool } from 'pg';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -48,28 +48,36 @@ async function bootstrap() {
 
   console.log('[DEBUG] Session configuration:', {
     sessionSecret: process.env.SESSION_SECRET ? 'SET' : 'NOT SET',
-    mongoUri: process.env.MONGODB_URI ? 'SET' : 'NOT SET',
+    databaseHost: process.env.DATABASE_HOST ? 'SET' : 'NOT SET',
     nodeEnv: process.env.NODE_ENV,
   });
 
-  const MongoStore = MongoDBStore(session);
+  const PgSession = connectPgSimple(session);
 
-  const sessionStore = new MongoStore({
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/tensillabs-lite',
-    databaseName: 'tensillabs-lite',
-    collection: 'sessions',
+  const pgPool = new Pool({
+    host: process.env.DATABASE_HOST || 'localhost',
+    port: parseInt(process.env.DATABASE_PORT || '5432'),
+    user: process.env.DATABASE_USER || 'postgres',
+    password: process.env.DATABASE_PASSWORD || 'postgres',
+    database: process.env.DATABASE_NAME || 'tensillabs_lite',
+  });
+
+  const sessionStore = new PgSession({
+    pool: pgPool,
+    tableName: 'sessions',
+    createTableIfMissing: true,
   });
 
   sessionStore.on('error', (error) => {
     console.error('[SESSION STORE ERROR]:', error);
   });
 
-  sessionStore.on('connected', () => {
-    console.log('[SESSION STORE] Connected to MongoDB successfully');
+  pgPool.on('connect', () => {
+    console.log('[SESSION STORE] Connected to PostgreSQL successfully');
   });
 
-  sessionStore.on('disconnected', () => {
-    console.log('[SESSION STORE] Disconnected from MongoDB');
+  pgPool.on('error', (error) => {
+    console.error('[SESSION POOL ERROR]:', error);
   });
 
   app.use(

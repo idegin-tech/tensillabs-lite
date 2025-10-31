@@ -12,7 +12,7 @@ import { createSuccessResponse } from '../../lib/response.interface';
 import { createWorkspaceSchema, CreateWorkspaceDto } from './dto/workspace.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserDocument } from '../users/schemas/user.schema';
+import { User } from '../users/schemas/user.schema';
 
 @Controller('workspaces')
 @UseGuards(AuthGuard)
@@ -24,7 +24,7 @@ export class WorkspaceController {
   async createWorkspace(
     @Body(new ZodValidationPipe(createWorkspaceSchema))
     createWorkspaceDto: CreateWorkspaceDto,
-    @CurrentUser() user: UserDocument,
+    @CurrentUser() user: User,
   ) {
     const result = await this.workspaceService.createWorkspace(
       createWorkspaceDto,

@@ -1,13 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import {
-  Model,
-  Types,
-  PaginateModel,
-  FilterQuery,
-  PaginateResult,
-} from 'mongoose';
-import { Project, ProjectDocument } from '../schemas/project.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Project } from '../schemas/project.schema';
 import { CreateProjectDto, UpdateProjectDto } from '../dto/project.dto';
 import { PaginationDto } from '../../workspace-members/dto/pagination.dto';
 import { extractPaginationOptions } from '../../workspace-members/dto/pagination.dto';
@@ -15,67 +9,87 @@ import { extractPaginationOptions } from '../../workspace-members/dto/pagination
 @Injectable()
 export class ProjectService {
   constructor(
-    @InjectModel(Project.name)
-    private projectModel: Model<ProjectDocument> &
-      PaginateModel<ProjectDocument>,
+    @InjectRepository(Project)
+    private projectRepository: Repository<Project>,
   ) {}
 
   async create(
     createProjectDto: CreateProjectDto,
-    workspaceId: Types.ObjectId,
-    createdBy: Types.ObjectId,
-  ): Promise<ProjectDocument> {
+    workspaceId: string,
+    createdById: string,
+  ): Promise<Project> {
     const projectData: Record<string, any> = {
       ...createProjectDto,
-      workspace: workspaceId,
-      createdBy,
+      workspaceId,
+      createdById,
     };
 
     if (createProjectDto.client) {
-      projectData.client = new Types.ObjectId(createProjectDto.client);
-    } else {
-      delete projectData.client;
+      projectData.clientId = createProjectDto.client;
     }
 
-    const project = new this.projectModel(projectData);
+    const project = this.projectRepository.create(projectData);
 
-    return await project.save();
+    return await this.projectRepository.save(project);
   }
 
-  async findAll(
-    workspaceId: Types.ObjectId,
-    pagination: PaginationDto,
-  ): Promise<PaginateResult<ProjectDocument>> {
+  async findAll(workspaceId: string, pagination: PaginationDto): Promise<any> {
     const { search, isActive, paginationOptions } =
       extractPaginationOptions(pagination);
 
-    const query: FilterQuery<ProjectDocument> = {
-      workspace: workspaceId,
+    const where: any = {
+      workspaceId,
       isDeleted: false,
     };
 
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
-    }
-
     if (isActive && isActive !== 'all') {
-      query.isActive = isActive === 'true';
+      where.isActive = isActive === 'true';
     }
 
-    return await this.projectModel.paginate(query, {
-      ...paginationOptions,
-      populate: ['createdBy', 'client'],
-    });
+    const queryBuilder = this.projectRepository.createQueryBuilder('project');
+    queryBuilder.where(where);
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(project.name ILIKE :search OR project.description ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    queryBuilder.leftJoinAndSelect('project.createdBy', 'createdBy');
+    queryBuilder.leftJoinAndSelect('project.client', 'client');
+
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 10;
+
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    if (paginationOptions.sort) {
+      const sortOrder = paginationOptions.sort.startsWith('-') ? 'DESC' : 'ASC';
+      const sortField = paginationOptions.sort.replace('-', '');
+      queryBuilder.orderBy(`project.${sortField}`, sortOrder);
+    }
+
+    const [docs, totalDocs] = await queryBuilder.getManyAndCount();
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page < Math.ceil(totalDocs / limit),
+      hasPrevPage: page > 1,
+      nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
+    };
   }
 
-  async findById(id: Types.ObjectId): Promise<ProjectDocument> {
-    const project = await this.projectModel
-      .findById(id)
-      .populate(['client', 'createdBy'])
-      .exec();
+  async findById(id: string): Promise<Project> {
+    const project = await this.projectRepository.findOne({
+      where: { id },
+      relations: ['client', 'createdBy'],
+    });
     if (!project || project.isDeleted) {
       throw new NotFoundException('Project not found');
     }
@@ -83,75 +97,73 @@ export class ProjectService {
   }
 
   async update(
-    id: Types.ObjectId,
+    id: string,
     updateProjectDto: UpdateProjectDto,
-    workspaceId: Types.ObjectId,
-  ): Promise<ProjectDocument> {
-    const updateData: Record<string, any> = { ...updateProjectDto };
+    workspaceId: string,
+  ): Promise<Project> {
+    const project = await this.projectRepository.findOne({
+      where: { id, workspaceId, isDeleted: false },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
 
     if (updateProjectDto.client) {
-      updateData.client = new Types.ObjectId(updateProjectDto.client);
+      project.clientId = updateProjectDto.client;
     } else if (
       updateProjectDto.client === null ||
       updateProjectDto.client === ''
     ) {
-      updateData.client = null;
+      project.clientId = null;
     }
 
-    const project = await this.projectModel
-      .findOneAndUpdate(
-        { _id: id, workspace: workspaceId, isDeleted: false },
-        updateData,
-        { new: true },
-      )
-      .populate(['client', 'createdBy'])
-      .exec();
+    Object.assign(project, updateProjectDto);
+    await this.projectRepository.save(project);
 
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    return project;
+    return await this.projectRepository.findOne({
+      where: { id },
+      relations: ['client', 'createdBy'],
+    });
   }
 
   async toggleActive(
-    id: Types.ObjectId,
+    id: string,
     isActive: boolean,
-    workspaceId: Types.ObjectId,
-  ): Promise<ProjectDocument> {
-    const project = await this.projectModel
-      .findOneAndUpdate(
-        { _id: id, workspace: workspaceId, isDeleted: false },
-        { isActive },
-        { new: true },
-      )
-      .populate(['client', 'createdBy'])
-      .exec();
+    workspaceId: string,
+  ): Promise<Project> {
+    const project = await this.projectRepository.findOne({
+      where: { id, workspaceId, isDeleted: false },
+    });
 
     if (!project) {
       throw new NotFoundException('Project not found');
     }
 
-    return project;
+    project.isActive = isActive;
+    await this.projectRepository.save(project);
+
+    return await this.projectRepository.findOne({
+      where: { id },
+      relations: ['client', 'createdBy'],
+    });
   }
 
-  async delete(
-    id: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<ProjectDocument> {
-    const project = await this.projectModel
-      .findOneAndUpdate(
-        { _id: id, workspace: workspaceId, isDeleted: false },
-        { isDeleted: true },
-        { new: true },
-      )
-      .populate(['client', 'createdBy'])
-      .exec();
+  async delete(id: string, workspaceId: string): Promise<Project> {
+    const project = await this.projectRepository.findOne({
+      where: { id, workspaceId, isDeleted: false },
+    });
 
     if (!project) {
       throw new NotFoundException('Project not found');
     }
 
-    return project;
+    project.isDeleted = true;
+    await this.projectRepository.save(project);
+
+    return await this.projectRepository.findOne({
+      where: { id },
+      relations: ['client', 'createdBy'],
+    });
   }
 }

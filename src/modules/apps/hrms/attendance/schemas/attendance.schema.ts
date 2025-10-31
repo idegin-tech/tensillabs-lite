@@ -1,56 +1,55 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { WorkspaceMember } from '../../../../workspace-members/schemas/workspace-member.schema';
+import { Office } from '../../../../options/offices/schemas/office.schema';
 
-export type AttendanceDocument = Attendance & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'attendances',
-})
+@Entity('attendances')
+@Index(['memberId', 'officeId', 'clockIn'])
 export class Attendance {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  member: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Office',
-    required: false,
-    default: null,
-  })
-  office?: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  memberId: string;
 
-  @Prop({
-    type: Date,
-    required: true,
-  })
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'memberId' })
+  member: WorkspaceMember;
+
+  @Column({ type: 'uuid', nullable: true })
+  officeId?: string;
+
+  @ManyToOne(() => Office, { nullable: true })
+  @JoinColumn({ name: 'officeId' })
+  office?: Office;
+
+  @Column({ type: 'timestamp' })
   clockIn: Date;
 
-  @Prop({
-    type: Date,
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'timestamp', nullable: true })
   clockOut?: Date;
 
-  @Prop({
-    type: String,
-    maxlength: 500,
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   remarks?: string;
 
-  @Prop({
-    type: String,
+  @Column({
+    type: 'enum',
     enum: ['open', 'closed'],
     default: 'open',
   })
   status: 'open' | 'closed';
-}
 
-export const AttendanceSchema = SchemaFactory.createForClass(Attendance);
-AttendanceSchema.index({ member: 1, office: 1, clockIn: 1 });
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
+}

@@ -1,40 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection, ConnectionStates } from 'mongoose';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class DatabaseHealthService {
-  constructor(@InjectConnection() private readonly connection: Connection) {}
+  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
   async checkHealth(): Promise<{
     status: string;
     message: string;
     details: {
-      state: string;
-      readyState: number;
+      isInitialized: boolean;
+      isConnected: boolean;
     };
   }> {
     try {
-      const readyState = this.connection.readyState;
-
-      if (readyState === ConnectionStates.connected && this.connection.db) {
-        await this.connection.db.admin().ping();
+      if (this.dataSource.isInitialized) {
+        await this.dataSource.query('SELECT 1');
 
         return {
           status: 'healthy',
           message: 'Database connection is active and responsive',
           details: {
-            state: this.getConnectionState(),
-            readyState,
+            isInitialized: this.dataSource.isInitialized,
+            isConnected: this.dataSource.isInitialized,
           },
         };
       } else {
         return {
           status: 'unhealthy',
-          message: 'Database connection is not active',
+          message: 'Database connection is not initialized',
           details: {
-            state: this.getConnectionState(),
-            readyState,
+            isInitialized: this.dataSource.isInitialized,
+            isConnected: false,
           },
         };
       }
@@ -45,27 +43,14 @@ export class DatabaseHealthService {
         status: 'unhealthy',
         message: `Database health check failed: ${errorMessage}`,
         details: {
-          state: this.getConnectionState(),
-          readyState: this.connection.readyState,
+          isInitialized: this.dataSource.isInitialized,
+          isConnected: false,
         },
       };
     }
   }
 
   getConnectionState(): string {
-    const readyState = this.connection.readyState;
-
-    switch (readyState) {
-      case ConnectionStates.disconnected:
-        return 'disconnected';
-      case ConnectionStates.connected:
-        return 'connected';
-      case ConnectionStates.connecting:
-        return 'connecting';
-      case ConnectionStates.disconnecting:
-        return 'disconnecting';
-      default:
-        return 'unknown';
-    }
+    return this.dataSource.isInitialized ? 'connected' : 'disconnected';
   }
 }

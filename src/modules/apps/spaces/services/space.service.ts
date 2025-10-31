@@ -1,34 +1,33 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Space, SpaceDocument } from '../schemas/space.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Space } from '../schemas/space.schema';
 import { CreateSpaceDto, UpdateSpaceDto } from '../dto/space.dto';
 import { SpaceParticipantService } from '../space-participants/services/space-participant.service';
-import { ListDocument } from '../lists/schemas/list.schema';
 
 @Injectable()
 export class SpaceService {
   constructor(
-    @InjectModel(Space.name)
-    private spaceModel: Model<SpaceDocument>,
+    @InjectRepository(Space)
+    private spaceRepository: Repository<Space>,
     private spaceParticipantService: SpaceParticipantService,
   ) {}
 
   async create(
     createSpaceDto: CreateSpaceDto,
-    workspaceId: Types.ObjectId,
-    createdBy: Types.ObjectId,
-  ): Promise<SpaceDocument> {
-    const space = new this.spaceModel({
+    workspaceId: string,
+    createdBy: string,
+  ): Promise<Space> {
+    const space = this.spaceRepository.create({
       ...createSpaceDto,
-      workspace: workspaceId,
-      createdBy,
+      workspaceId,
+      createdById: createdBy,
     });
 
-    const savedSpace = await space.save();
+    const savedSpace = await this.spaceRepository.save(space);
 
     await this.spaceParticipantService.initializeDefaultParticipant(
-      savedSpace._id as Types.ObjectId,
+      savedSpace.id,
       createdBy,
       workspaceId,
     );
@@ -37,17 +36,18 @@ export class SpaceService {
   }
 
   async update(
-    spaceId: Types.ObjectId,
+    spaceId: string,
     updateSpaceDto: UpdateSpaceDto,
-    workspaceId: Types.ObjectId,
-  ): Promise<SpaceDocument> {
-    const space = await this.spaceModel
-      .findOneAndUpdate(
-        { _id: spaceId, workspace: workspaceId, isDeleted: false },
-        updateSpaceDto,
-        { new: true },
-      )
-      .exec();
+    workspaceId: string,
+  ): Promise<Space> {
+    await this.spaceRepository.update(
+      { id: spaceId, workspaceId, isDeleted: false },
+      updateSpaceDto,
+    );
+
+    const space = await this.spaceRepository.findOne({
+      where: { id: spaceId },
+    });
 
     if (!space) {
       throw new NotFoundException('Space not found');
@@ -57,43 +57,37 @@ export class SpaceService {
   }
 
   async getSpaceDetails(
-    spaceId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    spaceId: string,
+    workspaceId: string,
   ): Promise<any> {
-    const space = await this.spaceModel
-      .findOne({ _id: spaceId, workspace: workspaceId, isDeleted: false })
-      .exec();
+    const space = await this.spaceRepository.findOne({
+      where: { id: spaceId, workspaceId, isDeleted: false },
+      relations: ['lists'],
+    });
 
     if (!space) {
       throw new NotFoundException('Space not found');
     }
 
-    const lists = await this.spaceModel.db
-      .collection('lists')
-      .find({
-        space: spaceId,
-        workspace: workspaceId,
-        isDeleted: false,
-      })
-      .sort({ createdAt: -1 })
-      .toArray();
+    const lists = await this.spaceRepository
+      .createQueryBuilder('space')
+      .leftJoinAndSelect('space.lists', 'list')
+      .where('space.id = :spaceId', { spaceId })
+      .andWhere('list.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('list.isDeleted = :isDeleted', { isDeleted: false })
+      .orderBy('list.createdAt', 'DESC')
+      .select(['list.id', 'list.name', 'list.isPrivate', 'list.createdAt', 'list.updatedAt'])
+      .getRawMany();
 
     return {
-      space: space.toObject(),
-      lists: lists.map((list) => {
-        const listDoc = list as any as ListDocument & {
-          _id: Types.ObjectId;
-          createdAt: Date;
-          updatedAt: Date;
-        };
-        return {
-          _id: listDoc._id,
-          name: listDoc.name,
-          isPrivate: listDoc.isPrivate,
-          createdAt: listDoc.createdAt,
-          updatedAt: listDoc.updatedAt,
-        };
-      }),
+      space,
+      lists: lists.map((list) => ({
+        id: list.list_id,
+        name: list.list_name,
+        isPrivate: list.list_isPrivate,
+        createdAt: list.list_createdAt,
+        updatedAt: list.list_updatedAt,
+      })),
     };
   }
 }

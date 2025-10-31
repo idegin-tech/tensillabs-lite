@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
@@ -12,10 +11,8 @@ import {
   Query,
   UseGuards,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { SpaceService } from './services/space.service';
 import { SpaceParticipantService } from './space-participants/services/space-participant.service';
 import { AuthGuard } from '../../auth/guards/auth.guard';
@@ -56,8 +53,8 @@ export class SpaceController {
   ) {
     const space = await this.spaceService.create(
       createSpaceDto,
-      req.workspace._id as Types.ObjectId,
-      req.workspaceMember._id as Types.ObjectId,
+      req.workspace.id,
+      req.workspaceMember.id,
     );
 
     return createSuccessResponse('Space created successfully', space);
@@ -69,8 +66,8 @@ export class SpaceController {
     @Req() req: Request & { workspaceMember: any; workspace: any },
   ) {
     const spaces = await this.spaceParticipantService.getSpacesByParticipant(
-      req.workspaceMember._id,
-      req.workspace._id,
+      req.workspaceMember.id,
+      req.workspace.id,
       pagination,
     );
 
@@ -85,14 +82,10 @@ export class SpaceController {
     updateSpaceDto: UpdateSpaceDto,
     @Req() req: Request & { workspaceMember: any; workspace: any; space: any },
   ) {
-    if (!Types.ObjectId.isValid(spaceId)) {
-      throw new BadRequestException('Invalid space ID format');
-    }
-
     const space = await this.spaceService.update(
-      new Types.ObjectId(spaceId),
+      spaceId,
       updateSpaceDto,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Space updated successfully', space);
@@ -104,13 +97,9 @@ export class SpaceController {
     @Param('spaceId') spaceId: string,
     @Req() req: Request & { workspaceMember: any; workspace: any; space: any },
   ) {
-    if (!Types.ObjectId.isValid(spaceId)) {
-      throw new BadRequestException('Invalid space ID format');
-    }
-
     const spaceDetails = await this.spaceService.getSpaceDetails(
-      new Types.ObjectId(spaceId),
-      req.workspace._id,
+      spaceId,
+      req.workspace.id,
     );
 
     return createSuccessResponse(

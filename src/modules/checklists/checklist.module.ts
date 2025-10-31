@@ -1,7 +1,6 @@
-/* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Checklist, ChecklistSchema } from './schemas/checklist.schema';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Checklist } from './schemas/checklist.schema';
 import { ChecklistController } from './checklist.controller';
 import { ChecklistService } from './services/checklist.service';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
@@ -10,9 +9,7 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Checklist.name, schema: ChecklistSchema },
-    ]),
+    TypeOrmModule.forFeature([Checklist]),
     AuthModule,
     WorkspaceMembersModule,
     WorkspacesModule,

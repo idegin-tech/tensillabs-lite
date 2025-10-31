@@ -1,7 +1,15 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-
-export type EmployeeDocument = Employee & Document;
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { WorkspaceMember } from '../../../workspace-members/schemas/workspace-member.schema';
+import { Workspace } from '../../../workspaces/schemas/workspace.schema';
 
 export enum Gender {
   MALE = 'male',
@@ -34,154 +42,99 @@ export enum Religion {
   NONE = 'none',
 }
 
-@Schema({
-  timestamps: true,
-  collection: 'employees',
-})
+interface EmergencyContact {
+  name: string;
+  phone: string;
+  address?: string;
+  relationship: string;
+  email?: string;
+  notes?: string;
+}
+
+@Entity('employees')
+@Index(['memberId', 'workspaceId'], { unique: true })
+@Index(['employeeId'], { unique: true })
 export class Employee {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  member: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  memberId: string;
 
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 50,
-  })
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'memberId' })
+  member: WorkspaceMember;
+
+  @Column({ type: 'uuid' })
+  workspaceId: string;
+
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({ type: 'varchar', length: 50 })
   firstName: string;
 
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 50,
-  })
+  @Column({ type: 'varchar', length: 50 })
   lastName: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 50,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   middleName: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 200,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 200, nullable: true })
   address: string;
 
-  @Prop({
-    type: [
-      {
-        name: { type: String, required: true, maxlength: 100 },
-        phone: { type: String, required: true, maxlength: 20 },
-        address: { type: String, required: false, maxlength: 200 },
-        relationship: { type: String, required: true, maxlength: 50 },
-        email: { type: String, required: false, maxlength: 100 },
-        notes: { type: String, required: false, maxlength: 200 },
-      },
-    ],
-    default: [],
-  })
-  emergencyContacts: Array<{
-    name: string;
-    phone: string;
-    address?: string;
-    relationship: string;
-    email?: string;
-    notes?: string;
-  }>;
+  @Column({ type: 'jsonb', default: [] })
+  emergencyContacts: EmergencyContact[];
 
-  @Prop({
-    type: String,
+  @Column({
+    type: 'enum',
     enum: Gender,
-    required: false,
+    nullable: true,
     default: Gender.OTHER,
   })
   gender: Gender;
 
-  @Prop({
-    type: Date,
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'date', nullable: true })
   dateOfBirth: Date;
 
-  //Todo: use nationality npm package
-  @Prop({
-    type: String,
-    required: false,
-    maxlength: 100,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   nationality: string;
 
-  //Todo: add the 36 states of Nigeria and FCT
-  @Prop({
-    type: String,
-    required: false,
-    maxlength: 100,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   stateOfOrigin: string;
 
-  @Prop({
-    type: String,
+  @Column({
+    type: 'enum',
     enum: MaritalStatus,
-    required: false,
-    // default: MaritalStatus.SINGLE,
-    default: null
+    nullable: true,
   })
   maritalStatus: MaritalStatus;
 
-  @Prop({
-    type: String,
+  @Column({
+    type: 'enum',
     enum: Religion,
-    required: false,
-    // default: Religion.NONE,
-    default: null,
+    nullable: true,
   })
   religion: Religion;
 
-  @Prop({
-    type: String,
-    maxlength: 20,
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 20, nullable: true })
   nin: string;
 
-  @Prop({
-    type: String,
+  @Column({
+    type: 'enum',
     enum: EmploymentType,
-    required: false,
+    nullable: true,
     default: EmploymentType.PERMANENT,
   })
   employmentType: EmploymentType;
 
-  @Prop({
-    type: String,
-    maxlength: 50,
-    required: false,
-    default: null,
-    unique: true,
-    sparse: true,
-  })
+  @Column({ type: 'varchar', length: 50, nullable: true, unique: true })
   employeeId: string;
-}
 
-export const EmployeeSchema = SchemaFactory.createForClass(Employee);
-EmployeeSchema.index({ member: 1, workspace: 1 }, { unique: true });
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
+}

@@ -1,17 +1,14 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserSecretsService } from './services/user-secrets.service';
-import { User, UserSchema } from './schemas/user.schema';
-import { UserSecrets, UserSecretsSchema } from './schemas/user-secrets.schema';
+import { User } from './schemas/user.schema';
+import { UserSecrets } from './schemas/user-secrets.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: User.name, schema: UserSchema },
-      { name: UserSecrets.name, schema: UserSecretsSchema },
-    ]),
+    TypeOrmModule.forFeature([User, UserSecrets]),
   ],
   providers: [UserSecretsService],
-  exports: [MongooseModule, UserSecretsService],
+  exports: [TypeOrmModule, UserSecretsService],
 })
 export class UsersModule {}

@@ -1,70 +1,64 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import * as mongoosePaginate from 'mongoose-paginate-v2';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Workspace } from '../../workspaces/schemas/workspace.schema';
+import { WorkspaceMember } from '../../workspace-members/schemas/workspace-member.schema';
+import { Client } from '../../options/clients/schemas/client.schema';
 
-export type ProjectDocument = Project & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'projects',
-})
+@Entity('projects')
+@Index(['workspaceId'])
+@Index(['name'])
+@Index(['clientId'])
+@Index(['isActive'])
+@Index(['isDeleted'])
+@Index(['createdById'])
 export class Project {
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 100,
-  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 100 })
   name: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 500,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   description: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Client',
-    required: false,
-  })
-  client: Types.ObjectId;
+  @Column({ type: 'uuid', nullable: true })
+  clientId: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @ManyToOne(() => Client, { nullable: true })
+  @JoinColumn({ name: 'clientId' })
+  client: Client;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  createdBy: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  workspaceId: string;
 
-  @Prop({
-    required: true,
-    default: true,
-  })
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({ type: 'uuid' })
+  createdById: string;
+
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'createdById' })
+  createdBy: WorkspaceMember;
+
+  @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const ProjectSchema = SchemaFactory.createForClass(Project);
-
-ProjectSchema.index({ workspace: 1 });
-ProjectSchema.index({ name: 1 });
-ProjectSchema.index({ client: 1 });
-ProjectSchema.index({ isActive: 1 });
-ProjectSchema.index({ isDeleted: 1 });
-ProjectSchema.index({ createdBy: 1 });
-
-ProjectSchema.plugin(mongoosePaginate);

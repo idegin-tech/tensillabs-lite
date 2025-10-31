@@ -1,66 +1,49 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import * as mongoosePaginate from 'mongoose-paginate-v2';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { User } from '../../users/schemas/user.schema';
 
-export type WorkspaceDocument = Workspace & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'workspaces',
-})
+@Entity('workspaces')
+@Index(['createdById'])
+@Index(['name'])
+@Index(['createdAt'])
+@Index(['slug'], { unique: true })
 export class Workspace {
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 100,
-    minlength: 2,
-  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 100 })
   name: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 500,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   description: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'User',
-    required: true,
-  })
-  createdBy: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  createdById: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    default: null,
-  })
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'createdById' })
+  createdBy: User;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
   logoURL: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   bannerURL: string;
 
-  @Prop({
-    required: true,
-    trim: true,
-    unique: true,
-    lowercase: true,
-    maxlength: 100,
-    minlength: 2,
-  })
+  @Column({ type: 'varchar', length: 100, unique: true })
   slug: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const WorkspaceSchema = SchemaFactory.createForClass(Workspace);
-
-WorkspaceSchema.index({ createdBy: 1 });
-WorkspaceSchema.index({ name: 1 });
-WorkspaceSchema.index({ createdAt: -1 });
-
-WorkspaceSchema.plugin(mongoosePaginate);

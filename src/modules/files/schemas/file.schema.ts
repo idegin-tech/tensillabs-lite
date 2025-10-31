@@ -1,117 +1,80 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import * as mongoosePaginate from 'mongoose-paginate-v2';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { WorkspaceMember } from '../../workspace-members/schemas/workspace-member.schema';
+import { Workspace } from '../../workspaces/schemas/workspace.schema';
 
-export type FileDocument = File & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'files',
-})
+@Entity('files')
+@Index(['workspaceId'])
+@Index(['createdById'])
+@Index(['taskId'])
+@Index(['spaceId'])
+@Index(['isDeleted'])
+@Index(['isActive'])
+@Index(['createdAt'])
+@Index(['size'])
+@Index(['mimeType'])
 export class File {
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 255,
-  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   thumbnailURL: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  createdBy: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  createdById: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'createdById' })
+  createdBy: WorkspaceMember;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Task',
-    required: false,
-    default: null,
-  })
-  task: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  workspaceId: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Space',
-    required: false,
-    default: null,
-  })
-  space: Types.ObjectId;
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
 
-  @Prop({
-    required: true,
-    default: 0,
-  })
+  @Column({ type: 'uuid', nullable: true })
+  taskId: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  spaceId: string;
+
+  @Column({ type: 'bigint', default: 0 })
   size: number;
 
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 500,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   description: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   mimeType: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   fileURL: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   fileKey: string;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
-  @Prop({
-    required: true,
-    default: true,
-  })
+  @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const FileSchema = SchemaFactory.createForClass(File);
-
-FileSchema.index({ workspace: 1 });
-FileSchema.index({ createdBy: 1 });
-FileSchema.index({ task: 1 });
-FileSchema.index({ space: 1 });
-FileSchema.index({ isDeleted: 1 });
-FileSchema.index({ isActive: 1 });
-FileSchema.index({ name: 'text', description: 'text' });
-FileSchema.index({ createdAt: -1 });
-FileSchema.index({ size: 1 });
-FileSchema.index({ mimeType: 1 });
-
-FileSchema.plugin(mongoosePaginate);

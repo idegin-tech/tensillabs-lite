@@ -5,29 +5,28 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
 import { HrmsUser, HrmsUserPermission } from '../hrms-user.schema';
-import { Model } from 'mongoose';
+import { Repository } from 'typeorm';
 import { Permission } from '../../../../workspace-members/schemas/workspace-member.schema';
 
 export function validateHRMSUser(allowed: HrmsUserPermission[]) {
   @Injectable()
   class HRMSUserGuard implements CanActivate {
     constructor(
-      @InjectModel(HrmsUser.name)
-      public readonly hrmsUserModel: Model<HrmsUser>,
+      @InjectRepository(HrmsUser)
+      public readonly hrmsUserRepository: Repository<HrmsUser>,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
       const req = context.switchToHttp().getRequest<
         Request & {
           workspaceMember?: {
-            _id?: string | Types.ObjectId;
+            id?: string;
             permission?: string;
           };
           workspace?: {
-            _id?: string | Types.ObjectId;
+            id?: string;
           };
         }
       >();
@@ -46,22 +45,16 @@ export function validateHRMSUser(allowed: HrmsUserPermission[]) {
         return true;
       }
 
-      const memberId = member._id
-        ? typeof member._id === 'string'
-          ? new Types.ObjectId(member._id)
-          : member._id
-        : undefined;
-      const workspaceId = workspace._id
-        ? typeof workspace._id === 'string'
-          ? new Types.ObjectId(workspace._id)
-          : workspace._id
-        : undefined;
+      const memberId = member.id;
+      const workspaceId = workspace.id;
       if (!memberId || !workspaceId) {
         throw new ForbiddenException('Invalid member or workspace ID');
       }
-      const hrmsUser = await this.hrmsUserModel.findOne({
-        member: memberId,
-        workspace: workspaceId,
+      const hrmsUser = await this.hrmsUserRepository.findOne({
+        where: {
+          memberId: memberId,
+          workspaceId: workspaceId,
+        },
       });
       if (!hrmsUser || !allowed.includes(hrmsUser.permission)) {
         throw new ForbiddenException('You do not have HRMS access');

@@ -1,56 +1,54 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Workspace } from '../../../../workspaces/schemas/workspace.schema';
+import { Space } from '../../schemas/space.schema';
 
-export type ListDocument = List & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'lists',
-})
+@Entity('lists')
+@Index(['spaceId'])
+@Index(['workspaceId'])
+@Index(['isDeleted'])
+@Index(['isPrivate'])
 export class List {
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 100,
-  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 100 })
   name: string;
 
-  @Prop({
-    trim: true,
-    maxlength: 500,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   description?: string;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @Column({ type: 'boolean', default: false })
   isPrivate: boolean;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  workspaceId: string;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Space',
-    required: true,
-  })
-  space: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  spaceId: string;
+
+  @ManyToOne(() => Space)
+  @JoinColumn({ name: 'spaceId' })
+  space: Space;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const ListSchema = SchemaFactory.createForClass(List);
-
-ListSchema.index({ space: 1 });
-ListSchema.index({ workspace: 1 });
-ListSchema.index({ isDeleted: 1 });
-ListSchema.index({ isPrivate: 1 });

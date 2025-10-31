@@ -1,90 +1,63 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { User } from './user.schema';
 
-export type UserSecretsDocument = UserSecrets & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'user_secrets',
-})
+@Entity('user_secrets')
+@Index(['userId'], { unique: true })
+@Index(['passwordResetToken'])
+@Index(['lockedUntil'])
 export class UserSecrets {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'User',
-    required: true,
-  })
-  user: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Prop({
-    required: true,
-    select: false,
-  })
+  @Column({ type: 'uuid' })
+  userId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @Column({ type: 'varchar', length: 255, select: false })
   passwordHash: string;
 
-  @Prop({
-    required: false,
-    select: false,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
   passwordSalt: string;
 
-  @Prop({
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'timestamp', nullable: true })
   passwordChangedAt: Date;
 
-  @Prop({
-    required: false,
-    select: false,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
   otpSecret: string;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @Column({ type: 'boolean', default: false })
   otpEnabled: boolean;
 
-  @Prop({
-    type: [String],
-    required: false,
-    default: [],
-    select: false,
-  })
+  @Column({ type: 'simple-array', default: '', select: false })
   otpBackupCodes: string[];
 
-  @Prop({
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'timestamp', nullable: true })
   otpExpiresAt: Date;
 
-  @Prop({
-    required: false,
-    select: false,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
   passwordResetToken: string;
 
-  @Prop({
-    required: false,
-    default: 0,
-  })
+  @Column({ type: 'int', default: 0 })
   failedLoginAttempts: number;
 
-  @Prop({
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'timestamp', nullable: true })
   lockedUntil: Date;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const UserSecretsSchema = SchemaFactory.createForClass(UserSecrets);
-
-UserSecretsSchema.index({ user: 1 }, { unique: true });
-UserSecretsSchema.index({ passwordResetToken: 1 });
-UserSecretsSchema.index({ emailVerificationToken: 1 });
-UserSecretsSchema.index({ 'refreshTokens.token': 1 });
-UserSecretsSchema.index({ lockedUntil: 1 });

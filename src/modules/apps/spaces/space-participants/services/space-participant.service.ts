@@ -5,17 +5,10 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import {
-  Model,
-  Types,
-  PaginateModel,
-  PaginateResult,
-  FilterQuery,
-} from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import {
   SpaceParticipant,
-  SpaceParticipantDocument,
   SpacePermission,
   ParticipantStatus,
 } from '../schemas/space-participant.schema';
@@ -23,7 +16,7 @@ import {
   InviteParticipantDto,
   UpdateParticipantDto,
 } from '../dto/space-participant.dto';
-import { Space, SpaceDocument } from '../../schemas/space.schema';
+import { Space } from '../../schemas/space.schema';
 import {
   PaginationDto,
   extractPaginationOptions,
@@ -32,208 +25,207 @@ import {
 @Injectable()
 export class SpaceParticipantService {
   constructor(
-    @InjectModel(SpaceParticipant.name)
-    private spaceParticipantModel: Model<SpaceParticipantDocument> &
-      PaginateModel<SpaceParticipantDocument>,
-    @InjectModel(Space.name)
-    private spaceModel: Model<SpaceDocument>,
+    @InjectRepository(SpaceParticipant)
+    private spaceParticipantRepository: Repository<SpaceParticipant>,
+    @InjectRepository(Space)
+    private spaceRepository: Repository<Space>,
   ) {}
 
   async initializeDefaultParticipant(
-    spaceId: Types.ObjectId,
-    memberId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<SpaceParticipantDocument> {
-    const participant = new this.spaceParticipantModel({
-      space: spaceId,
-      member: memberId,
-      workspace: workspaceId,
+    spaceId: string,
+    memberId: string,
+    workspaceId: string,
+  ): Promise<SpaceParticipant> {
+    const participant = this.spaceParticipantRepository.create({
+      spaceId,
+      memberId,
+      workspaceId,
       permissions: SpacePermission.ADMIN,
       status: ParticipantStatus.ACTIVE,
     });
 
-    return await participant.save();
+    return await this.spaceParticipantRepository.save(participant);
   }
 
   async inviteParticipant(
-    spaceId: Types.ObjectId,
+    spaceId: string,
     inviteParticipantDto: InviteParticipantDto,
-    workspaceId: Types.ObjectId,
-  ): Promise<SpaceParticipantDocument> {
-    const existingParticipant = await this.spaceParticipantModel
-      .findOne({
-        space: spaceId,
-        member: new Types.ObjectId(inviteParticipantDto.memberId),
-        workspace: workspaceId,
-      })
-      .exec();
+    workspaceId: string,
+  ): Promise<SpaceParticipant> {
+    const existingParticipant = await this.spaceParticipantRepository.findOne({
+      where: {
+        spaceId,
+        memberId: inviteParticipantDto.memberId,
+        workspaceId,
+      },
+    });
 
     if (existingParticipant) {
       throw new ForbiddenException('Member is already a participant');
     }
 
-    const participant = new this.spaceParticipantModel({
-      space: spaceId,
-      member: new Types.ObjectId(inviteParticipantDto.memberId),
-      workspace: workspaceId,
+    const participant = this.spaceParticipantRepository.create({
+      spaceId,
+      memberId: inviteParticipantDto.memberId,
+      workspaceId,
       permissions: inviteParticipantDto.permissions || SpacePermission.REGULAR,
       status: ParticipantStatus.ACTIVE,
     });
 
-    return await participant.save();
+    return await this.spaceParticipantRepository.save(participant);
   }
 
   async updateParticipant(
-    participantId: Types.ObjectId,
+    participantId: string,
     updateParticipantDto: UpdateParticipantDto,
-    workspaceId: Types.ObjectId,
-  ): Promise<SpaceParticipantDocument> {
-    const participant = await this.spaceParticipantModel
-      .findOne({
-        _id: participantId,
-        workspace: workspaceId,
+    workspaceId: string,
+  ): Promise<SpaceParticipant> {
+    const participant = await this.spaceParticipantRepository.findOne({
+      where: {
+        id: participantId,
+        workspaceId,
         status: ParticipantStatus.ACTIVE,
-      })
-      .populate('space')
-      .exec();
+      },
+      relations: ['space'],
+    });
 
     if (!participant) {
       throw new NotFoundException('Participant not found');
     }
 
-    const space = participant.space as any as SpaceDocument;
-    if (space.createdBy.equals(participant.member)) {
+    const space = participant.space;
+    if (space.createdById === participant.memberId) {
       throw new ForbiddenException(
         'Cannot update space owner permissions or status',
       );
     }
 
-    return await this.spaceParticipantModel
-      .findOneAndUpdate(
-        { _id: participantId, workspace: workspaceId },
-        updateParticipantDto,
-        { new: true },
-      )
-      .exec();
+    await this.spaceParticipantRepository.update(
+      { id: participantId, workspaceId },
+      updateParticipantDto,
+    );
+
+    return await this.spaceParticipantRepository.findOne({
+      where: { id: participantId },
+    });
   }
 
   async getSpaceParticipants(
-    spaceId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    spaceId: string,
+    workspaceId: string,
     pagination?: PaginationDto,
-  ): Promise<PaginateResult<SpaceParticipantDocument>> {
+  ): Promise<any> {
     if (!pagination) {
       pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
     }
 
     const { search, paginationOptions } = extractPaginationOptions(pagination);
 
-    const query: FilterQuery<SpaceParticipantDocument> = {
-      space: spaceId,
-      workspace: workspaceId,
-      status: ParticipantStatus.ACTIVE,
-    };
+    const queryBuilder = this.spaceParticipantRepository
+      .createQueryBuilder('participant')
+      .leftJoinAndSelect('participant.member', 'member')
+      .where('participant.spaceId = :spaceId', { spaceId })
+      .andWhere('participant.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('participant.status = :status', { status: ParticipantStatus.ACTIVE });
 
     if (search) {
-      query.$or = [
-        { 'member.firstName': { $regex: search, $options: 'i' } },
-        { 'member.lastName': { $regex: search, $options: 'i' } },
-        { 'member.primaryEmail': { $regex: search, $options: 'i' } },
-      ];
+      queryBuilder.andWhere(
+        '(member.firstName ILIKE :search OR member.lastName ILIKE :search OR member.primaryEmail ILIKE :search)',
+        { search: `%${search}%` },
+      );
     }
 
-    return await this.spaceParticipantModel.paginate(query, {
-      ...paginationOptions,
-      populate: {
-        path: 'member',
-        select: 'firstName lastName primaryEmail permission',
-      },
-    });
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 10;
+
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    const [docs, totalDocs] = await queryBuilder.getManyAndCount();
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page < Math.ceil(totalDocs / limit),
+      hasPrevPage: page > 1,
+      nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
+    };
   }
 
   async getSpacesByParticipant(
-    memberId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    memberId: string,
+    workspaceId: string,
     pagination?: PaginationDto,
-  ): Promise<PaginateResult<SpaceParticipantDocument>> {
+  ): Promise<any> {
     if (!pagination) {
       pagination = { page: 1, limit: 30, sortBy: '-createdAt' };
     }
 
     const { search, paginationOptions } = extractPaginationOptions(pagination);
 
-    const query: FilterQuery<SpaceParticipantDocument> = {
-      member: memberId,
-      workspace: workspaceId,
-      status: ParticipantStatus.ACTIVE,
-    };
+    const queryBuilder = this.spaceParticipantRepository
+      .createQueryBuilder('participant')
+      .leftJoinAndSelect('participant.space', 'space')
+      .where('participant.memberId = :memberId', { memberId })
+      .andWhere('participant.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('participant.status = :status', { status: ParticipantStatus.ACTIVE })
+      .andWhere('space.isDeleted = :isDeleted', { isDeleted: false });
 
     if (search) {
-      const spaceIds = await this.spaceModel
-        .find({
-          workspace: workspaceId,
-          isDeleted: false,
-          name: { $regex: search, $options: 'i' },
-        })
-        .select('_id')
-        .exec();
-
-      if (spaceIds.length > 0) {
-        query.space = { $in: spaceIds.map((s) => s._id) };
-      } else {
-        query.space = null;
-      }
+      queryBuilder.andWhere('space.name ILIKE :search', { search: `%${search}%` });
     }
 
-    const result = await this.spaceParticipantModel.paginate(query, {
-      ...paginationOptions,
-      populate: [
-        {
-          path: 'space',
-          select: 'name description color icon isPublic createdAt',
-          match: { isDeleted: false },
-        },
-      ],
-    });
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 30;
+
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    const [docs, totalDocs] = await queryBuilder.getManyAndCount();
 
     const enhancedDocs = await Promise.all(
-      result.docs.map(async (doc) => {
+      docs.map(async (doc) => {
         if (!doc.space) return doc;
 
-        const spaceId = (doc.space as any)._id;
+        const spaceId = doc.space.id;
 
         const [participantCount, recentParticipants, listCount] =
           await Promise.all([
-            this.spaceParticipantModel.countDocuments({
-              space: spaceId,
-              workspace: workspaceId,
-              status: ParticipantStatus.ACTIVE,
-            }),
-            this.spaceParticipantModel
-              .find({
-                space: spaceId,
-                workspace: workspaceId,
+            this.spaceParticipantRepository.count({
+              where: {
+                spaceId,
+                workspaceId,
                 status: ParticipantStatus.ACTIVE,
-              })
-              .populate('member', 'firstName lastName primaryEmail')
-              .sort({ createdAt: -1 })
-              .limit(5)
-              .exec(),
-            this.spaceModel.db.collection('lists').countDocuments({
-              space: spaceId,
-              workspace: workspaceId,
-              isDeleted: false,
+              },
             }),
+            this.spaceParticipantRepository.find({
+              where: {
+                spaceId,
+                workspaceId,
+                status: ParticipantStatus.ACTIVE,
+              },
+              relations: ['member'],
+              order: { createdAt: 'DESC' },
+              take: 5,
+            }),
+            this.spaceRepository
+              .createQueryBuilder('space')
+              .leftJoin('space.lists', 'list')
+              .where('space.id = :spaceId', { spaceId })
+              .andWhere('list.workspaceId = :workspaceId', { workspaceId })
+              .andWhere('list.isDeleted = :isDeleted', { isDeleted: false })
+              .getCount(),
           ]);
 
-        const docObj = doc.toObject();
         return {
-          ...docObj,
+          ...doc,
           space: {
-            ...(docObj.space as any),
+            ...doc.space,
             participantCount,
-            recentParticipants: recentParticipants.map((p: any) => ({
-              _id: p.member._id,
+            recentParticipants: recentParticipants.map((p) => ({
+              id: p.member.id,
               firstName: p.member.firstName,
               lastName: p.member.lastName,
               primaryEmail: p.member.primaryEmail,
@@ -245,8 +237,15 @@ export class SpaceParticipantService {
     );
 
     return {
-      ...result,
-      docs: enhancedDocs as any,
+      docs: enhancedDocs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page < Math.ceil(totalDocs / limit),
+      hasPrevPage: page > 1,
+      nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
     };
   }
 }

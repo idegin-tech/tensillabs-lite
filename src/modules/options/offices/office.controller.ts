@@ -10,11 +10,9 @@ import {
   Query,
   UseGuards,
   UsePipes,
-  BadRequestException,
   Req,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { AuthGuard } from '../../auth/guards/auth.guard';
 import {
   WorkspaceMemberGuard,
@@ -51,8 +49,8 @@ export class OfficeController {
   ) {
     const office = await this.officeService.create(
       createOfficeDto,
-      req.workspace._id as Types.ObjectId,
-      req.workspaceMember._id as Types.ObjectId,
+      req.workspace.id,
+      req.workspaceMember.id,
     );
 
     return createSuccessResponse('Office created successfully', office);
@@ -66,7 +64,7 @@ export class OfficeController {
     @Req() req: Request & { workspace: any },
   ) {
     const offices = await this.officeService.findAll(
-      req.workspace._id as Types.ObjectId,
+      req.workspace.id,
       pagination,
     );
     return createSuccessResponse('Offices retrieved successfully', offices);
@@ -80,14 +78,10 @@ export class OfficeController {
     @Body() updateOfficeDto: UpdateOfficeDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid office ID format');
-    }
-
     const office = await this.officeService.update(
-      new Types.ObjectId(id),
+      id,
       updateOfficeDto,
-      req.workspace._id as Types.ObjectId,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Office updated successfully', office);
@@ -101,14 +95,10 @@ export class OfficeController {
     @Body() body: ToggleActiveDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid office ID format');
-    }
-
     const office = await this.officeService.toggleActive(
-      new Types.ObjectId(id),
+      id,
       body.isActive,
-      req.workspace._id as Types.ObjectId,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Office status updated successfully', office);
@@ -120,13 +110,9 @@ export class OfficeController {
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid office ID format');
-    }
-
     const office = await this.officeService.moveToTrash(
-      new Types.ObjectId(id),
-      req.workspace._id as Types.ObjectId,
+      id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Office moved to trash successfully', office);

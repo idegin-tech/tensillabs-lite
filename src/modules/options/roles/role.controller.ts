@@ -12,10 +12,8 @@ import {
   UseGuards,
   UsePipes,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 
 import {
   createRoleSchema,
@@ -53,8 +51,8 @@ export class RoleController {
   ) {
     const role = await this.roleService.create(
       createRoleDto,
-      req.workspace._id,
-      req.workspaceMember._id,
+      req.workspace.id,
+      req.workspaceMember.id,
     );
 
     return createSuccessResponse('Role created successfully', role);
@@ -67,7 +65,7 @@ export class RoleController {
     @Query() pagination: PaginationDto,
     @Req() req: Request & { workspace: any },
   ) {
-    const roles = await this.roleService.findAll(req.workspace._id, pagination);
+    const roles = await this.roleService.findAll(req.workspace.id, pagination);
 
     return createSuccessResponse('Roles retrieved successfully', roles);
   }
@@ -80,14 +78,10 @@ export class RoleController {
     @Body() updateRoleDto: UpdateRoleDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid role ID format');
-    }
-
     const role = await this.roleService.update(
-      new Types.ObjectId(id),
+      id,
       updateRoleDto,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Role updated successfully', role);
@@ -99,13 +93,9 @@ export class RoleController {
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid role ID format');
-    }
-
     const role = await this.roleService.moveToTrash(
-      new Types.ObjectId(id),
-      req.workspace._id,
+      id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Role moved to trash successfully', role);
@@ -119,14 +109,10 @@ export class RoleController {
     @Body() toggleActiveDto: ToggleActiveDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid role ID format');
-    }
-
     const role = await this.roleService.toggleActive(
-      new Types.ObjectId(id),
+      id,
       toggleActiveDto.isActive,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Role status updated successfully', role);

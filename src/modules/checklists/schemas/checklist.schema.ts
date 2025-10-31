@@ -1,77 +1,78 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Task } from '../../apps/spaces/tasks/schemas/task.schema';
+import { Workspace } from '../../workspaces/schemas/workspace.schema';
+import { Space } from '../../apps/spaces/schemas/space.schema';
+import { List } from '../../apps/spaces/lists/schemas/list.schema';
+import { WorkspaceMember } from '../../workspace-members/schemas/workspace-member.schema';
 
-export type ChecklistDocument = Checklist & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'checklists',
-})
+@Entity('checklists')
+@Index(['taskId'])
+@Index(['workspaceId'])
+@Index(['spaceId'])
+@Index(['listId'])
+@Index(['createdById'])
+@Index(['isDeleted'])
+@Index(['isDone'])
 export class Checklist {
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 200,
-  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 200 })
   name: string;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @Column({ type: 'boolean', default: false })
   isDone: boolean;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Task',
-    required: false,
-    default: null,
-  })
-  task: Types.ObjectId;
+  @Column({ type: 'uuid', nullable: true })
+  taskId: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @ManyToOne(() => Task, { nullable: true })
+  @JoinColumn({ name: 'taskId' })
+  task: Task;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Space',
-    required: false,
-    default: null,
-  })
-  space: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  workspaceId: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'List',
-    required: false,
-    default: null,
-  })
-  list: Types.ObjectId;
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  createdBy: Types.ObjectId;
+  @Column({ type: 'uuid', nullable: true })
+  spaceId: string;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @ManyToOne(() => Space, { nullable: true })
+  @JoinColumn({ name: 'spaceId' })
+  space: Space;
+
+  @Column({ type: 'uuid', nullable: true })
+  listId: string;
+
+  @ManyToOne(() => List, { nullable: true })
+  @JoinColumn({ name: 'listId' })
+  list: List;
+
+  @Column({ type: 'uuid' })
+  createdById: string;
+
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'createdById' })
+  createdBy: WorkspaceMember;
+
+  @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const ChecklistSchema = SchemaFactory.createForClass(Checklist);
-
-ChecklistSchema.index({ task: 1 });
-ChecklistSchema.index({ workspace: 1 });
-ChecklistSchema.index({ space: 1 });
-ChecklistSchema.index({ list: 1 });
-ChecklistSchema.index({ createdBy: 1 });
-ChecklistSchema.index({ isDeleted: 1 });
-ChecklistSchema.index({ isDone: 1 });

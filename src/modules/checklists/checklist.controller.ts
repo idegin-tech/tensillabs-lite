@@ -1,7 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
   Controller,
   Post,
@@ -13,10 +9,8 @@ import {
   Query,
   UseGuards,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { ChecklistService } from './services/checklist.service';
 import {
   createChecklistSchema,
@@ -50,8 +44,8 @@ export class ChecklistController {
   ) {
     const result = await this.checklistService.createChecklist(
       createChecklistDto,
-      req.workspace._id,
-      req.workspaceMember._id,
+      req.workspace.id,
+      req.workspaceMember.id,
     );
 
     return createSuccessResponse('Checklist created successfully', result);
@@ -69,7 +63,7 @@ export class ChecklistController {
   ) {
     const result = await this.checklistService.getAllChecklists(
       queryParams,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Checklists retrieved successfully', result);
@@ -86,14 +80,10 @@ export class ChecklistController {
       workspace: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(checklistId)) {
-      throw new BadRequestException('Invalid checklist ID format');
-    }
-
     const result = await this.checklistService.updateChecklist(
-      new Types.ObjectId(checklistId),
+      checklistId,
       updateChecklistDto,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Checklist updated successfully', result);
@@ -108,13 +98,9 @@ export class ChecklistController {
       workspace: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(checklistId)) {
-      throw new BadRequestException('Invalid checklist ID format');
-    }
-
     const result = await this.checklistService.deleteChecklist(
-      new Types.ObjectId(checklistId),
-      req.workspace._id,
+      checklistId,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Checklist deleted successfully', result);

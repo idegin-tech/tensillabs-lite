@@ -5,9 +5,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { User, UserDocument } from '../../users/schemas/user.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../../users/schemas/user.schema';
 
 interface SessionData {
   userId?: string;
@@ -16,12 +16,15 @@ interface SessionData {
 
 interface AuthenticatedRequest extends Request {
   session: Request['session'] & SessionData;
-  user?: UserDocument;
+  user?: User;
 }
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -33,7 +36,9 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const user = await this.userModel.findById(session.userId);
+      const user = await this.userRepository.findOne({
+        where: { id: session.userId },
+      });
 
       if (!user) {
         console.log(

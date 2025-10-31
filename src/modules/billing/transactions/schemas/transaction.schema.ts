@@ -1,62 +1,58 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import * as mongoosePaginate from 'mongoose-paginate-v2';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Workspace } from '../../../workspaces/schemas/workspace.schema';
+import { Wallet } from '../../wallets/schemas/wallet.schema';
 
-export type TransactionDocument = Transaction & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'transactions',
-})
+@Entity('transactions')
+@Index(['workspaceId'])
+@Index(['walletId'])
+@Index(['paid'])
+@Index(['paidOn'])
+@Index(['dueDate'])
 export class Transaction {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Wallet',
-    required: true,
-  })
-  wallet: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  workspaceId: string;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({ type: 'uuid' })
+  walletId: string;
+
+  @ManyToOne(() => Wallet)
+  @JoinColumn({ name: 'walletId' })
+  wallet: Wallet;
+
+  @Column({ type: 'boolean', default: false })
   paid: boolean;
 
-  @Prop({
-    required: true,
-  })
+  @Column({ type: 'int' })
   numberOfMembers: number;
 
-  @Prop({
-    required: false,
-  })
+  @Column({ type: 'timestamp', nullable: true })
   paidOn: Date;
 
-  @Prop({
-    required: true,
-    default: 0,
-  })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   discountPercentage: number;
 
-  @Prop({
-    required: true,
-  })
+  @Column({ type: 'timestamp' })
   dueDate: Date;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const TransactionSchema = SchemaFactory.createForClass(Transaction);
-
-TransactionSchema.index({ workspace: 1 });
-TransactionSchema.index({ wallet: 1 });
-TransactionSchema.index({ paid: 1 });
-TransactionSchema.index({ paidOn: 1 });
-TransactionSchema.index({ dueDate: 1 });
-
-TransactionSchema.plugin(mongoosePaginate);

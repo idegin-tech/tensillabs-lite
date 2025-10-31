@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-base-to-string */
 import {
   Controller,
   Post,
@@ -28,7 +27,7 @@ import {
 } from './dto/auth.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { UserDocument } from '../users/schemas/user.schema';
+import { User } from '../users/schemas/user.schema';
 
 interface SessionData {
   userId?: string;
@@ -49,7 +48,7 @@ export class AuthController {
       'User registered successfully. Please verify your email.',
       {
         user: {
-          id: user._id,
+          id: user.id,
           email: user.email,
           timezone: user.timezone,
           isEmailVerified: user.isEmailVerified,
@@ -63,7 +62,6 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(verifyEmailSchema))
   async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
     const result = await this.authService.verifyEmail(verifyEmailDto);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     return createSuccessResponse(result.message, { user: result.user });
   }
 
@@ -85,20 +83,19 @@ export class AuthController {
   ) {
     const user = await this.authService.login(loginDto);
 
-    session.userId = String(user._id);
+    session.userId = user.id;
     session.userEmail = user.email;
 
     return new Promise((resolve, reject) => {
       req.session.save((err) => {
         if (err) {
           console.error('[DEBUG] Session save error:', err);
-          // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
           reject(err);
         } else {
           resolve(
             createSuccessResponse('Login successful', {
               user: {
-                id: user._id,
+                id: user.id,
                 email: user.email,
                 timezone: user.timezone,
                 lastLoginAt: user.lastLoginAt,
@@ -135,7 +132,7 @@ export class AuthController {
 
     return createSuccessResponse('Token refreshed successfully', {
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
         timezone: user.timezone,
         lastLoginAt: user.lastLoginAt,
@@ -147,10 +144,10 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  getCurrentUser(@CurrentUser() user: UserDocument) {
+  getCurrentUser(@CurrentUser() user: User) {
     return createSuccessResponse('User data retrieved successfully', {
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
         timezone: user.timezone,
         lastLoginAt: user.lastLoginAt,

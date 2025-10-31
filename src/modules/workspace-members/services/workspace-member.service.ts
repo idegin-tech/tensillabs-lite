@@ -4,18 +4,10 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import {
-  Model,
-  Types,
-  PaginateModel,
-  FilterQuery,
-  PaginateResult,
-  PipelineStage,
-} from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import {
   WorkspaceMember,
-  WorkspaceMemberDocument,
   Permission,
   MemberStatus,
 } from '../schemas/workspace-member.schema';
@@ -24,32 +16,28 @@ import { PaginationDto, extractPaginationOptions } from '../dto/pagination.dto';
 import { workspaceInvitationEmail } from '../workspace-member.email';
 import { useCTAMail } from '../../../lib/emil.lib';
 import { APP_CONFIG } from '../../../config/app.config';
-import {
-  Workspace,
-  WorkspaceDocument,
-} from '../../workspaces/schemas/workspace.schema';
+import { Workspace } from '../../workspaces/schemas/workspace.schema';
 
 @Injectable()
 export class WorkspaceMemberService {
   constructor(
-    @InjectModel(WorkspaceMember.name)
-    private workspaceMemberModel: Model<WorkspaceMemberDocument> &
-      PaginateModel<WorkspaceMemberDocument>,
-    @InjectModel(Workspace.name)
-    private workspaceModel: Model<WorkspaceDocument>,
+    @InjectRepository(WorkspaceMember)
+    private workspaceMemberRepository: Repository<WorkspaceMember>,
+    @InjectRepository(Workspace)
+    private workspaceRepository: Repository<Workspace>,
   ) {}
 
   async initializeWorkspaceOwner(
-    userId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    userId: string,
+    workspaceId: string,
     userEmail: string,
     firstName: string,
     lastName: string,
     middleName?: string,
-  ): Promise<WorkspaceMemberDocument> {
-    const workspaceMember = new this.workspaceMemberModel({
-      user: userId,
-      workspace: workspaceId,
+  ): Promise<WorkspaceMember> {
+    const workspaceMember = this.workspaceMemberRepository.create({
+      userId,
+      workspaceId,
       firstName,
       middleName: middleName || null,
       lastName,
@@ -59,22 +47,22 @@ export class WorkspaceMemberService {
       lastActiveAt: new Date(),
     });
 
-    return await workspaceMember.save();
+    return await this.workspaceMemberRepository.save(workspaceMember);
   }
 
   async findByUserAndWorkspace(
-    userId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<WorkspaceMemberDocument | null> {
-    return await this.workspaceMemberModel
-      .findOne({ user: userId, workspace: workspaceId })
-      .exec();
+    userId: string,
+    workspaceId: string,
+  ): Promise<WorkspaceMember | null> {
+    return await this.workspaceMemberRepository.findOne({
+      where: { userId, workspaceId },
+    });
   }
 
   async findByWorkspace(
-    workspaceId: Types.ObjectId,
+    workspaceId: string,
     pagination?: PaginationDto,
-  ): Promise<PaginateResult<WorkspaceMemberDocument>> {
+  ): Promise<any> {
     if (!pagination) {
       pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
     }
@@ -82,79 +70,104 @@ export class WorkspaceMemberService {
     const { search, status, permission, paginationOptions } =
       extractPaginationOptions(pagination);
 
-    const query: FilterQuery<WorkspaceMemberDocument> = {
-      workspace: workspaceId,
+    const where: any = {
+      workspaceId,
     };
 
     if (status && status !== 'all') {
-      query.status = status;
+      where.status = status;
     }
 
     if (permission && permission !== 'all') {
-      query.permission = permission;
+      where.permission = permission;
     }
+
+    const queryBuilder =
+      this.workspaceMemberRepository.createQueryBuilder('workspaceMember');
+
+    queryBuilder.where(where);
 
     if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { primaryEmail: { $regex: search, $options: 'i' } },
-      ];
+      queryBuilder.andWhere(
+        '(workspaceMember.firstName ILIKE :search OR workspaceMember.lastName ILIKE :search OR workspaceMember.primaryEmail ILIKE :search)',
+        { search: `%${search}%` },
+      );
     }
 
-    const restPaginationOptions = { ...paginationOptions };
-    delete restPaginationOptions.populate;
+    queryBuilder.leftJoinAndSelect('workspaceMember.user', 'user');
+    queryBuilder.select([
+      'workspaceMember',
+      'user.id',
+      'user.email',
+      'user.timezone',
+      'user.isEmailVerified',
+    ]);
 
-    return await this.workspaceMemberModel.paginate(query, {
-      ...restPaginationOptions,
-      populate: { path: 'user', select: 'email timezone isEmailVerified' },
-    });
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 10;
+
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    if (paginationOptions.sort) {
+      const sortOrder = paginationOptions.sort.startsWith('-') ? 'DESC' : 'ASC';
+      const sortField = paginationOptions.sort.replace('-', '');
+      queryBuilder.orderBy(`workspaceMember.${sortField}`, sortOrder);
+    }
+
+    const [docs, totalDocs] = await queryBuilder.getManyAndCount();
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page < Math.ceil(totalDocs / limit),
+      hasPrevPage: page > 1,
+      nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
+    };
   }
 
   async updateMember(
-    memberId: Types.ObjectId,
+    memberId: string,
     updateData: Partial<WorkspaceMember>,
-  ): Promise<WorkspaceMemberDocument | null> {
-    return await this.workspaceMemberModel
-      .findByIdAndUpdate(memberId, updateData, { new: true })
-      .exec();
+  ): Promise<WorkspaceMember | null> {
+    await this.workspaceMemberRepository.update(memberId, updateData);
+    return await this.workspaceMemberRepository.findOne({
+      where: { id: memberId },
+    });
   }
 
-  async findById(
-    memberId: Types.ObjectId,
-  ): Promise<WorkspaceMemberDocument | null> {
-    return await this.workspaceMemberModel.findById(memberId).exec();
+  async findById(memberId: string): Promise<WorkspaceMember | null> {
+    return await this.workspaceMemberRepository.findOne({
+      where: { id: memberId },
+    });
   }
 
-  async getMemberDependencies(memberId: Types.ObjectId): Promise<any> {
-    const member = await this.workspaceMemberModel
-      .findById(memberId)
-      .populate({
-        path: 'user',
-        select: 'email timezone isEmailVerified lastLoginAt',
-      })
-      .exec();
+  async getMemberDependencies(memberId: string): Promise<any> {
+    const member = await this.workspaceMemberRepository.findOne({
+      where: { id: memberId },
+      relations: ['user'],
+    });
 
     if (!member) {
       return null;
     }
 
-    const workspace = await this.workspaceMemberModel.db
-      .collection('workspaces')
-      .findOne(
-        { _id: member.workspace },
-        {
-          projection: {
-            name: 1,
-            description: 1,
-            logoURL: 1,
-            bannerURL: 1,
-            createdBy: 1,
-            createdAt: 1,
-            updatedAt: 1,
-          },
-        },
-      );
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: member.workspaceId },
+      select: [
+        'id',
+        'name',
+        'description',
+        'logoURL',
+        'bannerURL',
+        'createdBy',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
 
     return {
       member,
@@ -162,128 +175,216 @@ export class WorkspaceMemberService {
     };
   }
 
-  async findByUserId(
-    userId: Types.ObjectId,
-    pagination?: PaginationDto,
-  ): Promise<PaginateResult<WorkspaceMemberDocument>> {
+  async findByUserId(userId: string, pagination?: PaginationDto): Promise<any> {
     if (!pagination) {
       pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
     }
 
     const { search, paginationOptions } = extractPaginationOptions(pagination);
 
-    const query: FilterQuery<WorkspaceMemberDocument> = {
-      user: userId,
-      status: { $in: [MemberStatus.ACTIVE, MemberStatus.PENDING] },
+    const where: any = {
+      userId,
+      status: MemberStatus.ACTIVE,
     };
 
+    const queryBuilder =
+      this.workspaceMemberRepository.createQueryBuilder('workspaceMember');
+
+    queryBuilder.where(where);
+
     if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { primaryEmail: { $regex: search, $options: 'i' } },
-      ];
+      queryBuilder.andWhere(
+        '(workspaceMember.firstName ILIKE :search OR workspaceMember.lastName ILIKE :search OR workspaceMember.primaryEmail ILIKE :search)',
+        { search: `%${search}%` },
+      );
     }
 
-    const restPaginationOptions = { ...paginationOptions };
-    delete restPaginationOptions.populate;
+    queryBuilder.leftJoinAndSelect('workspaceMember.workspace', 'workspace');
+    queryBuilder.select([
+      'workspaceMember',
+      'workspace.id',
+      'workspace.name',
+      'workspace.description',
+      'workspace.logoURL',
+      'workspace.bannerURL',
+      'workspace.createdBy',
+      'workspace.createdAt',
+      'workspace.updatedAt',
+    ]);
 
-    return await this.workspaceMemberModel.paginate(query, {
-      ...restPaginationOptions,
-      populate: {
-        path: 'workspace',
-        select:
-          'name description logoURL bannerURL createdBy createdAt updatedAt',
-      },
-    });
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 10;
+
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    if (paginationOptions.sort) {
+      const sortOrder = paginationOptions.sort.startsWith('-') ? 'DESC' : 'ASC';
+      const sortField = paginationOptions.sort.replace('-', '');
+      queryBuilder.orderBy(`workspaceMember.${sortField}`, sortOrder);
+    }
+
+    const [docs, totalDocs] = await queryBuilder.getManyAndCount();
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page < Math.ceil(totalDocs / limit),
+      hasPrevPage: page > 1,
+      nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
+    };
   }
 
   async findByUserEmail(
     userEmail: string,
     pagination?: PaginationDto,
-  ): Promise<PaginateResult<WorkspaceMemberDocument>> {
+  ): Promise<any> {
     if (!pagination) {
       pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
     }
 
     const { search, paginationOptions } = extractPaginationOptions(pagination);
 
-    const query: FilterQuery<WorkspaceMemberDocument> = {
+    const where: any = {
       primaryEmail: userEmail,
-      status: { $in: [MemberStatus.ACTIVE, MemberStatus.PENDING] },
+      status: MemberStatus.ACTIVE,
     };
 
+    const queryBuilder =
+      this.workspaceMemberRepository.createQueryBuilder('workspaceMember');
+
+    queryBuilder.where(where);
+
     if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { primaryEmail: { $regex: search, $options: 'i' } },
-      ];
+      queryBuilder.andWhere(
+        '(workspaceMember.firstName ILIKE :search OR workspaceMember.lastName ILIKE :search OR workspaceMember.primaryEmail ILIKE :search)',
+        { search: `%${search}%` },
+      );
     }
 
-    const restPaginationOptions = { ...paginationOptions };
-    delete restPaginationOptions.populate;
+    queryBuilder.leftJoinAndSelect('workspaceMember.workspace', 'workspace');
+    queryBuilder.select([
+      'workspaceMember',
+      'workspace.id',
+      'workspace.name',
+      'workspace.description',
+      'workspace.logoURL',
+      'workspace.bannerURL',
+      'workspace.createdBy',
+      'workspace.createdAt',
+      'workspace.updatedAt',
+    ]);
 
-    return await this.workspaceMemberModel.paginate(query, {
-      ...restPaginationOptions,
-      populate: {
-        path: 'workspace',
-        select:
-          'name description logoURL bannerURL createdBy createdAt updatedAt',
-      },
-    });
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 10;
+
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    if (paginationOptions.sort) {
+      const sortOrder = paginationOptions.sort.startsWith('-') ? 'DESC' : 'ASC';
+      const sortField = paginationOptions.sort.replace('-', '');
+      queryBuilder.orderBy(`workspaceMember.${sortField}`, sortOrder);
+    }
+
+    const [docs, totalDocs] = await queryBuilder.getManyAndCount();
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page < Math.ceil(totalDocs / limit),
+      hasPrevPage: page > 1,
+      nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
+    };
   }
 
   async findByInvitedBy(
-    invitedByUserId: Types.ObjectId,
+    invitedByUserId: string,
     pagination?: PaginationDto,
-  ): Promise<PaginateResult<WorkspaceMemberDocument>> {
+  ): Promise<any> {
     if (!pagination) {
       pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
     }
 
     const { search, paginationOptions } = extractPaginationOptions(pagination);
 
-    const query: FilterQuery<WorkspaceMemberDocument> = {
+    const where: any = {
       invitedBy: invitedByUserId,
       status: MemberStatus.ACTIVE,
     };
 
+    const queryBuilder =
+      this.workspaceMemberRepository.createQueryBuilder('workspaceMember');
+
+    queryBuilder.where(where);
+
     if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { primaryEmail: { $regex: search, $options: 'i' } },
-      ];
+      queryBuilder.andWhere(
+        '(workspaceMember.firstName ILIKE :search OR workspaceMember.lastName ILIKE :search OR workspaceMember.primaryEmail ILIKE :search)',
+        { search: `%${search}%` },
+      );
     }
 
-    const restPaginationOptions = { ...paginationOptions };
-    delete restPaginationOptions.populate;
+    queryBuilder.leftJoinAndSelect('workspaceMember.workspace', 'workspace');
+    queryBuilder.leftJoinAndSelect('workspaceMember.user', 'user');
+    queryBuilder.select([
+      'workspaceMember',
+      'workspace.id',
+      'workspace.name',
+      'workspace.description',
+      'workspace.logoURL',
+      'workspace.bannerURL',
+      'workspace.createdBy',
+      'workspace.createdAt',
+      'workspace.updatedAt',
+      'user.id',
+      'user.email',
+      'user.timezone',
+      'user.isEmailVerified',
+    ]);
 
-    return await this.workspaceMemberModel.paginate(query, {
-      ...restPaginationOptions,
-      populate: [
-        {
-          path: 'workspace',
-          select:
-            'name description logoURL bannerURL createdBy createdAt updatedAt',
-        },
-        {
-          path: 'user',
-          select: 'email timezone isEmailVerified',
-        },
-      ],
-    });
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 10;
+
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    if (paginationOptions.sort) {
+      const sortOrder = paginationOptions.sort.startsWith('-') ? 'DESC' : 'ASC';
+      const sortField = paginationOptions.sort.replace('-', '');
+      queryBuilder.orderBy(`workspaceMember.${sortField}`, sortOrder);
+    }
+
+    const [docs, totalDocs] = await queryBuilder.getManyAndCount();
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page < Math.ceil(totalDocs / limit),
+      hasPrevPage: page > 1,
+      nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
+    };
   }
 
   async inviteMember(
     inviteMemberDto: InviteMemberDto,
-    workspaceId: Types.ObjectId,
-    invitingMember: WorkspaceMemberDocument,
-  ): Promise<WorkspaceMemberDocument> {
-    const existingMember = await this.workspaceMemberModel.findOne({
-      primaryEmail: inviteMemberDto.primaryEmail,
-      workspace: workspaceId,
+    workspaceId: string,
+    invitingMember: WorkspaceMember,
+  ): Promise<WorkspaceMember> {
+    const existingMember = await this.workspaceMemberRepository.findOne({
+      where: {
+        primaryEmail: inviteMemberDto.primaryEmail,
+        workspaceId,
+      },
     });
 
     if (existingMember) {
@@ -301,8 +402,8 @@ export class WorkspaceMemberService {
       );
     }
 
-    const workspaceMember = new this.workspaceMemberModel({
-      workspace: workspaceId,
+    const workspaceMember = this.workspaceMemberRepository.create({
+      workspaceId,
       firstName: inviteMemberDto.firstName,
       lastName: inviteMemberDto.lastName,
       middleName: inviteMemberDto.middleName || null,
@@ -310,18 +411,16 @@ export class WorkspaceMemberService {
       permission: Permission.REGULAR,
       status: MemberStatus.PENDING,
       workPhone: inviteMemberDto.workPhone || null,
-      primaryRole: inviteMemberDto.primaryRole
-        ? new Types.ObjectId(inviteMemberDto.primaryRole)
-        : null,
-      primaryTeam: inviteMemberDto.primaryTeam
-        ? new Types.ObjectId(inviteMemberDto.primaryTeam)
-        : null,
-      invitedBy: invitingMember.user,
+      primaryRoleId: inviteMemberDto.primaryRole || null,
+      primaryTeamId: inviteMemberDto.primaryTeam || null,
+      invitedById: invitingMember.userId,
     });
 
-    await workspaceMember.save();
+    await this.workspaceMemberRepository.save(workspaceMember);
 
-    const workspace = await this.workspaceModel.findById(workspaceId).lean();
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: workspaceId },
+    });
 
     try {
       const { heading, body, ctaText, ctaUrl } = workspaceInvitationEmail({
@@ -331,7 +430,6 @@ export class WorkspaceMemberService {
 
       await useCTAMail({
         to: inviteMemberDto.primaryEmail,
-        // subject: `Invitation to join ${workspace?.name || 'a workspace'} on ${APP_CONFIG.name}`,
         heading,
         body,
         ctaText,
@@ -347,10 +445,12 @@ export class WorkspaceMemberService {
   }
 
   async acceptInvitation(
-    memberId: Types.ObjectId,
-    userId: Types.ObjectId,
-  ): Promise<WorkspaceMemberDocument> {
-    const member = await this.workspaceMemberModel.findById(memberId).exec();
+    memberId: string,
+    userId: string,
+  ): Promise<WorkspaceMember> {
+    const member = await this.workspaceMemberRepository.findOne({
+      where: { id: memberId },
+    });
 
     if (!member) {
       throw new BadRequestException('Invitation not found');
@@ -360,17 +460,17 @@ export class WorkspaceMemberService {
       throw new BadRequestException('Invitation is not pending');
     }
 
-    if (member.user && member.user.toString() !== userId.toString()) {
+    if (member.userId && member.userId !== userId) {
       throw new BadRequestException('Invalid user for this invitation');
     }
 
     member.status = MemberStatus.ACTIVE;
     member.lastActiveAt = new Date();
 
-    if (!member.user) {
-      member.user = userId;
+    if (!member.userId) {
+      member.userId = userId;
     }
 
-    return await member.save();
+    return await this.workspaceMemberRepository.save(member);
   }
 }

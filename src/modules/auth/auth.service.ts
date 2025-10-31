@@ -3,9 +3,9 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { User, UserDocument } from '../users/schemas/user.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../users/schemas/user.schema';
 import { UserSecretsService } from '../users/services/user-secrets.service';
 import {
   LoginDto,
@@ -17,42 +17,40 @@ import {
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private userSecretsService: UserSecretsService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<UserDocument> {
+  async register(registerDto: RegisterDto): Promise<User> {
     const { email, password, timezone } = registerDto;
 
-    const existingUser = await this.userModel.findOne({ email });
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new BadRequestException('User already exists');
     }
 
-    const user = new this.userModel({
+    const user = this.userRepository.create({
       email,
       timezone,
       isEmailVerified: false,
     });
 
-    const savedUser = await user.save();
+    const savedUser = await this.userRepository.save(user);
 
-    await this.userSecretsService.createUserSecrets(
-      savedUser._id as Types.ObjectId,
-      password,
-    );
+    await this.userSecretsService.createUserSecrets(savedUser.id, password);
 
-    await this.userSecretsService.generateAndSaveOTP(
-      savedUser._id as Types.ObjectId,
-    );
+    await this.userSecretsService.generateAndSaveOTP(savedUser.id);
 
     return savedUser;
   }
 
-  async login(loginDto: LoginDto): Promise<UserDocument> {
+  async login(loginDto: LoginDto): Promise<User> {
     const { email, password } = loginDto;
 
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -63,14 +61,11 @@ export class AuthService {
       );
     }
 
-    const isLocked = await this.userSecretsService.isAccountLocked(
-      user._id as Types.ObjectId,
-    );
+    const isLocked = await this.userSecretsService.isAccountLocked(user.id);
 
     if (isLocked) {
-      const lockInfo = await this.userSecretsService.getAccountLockInfo(
-        user._id as Types.ObjectId,
-      );
+      const lockInfo =
+        await this.userSecretsService.getAccountLockInfo(user.id);
 
       if (lockInfo.lockedUntil) {
         const remainingTime = Math.ceil(
@@ -83,20 +78,15 @@ export class AuthService {
     }
 
     const isPasswordValid = await this.userSecretsService.verifyPassword(
-      user._id as Types.ObjectId,
+      user.id,
       password.trim(),
     );
 
     if (!isPasswordValid) {
-      // Increment failed login attempts
-      await this.userSecretsService.incrementFailedLoginAttempts(
-        user._id as Types.ObjectId,
-      );
+      await this.userSecretsService.incrementFailedLoginAttempts(user.id);
 
-      // Check if account got locked after this attempt
-      const lockInfo = await this.userSecretsService.getAccountLockInfo(
-        user._id as Types.ObjectId,
-      );
+      const lockInfo =
+        await this.userSecretsService.getAccountLockInfo(user.id);
 
       if (lockInfo.isLocked) {
         throw new UnauthorizedException(
@@ -110,12 +100,10 @@ export class AuthService {
       }
     }
 
-    await this.userSecretsService.resetFailedLoginAttempts(
-      user._id as Types.ObjectId,
-    );
+    await this.userSecretsService.resetFailedLoginAttempts(user.id);
 
     user.lastLoginAt = new Date();
-    await user.save();
+    await this.userRepository.save(user);
 
     return user;
   }
@@ -125,7 +113,7 @@ export class AuthService {
   ): Promise<{ success: boolean; message: string; user?: any }> {
     const { email, otp } = verifyEmailDto;
 
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
       throw new BadRequestException('User not found');
     }
@@ -134,25 +122,22 @@ export class AuthService {
       throw new BadRequestException('Email already verified');
     }
 
-    const isOtpValid = await this.userSecretsService.verifyOTP(
-      user._id as Types.ObjectId,
-      otp,
-    );
+    const isOtpValid = await this.userSecretsService.verifyOTP(user.id, otp);
 
     if (!isOtpValid) {
       throw new BadRequestException('Invalid or expired OTP');
     }
 
     user.isEmailVerified = true;
-    await user.save();
+    await this.userRepository.save(user);
 
-    await this.userSecretsService.clearOTP(user._id as Types.ObjectId);
+    await this.userSecretsService.clearOTP(user.id);
 
     return {
       success: true,
       message: 'Email verified successfully',
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
         timezone: user.timezone,
         isEmailVerified: user.isEmailVerified,
@@ -165,7 +150,7 @@ export class AuthService {
   ): Promise<{ success: boolean; message: string }> {
     const { email } = resendOtpDto;
 
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
       throw new BadRequestException('User not found');
     }
@@ -174,9 +159,7 @@ export class AuthService {
       throw new BadRequestException('Email already verified');
     }
 
-    const otp = await this.userSecretsService.generateAndSaveOTP(
-      user._id as Types.ObjectId,
-    );
+    const otp = await this.userSecretsService.generateAndSaveOTP(user.id);
 
     // TODO: Send email with OTP (implementation depends on email service)
     console.log(`New OTP for ${email}: ${otp}`);
@@ -187,9 +170,9 @@ export class AuthService {
     };
   }
 
-  async findUserById(userId: string): Promise<UserDocument | null> {
+  async findUserById(userId: string): Promise<User | null> {
     try {
-      const user = await this.userModel.findById(userId).exec();
+      const user = await this.userRepository.findOne({ where: { id: userId } });
       return user;
     } catch {
       return null;

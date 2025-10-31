@@ -12,10 +12,8 @@ import {
   UseGuards,
   UsePipes,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import {
   createTeamSchema,
   updateTeamSchema,
@@ -52,8 +50,8 @@ export class TeamController {
   ) {
     const team = await this.teamService.create(
       createTeamDto,
-      req.workspace._id,
-      req.workspaceMember._id,
+      req.workspace.id,
+      req.workspaceMember.id,
     );
 
     return createSuccessResponse('Team created successfully', team);
@@ -66,7 +64,7 @@ export class TeamController {
     @Query() pagination: PaginationDto,
     @Req() req: Request & { workspace: any },
   ) {
-    const teams = await this.teamService.findAll(req.workspace._id, pagination);
+    const teams = await this.teamService.findAll(req.workspace.id, pagination);
 
     return createSuccessResponse('Teams retrieved successfully', teams);
   }
@@ -79,14 +77,10 @@ export class TeamController {
     @Body() updateTeamDto: UpdateTeamDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid team ID format');
-    }
-
     const team = await this.teamService.update(
-      new Types.ObjectId(id),
+      id,
       updateTeamDto,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Team updated successfully', team);
@@ -98,13 +92,9 @@ export class TeamController {
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid team ID format');
-    }
-
     const team = await this.teamService.moveToTrash(
-      new Types.ObjectId(id),
-      req.workspace._id,
+      id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Team moved to trash successfully', team);
@@ -118,14 +108,10 @@ export class TeamController {
     @Body() toggleActiveDto: ToggleActiveDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid team ID format');
-    }
-
     const team = await this.teamService.toggleActive(
-      new Types.ObjectId(id),
+      id,
       toggleActiveDto.isActive,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Team status updated successfully', team);

@@ -1,14 +1,7 @@
-/* eslint-disable prettier/prettier */
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import {
-  Model,
-  Types,
-  PaginateModel,
-  FilterQuery,
-  PaginateResult,
-} from 'mongoose';
-import { Role, RoleDocument } from '../schemas/role.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Role } from '../schemas/role.schema';
 import { CreateRoleDto, UpdateRoleDto } from '../dto/role.dto';
 import {
   PaginationDto,
@@ -18,55 +11,77 @@ import {
 @Injectable()
 export class RoleService {
   constructor(
-    @InjectModel(Role.name)
-    private roleModel: Model<RoleDocument> & PaginateModel<RoleDocument>,
+    @InjectRepository(Role)
+    private roleRepository: Repository<Role>,
   ) {}
 
   async create(
     createRoleDto: CreateRoleDto,
-    workspaceId: Types.ObjectId,
-    createdBy: Types.ObjectId,
-  ): Promise<RoleDocument> {
-    const role = new this.roleModel({
+    workspaceId: string,
+    createdById: string,
+  ): Promise<Role> {
+    const role = this.roleRepository.create({
       ...createRoleDto,
-      workspace: workspaceId,
-      createdBy,
+      workspaceId,
+      createdById,
     });
 
-    return await role.save();
+    return await this.roleRepository.save(role);
   }
 
-  async findAll(
-    workspaceId: Types.ObjectId,
-    pagination: PaginationDto,
-  ): Promise<PaginateResult<RoleDocument>> {
+  async findAll(workspaceId: string, pagination: PaginationDto): Promise<any> {
     const { search, isActive, paginationOptions } =
       extractPaginationOptions(pagination);
 
-    const query: FilterQuery<RoleDocument> = {
-      workspace: workspaceId,
+    const where: any = {
+      workspaceId,
       isDeleted: false,
     };
 
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
-    }
-
     if (isActive && isActive !== 'all') {
-      query.isActive = isActive === 'true';
+      where.isActive = isActive === 'true';
     }
 
-    return await this.roleModel.paginate(query, {
-      ...paginationOptions,
-      populate: 'createdBy',
-    });
+    const queryBuilder = this.roleRepository.createQueryBuilder('role');
+    queryBuilder.where(where);
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(role.name ILIKE :search OR role.description ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    queryBuilder.leftJoinAndSelect('role.createdBy', 'createdBy');
+
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 10;
+
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    if (paginationOptions.sort) {
+      const sortOrder = paginationOptions.sort.startsWith('-') ? 'DESC' : 'ASC';
+      const sortField = paginationOptions.sort.replace('-', '');
+      queryBuilder.orderBy(`role.${sortField}`, sortOrder);
+    }
+
+    const [docs, totalDocs] = await queryBuilder.getManyAndCount();
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page < Math.ceil(totalDocs / limit),
+      hasPrevPage: page > 1,
+      nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
+    };
   }
 
-  async findById(id: Types.ObjectId): Promise<RoleDocument> {
-    const role = await this.roleModel.findById(id).exec();
+  async findById(id: string): Promise<Role> {
+    const role = await this.roleRepository.findOne({ where: { id } });
     if (!role || role.isDeleted) {
       throw new NotFoundException('Role not found');
     }
@@ -74,63 +89,59 @@ export class RoleService {
   }
 
   async update(
-    id: Types.ObjectId,
+    id: string,
     updateRoleDto: UpdateRoleDto,
-    workspaceId: Types.ObjectId,
-  ): Promise<RoleDocument> {
-    const role = await this.roleModel
-      .findOneAndUpdate(
-        { _id: id, workspace: workspaceId, isDeleted: false },
-        updateRoleDto,
-        { new: true },
-      )
-      .populate('createdBy')
-      .exec();
+    workspaceId: string,
+  ): Promise<Role> {
+    const role = await this.roleRepository.findOne({
+      where: { id, workspaceId, isDeleted: false },
+    });
 
     if (!role) {
       throw new NotFoundException('Role not found');
     }
 
-    return role;
+    Object.assign(role, updateRoleDto);
+    await this.roleRepository.save(role);
+
+    return await this.roleRepository.findOne({
+      where: { id },
+      relations: ['createdBy'],
+    });
   }
 
-  async moveToTrash(
-    id: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<RoleDocument> {
-    const role = await this.roleModel
-      .findOneAndUpdate(
-        { _id: id, workspace: workspaceId, isDeleted: false },
-        { isDeleted: true },
-        { new: true },
-      )
-      .exec();
+  async moveToTrash(id: string, workspaceId: string): Promise<Role> {
+    const role = await this.roleRepository.findOne({
+      where: { id, workspaceId, isDeleted: false },
+    });
 
     if (!role) {
       throw new NotFoundException('Role not found');
     }
 
-    return role;
+    role.isDeleted = true;
+    return await this.roleRepository.save(role);
   }
 
   async toggleActive(
-    id: Types.ObjectId,
+    id: string,
     isActive: boolean,
-    workspaceId: Types.ObjectId,
-  ): Promise<RoleDocument> {
-    const role = await this.roleModel
-      .findOneAndUpdate(
-        { _id: id, workspace: workspaceId, isDeleted: false },
-        { isActive },
-        { new: true },
-      )
-      .populate('createdBy')
-      .exec();
+    workspaceId: string,
+  ): Promise<Role> {
+    const role = await this.roleRepository.findOne({
+      where: { id, workspaceId, isDeleted: false },
+    });
 
     if (!role) {
       throw new NotFoundException('Role not found');
     }
 
-    return role;
+    role.isActive = isActive;
+    await this.roleRepository.save(role);
+
+    return await this.roleRepository.findOne({
+      where: { id },
+      relations: ['createdBy'],
+    });
   }
 }

@@ -9,11 +9,9 @@ import {
   Body,
   UseGuards,
   Req,
-  BadRequestException,
   Query,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { ListService } from './services/list.service';
 import { AuthGuard } from '../../../auth/guards/auth.guard';
 import {
@@ -46,13 +44,9 @@ export class ListController {
       workspace: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(listId)) {
-      throw new BadRequestException('Invalid list ID');
-    }
-
     const list = await this.listService.getListDetails(
-      new Types.ObjectId(listId),
-      req.workspace._id,
+      listId,
+      req.workspace.id,
     );
     return createSuccessResponse('List details retrieved successfully', list);
   }
@@ -69,13 +63,9 @@ export class ListController {
       workspace: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(listId)) {
-      throw new BadRequestException('Invalid list ID');
-    }
-
     const result = await this.listService.getListFiles(
-      new Types.ObjectId(listId),
-      req.workspace._id,
+      listId,
+      req.workspace.id,
       query,
     );
     return createSuccessResponse(
@@ -103,14 +93,10 @@ export class SpaceListController {
       space: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(spaceId)) {
-      throw new BadRequestException('Invalid space ID format');
-    }
-
     const list = await this.listService.create(
       createListDto,
-      new Types.ObjectId(spaceId),
-      req.workspace._id,
+      spaceId,
+      req.workspace.id,
     );
 
     return createSuccessResponse('List created successfully', list);
@@ -126,13 +112,9 @@ export class SpaceListController {
       space: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(spaceId)) {
-      throw new BadRequestException('Invalid space ID format');
-    }
-
     const lists = await this.listService.getListsBySpace(
-      new Types.ObjectId(spaceId),
-      req.workspace._id,
+      spaceId,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Lists retrieved successfully', lists);

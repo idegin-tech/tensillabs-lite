@@ -1,8 +1,8 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { WalletController } from './wallet.controller';
 import { WalletService } from './services/wallet.service';
-import { Wallet, WalletSchema } from './schemas/wallet.schema';
+import { Wallet } from './schemas/wallet.schema';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { WorkspaceMembersModule } from '../../workspace-members/workspace-members.module';
 import { AuthModule } from '../../auth/auth.module';
@@ -10,7 +10,7 @@ import { WorkspacesModule } from '../../workspaces/workspaces.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Wallet.name, schema: WalletSchema }]),
+    TypeOrmModule.forFeature([Wallet]),
     forwardRef(() => TransactionsModule),
     forwardRef(() => WorkspaceMembersModule),
     forwardRef(() => WorkspacesModule),
@@ -18,6 +18,6 @@ import { WorkspacesModule } from '../../workspaces/workspaces.module';
   ],
   controllers: [WalletController],
   providers: [WalletService],
-  exports: [MongooseModule, WalletService],
+  exports: [TypeOrmModule, WalletService],
 })
 export class WalletsModule {}

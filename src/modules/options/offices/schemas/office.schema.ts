@@ -1,70 +1,58 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import * as mongoosePaginate from 'mongoose-paginate-v2';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Workspace } from '../../../workspaces/schemas/workspace.schema';
+import { WorkspaceMember } from '../../../workspace-members/schemas/workspace-member.schema';
 
-export type OfficeDocument = Office & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'offices',
-})
+@Entity('offices')
+@Index(['workspaceId'])
+@Index(['name'])
+@Index(['isActive'])
+@Index(['isDeleted'])
+@Index(['createdById'])
 export class Office {
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 100,
-  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 100 })
   name: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  workspaceId: string;
 
-  @Prop({
-    required: true,
-    default: true,
-  })
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  createdBy: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  createdById: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 500,
-    default: null,
-  })
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'createdById' })
+  createdBy: WorkspaceMember;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
   description: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 500,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   address: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const OfficeSchema = SchemaFactory.createForClass(Office);
-
-OfficeSchema.index({ workspace: 1 });
-OfficeSchema.index({ name: 1 });
-OfficeSchema.index({ isActive: 1 });
-OfficeSchema.index({ isDeleted: 1 });
-OfficeSchema.index({ createdBy: 1 });
-
-OfficeSchema.plugin(mongoosePaginate);

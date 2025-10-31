@@ -1,47 +1,47 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Wallet, WalletDocument, Currency } from '../schemas/wallet.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Wallet, Currency } from '../schemas/wallet.schema';
 import { TransactionService } from '../../transactions/services/transaction.service';
 
 @Injectable()
 export class WalletService {
   constructor(
-    @InjectModel(Wallet.name)
-    private walletModel: Model<WalletDocument>,
+    @InjectRepository(Wallet)
+    private walletRepository: Repository<Wallet>,
     private transactionService: TransactionService,
   ) {}
 
   async initializeWallet(
-    workspaceId: Types.ObjectId,
+    workspaceId: string,
     currency: Currency = Currency.USD,
-  ): Promise<WalletDocument> {
+  ): Promise<Wallet> {
     const nextBillingDate = new Date();
     nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
 
-    const wallet = new this.walletModel({
-      workspace: workspaceId,
+    const wallet = this.walletRepository.create({
+      workspaceId,
       currentBalance: 0,
       currency,
       nextBillingDate,
       tier: 0,
     });
 
-    return await wallet.save();
+    return await this.walletRepository.save(wallet);
   }
 
-  async getWalletWithRecentTransactions(workspaceId: Types.ObjectId) {
-    const wallet = await this.walletModel
-      .findOne({ workspace: workspaceId })
-      .populate('workspace', 'name')
-      .exec();
+  async getWalletWithRecentTransactions(workspaceId: string) {
+    const wallet = await this.walletRepository.findOne({
+      where: { workspaceId },
+      relations: ['workspace'],
+    });
 
     if (!wallet) {
       throw new NotFoundException('Wallet not found');
     }
 
     const recentTransactions = await this.transactionService.findRecentByWallet(
-      wallet._id as Types.ObjectId,
+      wallet.id,
       5,
     );
 

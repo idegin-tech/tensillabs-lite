@@ -1,51 +1,53 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-
-export type WalletDocument = Wallet & Document;
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Workspace } from '../../../workspaces/schemas/workspace.schema';
 
 export enum Currency {
   USD = 'USD',
   NGN = 'NGN',
 }
 
-@Schema({
-  timestamps: true,
-  collection: 'wallets',
-})
+@Entity('wallets')
+@Index(['workspaceId'])
+@Index(['currency'])
+@Index(['nextBillingDate'])
 export class Wallet {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Prop({
-    required: true,
-    default: 0,
-  })
+  @Column({ type: 'uuid' })
+  workspaceId: string;
+
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   currentBalance: number;
 
-  @Prop({
-    required: true,
+  @Column({
+    type: 'enum',
     enum: Currency,
   })
   currency: Currency;
 
-  @Prop({
-    required: true,
-  })
+  @Column({ type: 'timestamp' })
   nextBillingDate: Date;
 
-  @Prop({
-    required: true,
-    default: 0,
-  })
+  @Column({ type: 'int', default: 0 })
   tier: number;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const WalletSchema = SchemaFactory.createForClass(Wallet);
-
-WalletSchema.index({ workspace: 1 });
-WalletSchema.index({ currency: 1 });
-WalletSchema.index({ nextBillingDate: 1 });

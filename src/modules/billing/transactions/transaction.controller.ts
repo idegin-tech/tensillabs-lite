@@ -1,8 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Controller, Get, Query, Param, UseGuards, Req } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { TransactionService } from './services/transaction.service';
 import { AuthGuard } from '../../auth/guards/auth.guard';
 import {
@@ -30,7 +27,7 @@ export class TransactionController {
     @Req() req: Request & { workspaceMember: any; workspace: any },
   ) {
     const transactions = await this.transactionService.findByWorkspace(
-      req.workspace._id,
+      req.workspace.id,
       pagination,
     );
 
@@ -44,9 +41,7 @@ export class TransactionController {
   @UseGuards(WorkspaceMemberGuard)
   @RequirePermission(MemberPermissions.MANAGER)
   async getTransactionById(@Param('id') id: string) {
-    const transaction = await this.transactionService.findById(
-      new Types.ObjectId(id),
-    );
+    const transaction = await this.transactionService.findById(id);
 
     return createSuccessResponse(
       'Transaction retrieved successfully',

@@ -12,10 +12,8 @@ import {
   UseGuards,
   UsePipes,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { ProjectService } from './services/project.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { WorkspaceMemberGuard } from '../workspace-members/guards/workspace-member.guard';
@@ -50,8 +48,8 @@ export class ProjectController {
   ) {
     const project = await this.projectService.create(
       createProjectDto,
-      req.workspace._id,
-      req.workspaceMember._id,
+      req.workspace.id,
+      req.workspaceMember.id,
     );
 
     return createSuccessResponse('Project created successfully', project);
@@ -65,7 +63,7 @@ export class ProjectController {
     @Req() req: Request & { workspace: any },
   ) {
     const projects = await this.projectService.findAll(
-      req.workspace._id,
+      req.workspace.id,
       pagination,
     );
     return createSuccessResponse('Projects retrieved successfully', projects);
@@ -79,14 +77,10 @@ export class ProjectController {
     updateProjectDto: UpdateProjectDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid project ID format');
-    }
-
     const project = await this.projectService.update(
-      new Types.ObjectId(id),
+      id,
       updateProjectDto,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Project updated successfully', project);
@@ -99,14 +93,10 @@ export class ProjectController {
     @Body(new ZodValidationPipe(toggleActiveSchema)) body: ToggleActiveDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid project ID format');
-    }
-
     const project = await this.projectService.toggleActive(
-      new Types.ObjectId(id),
+      id,
       body.isActive,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse(
@@ -121,13 +111,9 @@ export class ProjectController {
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid project ID format');
-    }
-
     const project = await this.projectService.delete(
-      new Types.ObjectId(id),
-      req.workspace._id,
+      id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Project deleted successfully', project);

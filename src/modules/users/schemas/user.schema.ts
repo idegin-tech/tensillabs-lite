@@ -1,41 +1,34 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
 
-export type UserDocument = User & Document;
-
-@Schema({
-  timestamps: true,
-  collection: 'users',
-})
+@Entity('users')
+@Index(['email'], { unique: true })
+@Index(['createdAt'])
 export class User {
-  @Prop({
-    required: true,
-    lowercase: true,
-    trim: true,
-  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
-  @Prop({
-    required: true,
-    default: 'Africa/Lagos',
-  })
+  @Column({ type: 'varchar', length: 100, default: 'Africa/Lagos' })
   timezone: string;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @Column({ type: 'boolean', default: false })
   isEmailVerified: boolean;
 
-  @Prop({
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'timestamp', nullable: true })
   lastLoginAt: Date;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const UserSchema = SchemaFactory.createForClass(User);
-
-UserSchema.index({ email: 1 }, { unique: true });
-UserSchema.index({ isActive: 1 });
-UserSchema.index({ createdAt: -1 });

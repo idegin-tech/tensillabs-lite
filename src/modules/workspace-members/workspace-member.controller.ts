@@ -13,7 +13,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { WorkspaceMemberService } from './services/workspace-member.service';
 import {
@@ -30,7 +29,7 @@ import {
 } from './dto/workspace-member.dto';
 import { paginationSchema, PaginationDto } from './dto/pagination.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserDocument } from '../users/schemas/user.schema';
+import { User } from '../users/schemas/user.schema';
 
 @Controller('workspace-members')
 @UseGuards(AuthGuard)
@@ -48,7 +47,7 @@ export class WorkspaceMemberController {
     @Req() req: Request & { workspaceMember: any; workspace: any },
   ) {
     const members = await this.workspaceMemberService.findByWorkspace(
-      req.workspace._id,
+      req.workspace.id,
       pagination,
     );
 
@@ -61,9 +60,9 @@ export class WorkspaceMemberController {
   @Get('workspaces/me')
   async getMyMemberships(
     @Query(new ZodValidationPipe(paginationSchema)) pagination: PaginationDto,
-    @CurrentUser() user: UserDocument,
+    @CurrentUser() user: User,
   ) {
-    console.log('my-memberships WAS CALLED', user._id);
+    console.log('my-memberships WAS CALLED', user.id);
     const memberships = await this.workspaceMemberService.findByUserEmail(
       user.email,
       pagination,
@@ -85,7 +84,7 @@ export class WorkspaceMemberController {
   ) {
     const member = await this.workspaceMemberService.inviteMember(
       inviteMemberDto,
-      req.workspace._id,
+      req.workspace.id,
       req.workspaceMember,
     );
 
@@ -99,7 +98,7 @@ export class WorkspaceMemberController {
   ) {
     const memberWithWorkspace =
       await this.workspaceMemberService.getMemberDependencies(
-        req.workspaceMember._id as Types.ObjectId,
+        req.workspaceMember.id,
       );
 
     return createSuccessResponse(
@@ -111,7 +110,7 @@ export class WorkspaceMemberController {
   @Post('accept-invitation')
   async acceptInvitation(
     @Body() rawBody: any,
-    @CurrentUser() user: UserDocument,
+    @CurrentUser() user: User,
   ) {
     const validationResult = acceptInvitationSchema.safeParse(rawBody);
     if (!validationResult.success) {
@@ -122,8 +121,8 @@ export class WorkspaceMemberController {
     const acceptInvitationDto = validationResult.data;
 
     const member = await this.workspaceMemberService.acceptInvitation(
-      new Types.ObjectId(acceptInvitationDto.memberId),
-      user._id as Types.ObjectId,
+      acceptInvitationDto.memberId,
+      user.id,
     );
 
     return createSuccessResponse('Invitation accepted successfully', member);

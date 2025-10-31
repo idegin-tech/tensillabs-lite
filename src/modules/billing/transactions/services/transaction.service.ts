@@ -1,16 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import {
-  Model,
-  Types,
-  PaginateModel,
-  FilterQuery,
-  PaginateResult,
-} from 'mongoose';
-import {
-  Transaction,
-  TransactionDocument,
-} from '../schemas/transaction.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Transaction } from '../schemas/transaction.schema';
 import {
   PaginationDto,
   extractPaginationOptions,
@@ -19,42 +10,63 @@ import {
 @Injectable()
 export class TransactionService {
   constructor(
-    @InjectModel(Transaction.name)
-    private transactionModel: Model<TransactionDocument> &
-      PaginateModel<TransactionDocument>,
+    @InjectRepository(Transaction)
+    private transactionRepository: Repository<Transaction>,
   ) {}
 
-  async findByWorkspace(
-    workspaceId: Types.ObjectId,
-    pagination?: PaginationDto,
-  ): Promise<PaginateResult<TransactionDocument>> {
+  async findByWorkspace(workspaceId: string, pagination?: PaginationDto): Promise<any> {
     if (!pagination) {
       pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
     }
 
     const { paginationOptions } = extractPaginationOptions(pagination);
 
-    const query: FilterQuery<TransactionDocument> = {
-      workspace: workspaceId,
-    };
+    const queryBuilder =
+      this.transactionRepository.createQueryBuilder('transaction');
 
-    return await this.transactionModel.paginate(query, {
-      ...paginationOptions,
-      populate: [
-        { path: 'workspace', select: 'name' },
-        { path: 'wallet', select: 'currentBalance currency' },
-      ],
-    });
+    queryBuilder.where({ workspaceId });
+    queryBuilder.leftJoinAndSelect('transaction.workspace', 'workspace');
+    queryBuilder.leftJoinAndSelect('transaction.wallet', 'wallet');
+    queryBuilder.select([
+      'transaction',
+      'workspace.id',
+      'workspace.name',
+      'wallet.id',
+      'wallet.currentBalance',
+      'wallet.currency',
+    ]);
+
+    const page = paginationOptions.page || 1;
+    const limit = paginationOptions.limit || 10;
+
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    if (paginationOptions.sort) {
+      const sortOrder = paginationOptions.sort.startsWith('-') ? 'DESC' : 'ASC';
+      const sortField = paginationOptions.sort.replace('-', '');
+      queryBuilder.orderBy(`transaction.${sortField}`, sortOrder);
+    }
+
+    const [docs, totalDocs] = await queryBuilder.getManyAndCount();
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: page < Math.ceil(totalDocs / limit),
+      hasPrevPage: page > 1,
+      nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
+    };
   }
 
-  async findById(id: Types.ObjectId): Promise<TransactionDocument> {
-    const transaction = await this.transactionModel
-      .findById(id)
-      .populate([
-        { path: 'workspace', select: 'name' },
-        { path: 'wallet', select: 'currentBalance currency' },
-      ])
-      .exec();
+  async findById(id: string): Promise<Transaction> {
+    const transaction = await this.transactionRepository.findOne({
+      where: { id },
+      relations: ['workspace', 'wallet'],
+    });
 
     if (!transaction) {
       throw new NotFoundException('Transaction not found');
@@ -64,23 +76,14 @@ export class TransactionService {
   }
 
   async findRecentByWallet(
-    walletId: Types.ObjectId,
+    walletId: string,
     limit: number = 5,
-  ): Promise<TransactionDocument[]> {
-    return await this.transactionModel
-      .find({ wallet: walletId })
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .populate([
-        {
-          path: 'workspace',
-          select: 'name',
-        },
-        {
-          path: 'wallet',
-          select: 'currentBalance currency',
-        },
-      ])
-      .exec();
+  ): Promise<Transaction[]> {
+    return await this.transactionRepository.find({
+      where: { walletId },
+      order: { createdAt: 'DESC' },
+      take: limit,
+      relations: ['workspace', 'wallet'],
+    });
   }
 }

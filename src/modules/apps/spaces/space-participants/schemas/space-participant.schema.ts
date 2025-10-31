@@ -1,8 +1,16 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import * as mongoosePaginate from 'mongoose-paginate-v2';
-
-export type SpaceParticipantDocument = SpaceParticipant & Document;
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { WorkspaceMember } from '../../../../workspace-members/schemas/workspace-member.schema';
+import { Workspace } from '../../../../workspaces/schemas/workspace.schema';
+import { Space } from '../../schemas/space.schema';
 
 export enum SpacePermission {
   ADMIN = 'admin',
@@ -14,56 +22,54 @@ export enum ParticipantStatus {
   INACTIVE = 'inactive',
 }
 
-@Schema({
-  timestamps: true,
-  collection: 'space_participants',
-})
+@Entity('space_participants')
+@Index(['spaceId'])
+@Index(['memberId'])
+@Index(['workspaceId'])
+@Index(['status'])
+@Index(['memberId', 'spaceId'], { unique: true })
 export class SpaceParticipant {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  member: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  memberId: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Space',
-    required: true,
-  })
-  space: Types.ObjectId;
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'memberId' })
+  member: WorkspaceMember;
 
-  @Prop({
-    type: String,
-    enum: Object.values(SpacePermission),
-    required: true,
+  @Column({ type: 'uuid' })
+  workspaceId: string;
+
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({ type: 'uuid' })
+  spaceId: string;
+
+  @ManyToOne(() => Space)
+  @JoinColumn({ name: 'spaceId' })
+  space: Space;
+
+  @Column({
+    type: 'enum',
+    enum: SpacePermission,
     default: SpacePermission.REGULAR,
   })
   permissions: SpacePermission;
 
-  @Prop({
-    type: String,
-    enum: Object.values(ParticipantStatus),
-    required: true,
+  @Column({
+    type: 'enum',
+    enum: ParticipantStatus,
     default: ParticipantStatus.ACTIVE,
   })
   status: ParticipantStatus;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const SpaceParticipantSchema =
-  SchemaFactory.createForClass(SpaceParticipant);
-
-SpaceParticipantSchema.index({ space: 1 });
-SpaceParticipantSchema.index({ member: 1 });
-SpaceParticipantSchema.index({ workspace: 1 });
-SpaceParticipantSchema.index({ status: 1 });
-SpaceParticipantSchema.index({ member: 1, space: 1 }, { unique: true });
-
-SpaceParticipantSchema.plugin(mongoosePaginate);

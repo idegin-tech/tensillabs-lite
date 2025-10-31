@@ -1,8 +1,15 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import * as mongoosePaginate from 'mongoose-paginate-v2';
-
-export type WorkspaceMemberDocument = WorkspaceMember & Document;
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { User } from '../../users/schemas/user.schema';
+import { Workspace } from '../../workspaces/schemas/workspace.schema';
 
 export enum Permission {
   SUPER_ADMIN = 'super_admin',
@@ -17,28 +24,33 @@ export enum MemberStatus {
   SUSPENDED = 'suspended',
 }
 
-@Schema({
-  timestamps: true,
-  collection: 'workspace_members',
-})
+@Entity('workspace_members')
+@Index(['userId', 'workspaceId'], { unique: true })
+@Index(['workspaceId'])
+@Index(['userId'])
+@Index(['permission'])
+@Index(['status'])
+@Index(['primaryEmail'])
 export class WorkspaceMember {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'User',
-    required: false,
-  })
-  user: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @Column({ type: 'uuid', nullable: true })
+  userId: string;
 
-  @Prop({
-    type: Object,
-    required: false,
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @Column({ type: 'uuid' })
+  workspaceId: string;
+
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({
+    type: 'jsonb',
     default: { sm: '', original: '' },
   })
   avatarURL: {
@@ -46,136 +58,63 @@ export class WorkspaceMember {
     original: string;
   };
 
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 50,
-    minlength: 2,
-  })
+  @Column({ type: 'varchar', length: 50 })
   firstName: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 50,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   middleName: string;
 
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 50,
-  })
+  @Column({ type: 'varchar', length: 50 })
   lastName: string;
 
-  @Prop({
-    required: true,
-    lowercase: true,
-    trim: true,
-  })
+  @Column({ type: 'varchar', length: 255 })
   primaryEmail: string;
 
-  @Prop({
-    required: false,
-    lowercase: true,
-    trim: true,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   secondaryEmail: string;
 
-  @Prop({
-    type: String,
-    enum: Object.values(Permission),
-    required: true,
+  @Column({
+    type: 'enum',
+    enum: Permission,
     default: Permission.REGULAR,
   })
   permission: Permission;
 
-  @Prop({
-    required: false,
-    trim: true,
-    maxlength: 500,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   bio: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   workPhone: string;
 
-  @Prop({
-    required: false,
-    trim: true,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   mobilePhone: string;
 
-  @Prop({
-    type: String,
-    enum: Object.values(MemberStatus),
-    required: true,
+  @Column({
+    type: 'enum',
+    enum: MemberStatus,
     default: MemberStatus.ACTIVE,
   })
   status: MemberStatus;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Role',
-    required: false,
-    default: null,
-  })
-  primaryRole: Types.ObjectId;
+  @Column({ type: 'uuid', nullable: true })
+  primaryRoleId: string;
 
-  @Prop({
-    type: [{ type: Types.ObjectId, ref: 'Role' }],
-    default: [],
-  })
-  secondaryRoles: Types.ObjectId[];
+  @Column({ type: 'uuid', nullable: true })
+  primaryTeamId: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Team',
-    required: false,
-    default: null,
-  })
-  primaryTeam: Types.ObjectId;
-
-  @Prop({
-    type: [{ type: Types.ObjectId, ref: 'Team' }],
-    default: [],
-  })
-  secondaryTeams: Types.ObjectId[];
-
-  @Prop({
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'timestamp', nullable: true })
   lastActiveAt: Date;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'User',
-    required: false,
-    default: null,
-  })
-  invitedBy: Types.ObjectId;
+  @Column({ type: 'uuid', nullable: true })
+  invitedById: string;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'invitedById' })
+  invitedBy: User;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const WorkspaceMemberSchema =
-  SchemaFactory.createForClass(WorkspaceMember);
-
-WorkspaceMemberSchema.index(
-  { user: 1, workspace: 1 },
-  { unique: true, partialFilterExpression: { user: { $ne: null } } }
-);
-WorkspaceMemberSchema.index({ workspace: 1 });
-WorkspaceMemberSchema.index({ user: 1 });
-WorkspaceMemberSchema.index({ permission: 1 });
-WorkspaceMemberSchema.index({ status: 1 });
-WorkspaceMemberSchema.index({ primaryEmail: 1 });
-
-WorkspaceMemberSchema.plugin(mongoosePaginate);

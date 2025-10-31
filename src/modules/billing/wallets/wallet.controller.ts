@@ -23,7 +23,7 @@ export class WalletController {
     @Req() req: Request & { workspaceMember: any; workspace: any },
   ) {
     const walletData = await this.walletService.getWalletWithRecentTransactions(
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse(

@@ -1,7 +1,15 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-
-export type LeaveRequestDocument = LeaveRequest & Document;
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { WorkspaceMember } from '../../../../workspace-members/schemas/workspace-member.schema';
+import { Workspace } from '../../../../workspaces/schemas/workspace.schema';
 
 export enum LeaveType {
   ANNUAL = 'annual',
@@ -19,75 +27,62 @@ export enum LeaveStatus {
   REJECTED = 'rejected',
 }
 
-@Schema({
-  timestamps: true,
-  collection: 'leave_requests',
-})
+@Entity('leave_requests')
+@Index(['memberId', 'workspaceId', 'startDate'])
 export class LeaveRequest {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  member: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  memberId: string;
 
-  @Prop({
-    type: String,
-    enum: Object.values(LeaveType),
-    required: true,
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'memberId' })
+  member: WorkspaceMember;
+
+  @Column({ type: 'uuid' })
+  workspaceId: string;
+
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({
+    type: 'enum',
+    enum: LeaveType,
   })
   type: LeaveType;
 
-  @Prop({
-    type: Date,
-    required: true,
-  })
+  @Column({ type: 'date' })
   startDate: Date;
 
-  @Prop({
-    type: Date,
-    required: true,
-  })
+  @Column({ type: 'date' })
   endDate: Date;
 
-  @Prop({
-    type: String,
-    maxlength: 1000,
-    required: false,
-    default: null,
-  })
+  @Column({ type: 'varchar', length: 1000, nullable: true })
   reason?: string;
 
-  @Prop({
-    type: String,
-    enum: Object.values(LeaveStatus),
+  @Column({
+    type: 'enum',
+    enum: LeaveStatus,
     default: LeaveStatus.PENDING,
   })
   status: LeaveStatus;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: false,
-    default: null,
-  })
-  approvedBy?: Types.ObjectId;
+  @Column({ type: 'uuid', nullable: true })
+  approvedById?: string;
 
-  @Prop({
-    type: Date,
-    required: false,
-    default: null,
-  })
+  @ManyToOne(() => WorkspaceMember, { nullable: true })
+  @JoinColumn({ name: 'approvedById' })
+  approvedBy?: WorkspaceMember;
+
+  @Column({ type: 'timestamp', nullable: true })
   approvedAt?: Date;
-}
 
-export const LeaveRequestSchema = SchemaFactory.createForClass(LeaveRequest);
-LeaveRequestSchema.index({ member: 1, workspace: 1, startDate: 1 });
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
+}
 

@@ -1,10 +1,7 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Checklist, ChecklistDocument } from '../schemas/checklist.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Checklist } from '../schemas/checklist.schema';
 import {
   CreateChecklistDto,
   UpdateChecklistDto,
@@ -12,7 +9,7 @@ import {
 } from '../dto/checklist.dto';
 
 export interface PaginatedChecklists {
-  checklists: ChecklistDocument[];
+  checklists: Checklist[];
   pagination: {
     total: number;
     page: number;
@@ -24,76 +21,74 @@ export interface PaginatedChecklists {
 @Injectable()
 export class ChecklistService {
   constructor(
-    @InjectModel(Checklist.name)
-    private checklistModel: Model<ChecklistDocument>,
+    @InjectRepository(Checklist)
+    private checklistRepository: Repository<Checklist>,
   ) {}
 
   async createChecklist(
     createChecklistDto: CreateChecklistDto,
-    workspaceId: Types.ObjectId,
-    currentMemberId: Types.ObjectId,
-  ): Promise<ChecklistDocument> {
-    const newChecklist = new this.checklistModel({
+    workspaceId: string,
+    currentMemberId: string,
+  ): Promise<Checklist> {
+    const newChecklist = this.checklistRepository.create({
       name: createChecklistDto.name,
-      task: createChecklistDto.task
-        ? new Types.ObjectId(createChecklistDto.task)
-        : null,
-      space: createChecklistDto.space
-        ? new Types.ObjectId(createChecklistDto.space)
-        : null,
-      list: createChecklistDto.list
-        ? new Types.ObjectId(createChecklistDto.list)
-        : null,
-      workspace: workspaceId,
-      createdBy: currentMemberId,
+      taskId: createChecklistDto.task || null,
+      spaceId: createChecklistDto.space || null,
+      listId: createChecklistDto.list || null,
+      workspaceId,
+      createdById: currentMemberId,
       isDone: false,
       isDeleted: false,
     });
 
-    return await newChecklist.save();
+    return await this.checklistRepository.save(newChecklist);
   }
 
   async getAllChecklists(
     queryParams: GetChecklistsQueryDto,
-    workspaceId: Types.ObjectId,
+    workspaceId: string,
   ): Promise<PaginatedChecklists> {
-    const filter: any = {
-      workspace: workspaceId,
-      isDeleted: false,
-    };
+    const queryBuilder = this.checklistRepository
+      .createQueryBuilder('checklist')
+      .where('checklist.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('checklist.isDeleted = :isDeleted', { isDeleted: false });
 
-    // Add optional filters
     if (queryParams.task) {
-      filter.task = new Types.ObjectId(queryParams.task);
+      queryBuilder.andWhere('checklist.taskId = :taskId', {
+        taskId: queryParams.task,
+      });
     }
     if (queryParams.space) {
-      filter.space = new Types.ObjectId(queryParams.space);
+      queryBuilder.andWhere('checklist.spaceId = :spaceId', {
+        spaceId: queryParams.space,
+      });
     }
     if (queryParams.list) {
-      filter.list = new Types.ObjectId(queryParams.list);
+      queryBuilder.andWhere('checklist.listId = :listId', {
+        listId: queryParams.list,
+      });
     }
     if (queryParams.isDone !== undefined) {
-      filter.isDone = queryParams.isDone;
+      queryBuilder.andWhere('checklist.isDone = :isDone', {
+        isDone: queryParams.isDone,
+      });
     }
 
-    const sortOptions: any = {};
-    sortOptions[queryParams.sortBy] = queryParams.sortOrder === 'asc' ? 1 : -1;
+    queryBuilder.orderBy(
+      `checklist.${queryParams.sortBy}`,
+      queryParams.sortOrder === 'asc' ? 'ASC' : 'DESC',
+    );
 
-    const skip = (queryParams.page - 1) * queryParams.limit;
+    const total = await queryBuilder.getCount();
 
-    const [checklists, total] = await Promise.all([
-      this.checklistModel
-        .find(filter)
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(queryParams.limit)
-        .populate('task', 'name task_id')
-        .populate('space', 'name')
-        .populate('list', 'name')
-        .populate('createdBy', 'user')
-        .exec(),
-      this.checklistModel.countDocuments(filter),
-    ]);
+    const checklists = await queryBuilder
+      .leftJoinAndSelect('checklist.task', 'task')
+      .leftJoinAndSelect('checklist.space', 'space')
+      .leftJoinAndSelect('checklist.list', 'list')
+      .leftJoinAndSelect('checklist.createdBy', 'createdBy')
+      .skip((queryParams.page - 1) * queryParams.limit)
+      .take(queryParams.limit)
+      .getMany();
 
     return {
       checklists,
@@ -107,22 +102,23 @@ export class ChecklistService {
   }
 
   async updateChecklist(
-    checklistId: Types.ObjectId,
+    checklistId: string,
     updateChecklistDto: UpdateChecklistDto,
-    workspaceId: Types.ObjectId,
-  ): Promise<ChecklistDocument> {
-    const checklist = await this.checklistModel.findOne({
-      _id: checklistId,
-      workspace: workspaceId,
-      isDeleted: false,
+    workspaceId: string,
+  ): Promise<Checklist> {
+    const checklist = await this.checklistRepository.findOne({
+      where: {
+        id: checklistId,
+        workspaceId,
+        isDeleted: false,
+      },
     });
 
     if (!checklist) {
       throw new NotFoundException('Checklist not found');
     }
 
-    // Only allow updating name and isDone
-    const updateData: any = {};
+    const updateData: Partial<Checklist> = {};
     if (updateChecklistDto.name !== undefined) {
       updateData.name = updateChecklistDto.name;
     }
@@ -130,55 +126,55 @@ export class ChecklistService {
       updateData.isDone = updateChecklistDto.isDone;
     }
 
-    const updatedChecklist = await this.checklistModel
-      .findByIdAndUpdate(checklistId, updateData, {
-        new: true,
-        runValidators: true,
-      })
-      .populate('task', 'name task_id')
-      .populate('space', 'name')
-      .populate('list', 'name')
-      .populate('createdBy', 'user');
+    await this.checklistRepository.update(checklistId, updateData);
+
+    const updatedChecklist = await this.checklistRepository.findOne({
+      where: { id: checklistId },
+      relations: ['task', 'space', 'list', 'createdBy'],
+    });
 
     return updatedChecklist;
   }
 
   async deleteChecklist(
-    checklistId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<ChecklistDocument> {
-    const checklist = await this.checklistModel.findOne({
-      _id: checklistId,
-      workspace: workspaceId,
-      isDeleted: false,
+    checklistId: string,
+    workspaceId: string,
+  ): Promise<Checklist> {
+    const checklist = await this.checklistRepository.findOne({
+      where: {
+        id: checklistId,
+        workspaceId,
+        isDeleted: false,
+      },
     });
 
     if (!checklist) {
       throw new NotFoundException('Checklist not found');
     }
 
-    // Soft delete
-    const deletedChecklist = await this.checklistModel.findByIdAndUpdate(
-      checklistId,
-      { isDeleted: true },
-      { new: true },
-    );
+    await this.checklistRepository.update(checklistId, { isDeleted: true });
+
+    const deletedChecklist = await this.checklistRepository.findOne({
+      where: { id: checklistId },
+    });
 
     return deletedChecklist;
   }
 
   async getChecklistsByTask(
-    taskId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<ChecklistDocument[]> {
-    return this.checklistModel
-      .find({
-        task: taskId,
-        workspace: workspaceId,
+    taskId: string,
+    workspaceId: string,
+  ): Promise<Checklist[]> {
+    return this.checklistRepository.find({
+      where: {
+        taskId,
+        workspaceId,
         isDeleted: false,
-      })
-      .sort({ createdAt: 1 })
-      .populate('createdBy', 'user')
-      .exec();
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+      relations: ['createdBy'],
+    });
   }
 }

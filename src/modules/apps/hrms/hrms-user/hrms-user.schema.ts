@@ -1,41 +1,52 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-
-export type HrmsUserDocument = HrmsUser & Document;
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { WorkspaceMember } from '../../../workspace-members/schemas/workspace-member.schema';
+import { Workspace } from '../../../workspaces/schemas/workspace.schema';
 
 export enum HrmsUserPermission {
   ADMIN = 'admin',
   MANAGER = 'manager',
 }
 
-@Schema({
-  timestamps: true,
-  collection: 'hrms_users',
-})
+@Entity('hrms_users')
+@Index(['memberId', 'workspaceId'], { unique: true })
 export class HrmsUser {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  member: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  memberId: string;
 
-  @Prop({
-    type: String,
-    enum: Object.values(HrmsUserPermission),
-    required: true,
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'memberId' })
+  member: WorkspaceMember;
+
+  @Column({ type: 'uuid' })
+  workspaceId: string;
+
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
+
+  @Column({
+    type: 'enum',
+    enum: HrmsUserPermission,
     default: HrmsUserPermission.MANAGER,
   })
   permission: HrmsUserPermission;
-}
 
-export const HrmsUserSchema = SchemaFactory.createForClass(HrmsUser);
-HrmsUserSchema.index({ member: 1, workspace: 1 }, { unique: true });
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
+}
 

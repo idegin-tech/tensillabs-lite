@@ -1,7 +1,17 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-
-export type TaskDocument = Task & Document;
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { WorkspaceMember } from '../../../../workspace-members/schemas/workspace-member.schema';
+import { Workspace } from '../../../../workspaces/schemas/workspace.schema';
+import { Space } from '../../schemas/space.schema';
+import { List } from '../../lists/schemas/list.schema';
 
 export enum TaskPriority {
   URGENT = 'urgent',
@@ -18,112 +28,88 @@ export enum TaskStatus {
   COMPLETED = 'completed',
 }
 
-@Schema({
-  timestamps: true,
-  collection: 'tasks',
-})
+@Entity('tasks')
+@Index(['listId'])
+@Index(['spaceId'])
+@Index(['workspaceId'])
+@Index(['createdById'])
+@Index(['status'])
+@Index(['priority'])
+@Index(['isDeleted'])
+@Index(['task_id'])
 export class Task {
-  @Prop({
-    required: true,
-    trim: true,
-    maxlength: 200,
-  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 200 })
   name: string;
 
-  @Prop({
-    required: true,
-    trim: true,
-    unique: true,
-  })
+  @Column({ type: 'varchar', length: 100, unique: true })
   task_id: string;
 
-  @Prop({
-    type: String,
-    enum: Object.values(TaskPriority),
-    required: false,
-    default: null,
+  @Column({
+    type: 'enum',
+    enum: TaskPriority,
+    nullable: true,
   })
   priority: TaskPriority;
 
-  @Prop({
-    type: String,
-    enum: Object.values(TaskStatus),
-    required: true,
+  @Column({
+    type: 'enum',
+    enum: TaskStatus,
     default: TaskStatus.TODO,
   })
   status: TaskStatus;
 
-  @Prop({
-    type: {
-      start: { type: Date, required: false },
-      end: { type: Date, required: false },
-    },
-    required: false,
-    default: null,
+  @Column({
+    type: 'jsonb',
+    nullable: true,
   })
   timeframe: {
     start?: Date;
     end?: Date;
   };
 
-  @Prop({
-    type: [{ type: Types.ObjectId, ref: 'WorkspaceMember' }],
-    required: false,
-    default: [],
-  })
-  assignee: Types.ObjectId[];
+  @Column({ type: 'simple-array', nullable: true })
+  assigneeIds: string[];
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'WorkspaceMember',
-    required: true,
-  })
-  createdBy: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  createdById: string;
 
-  @Prop({
-    required: true,
-    default: false,
-  })
+  @ManyToOne(() => WorkspaceMember)
+  @JoinColumn({ name: 'createdById' })
+  createdBy: WorkspaceMember;
+
+  @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Workspace',
-    required: true,
-  })
-  workspace: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  workspaceId: string;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Space',
-    required: true,
-  })
-  space: Types.ObjectId;
+  @ManyToOne(() => Workspace)
+  @JoinColumn({ name: 'workspaceId' })
+  workspace: Workspace;
 
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'List',
-    required: true,
-  })
-  list: Types.ObjectId;
+  @Column({ type: 'uuid' })
+  spaceId: string;
 
-  @Prop({
-    trim: true,
-    maxlength: 98000,
-    required: false,
-    default: null,
-  })
+  @ManyToOne(() => Space)
+  @JoinColumn({ name: 'spaceId' })
+  space: Space;
+
+  @Column({ type: 'uuid' })
+  listId: string;
+
+  @ManyToOne(() => List)
+  @JoinColumn({ name: 'listId' })
+  list: List;
+
+  @Column({ type: 'text', nullable: true })
   description: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }
-
-export const TaskSchema = SchemaFactory.createForClass(Task);
-
-TaskSchema.index({ list: 1 });
-TaskSchema.index({ space: 1 });
-TaskSchema.index({ workspace: 1 });
-TaskSchema.index({ createdBy: 1 });
-TaskSchema.index({ status: 1 });
-TaskSchema.index({ priority: 1 });
-TaskSchema.index({ isDeleted: 1 });
-TaskSchema.index({ assignee: 1 });
-TaskSchema.index({ task_id: 1 });

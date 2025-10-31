@@ -1,6 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
   Controller,
   Get,
@@ -12,11 +9,9 @@ import {
   Query,
   UseGuards,
   UsePipes,
-  BadRequestException,
   Req,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { AuthGuard } from '../../auth/guards/auth.guard';
 import {
   WorkspaceMemberGuard,
@@ -53,8 +48,8 @@ export class ClientController {
   ) {
     const client = await this.clientService.create(
       createClientDto,
-      req.workspace._id,
-      req.workspaceMember._id,
+      req.workspace.id,
+      req.workspaceMember.id,
     );
 
     return createSuccessResponse('Client created successfully', client);
@@ -68,7 +63,7 @@ export class ClientController {
     @Req() req: Request & { workspace: any },
   ) {
     const clients = await this.clientService.findAll(
-      req.workspace._id,
+      req.workspace.id,
       pagination,
     );
     return createSuccessResponse('Clients retrieved successfully', clients);
@@ -82,14 +77,10 @@ export class ClientController {
     @Body() updateClientDto: UpdateClientDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid client ID format');
-    }
-
     const client = await this.clientService.update(
-      new Types.ObjectId(id),
+      id,
       updateClientDto,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Client updated successfully', client);
@@ -103,14 +94,10 @@ export class ClientController {
     @Body() toggleActiveDto: ToggleActiveDto,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid client ID format');
-    }
-
     const client = await this.clientService.toggleActive(
-      new Types.ObjectId(id),
+      id,
       toggleActiveDto.isActive,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Client status updated successfully', client);
@@ -122,13 +109,9 @@ export class ClientController {
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },
   ) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid client ID format');
-    }
-
     const client = await this.clientService.moveToTrash(
-      new Types.ObjectId(id),
-      req.workspace._id,
+      id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Client moved to trash successfully', client);

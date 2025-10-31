@@ -1,10 +1,9 @@
-/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Task, TaskDocument, TaskPriority } from '../schemas/task.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Task, TaskPriority } from '../schemas/task.schema';
 import {
   UpdateTaskDto,
   CreateTasksDto,
@@ -17,12 +16,12 @@ import { FileService } from 'src/modules/files/services/file.service';
 export interface GroupedTasks {
   [key: string]: {
     count: number;
-    tasks: TaskDocument[];
+    tasks: Task[];
   };
 }
 
 export interface TaskDetailsResponse {
-  task: TaskDocument;
+  task: Task;
   checklist: any[];
   files: any[];
 }
@@ -30,37 +29,37 @@ export interface TaskDetailsResponse {
 @Injectable()
 export class TaskService {
   constructor(
-    @InjectModel(Task.name)
-    private taskModel: Model<TaskDocument>,
+    @InjectRepository(Task)
+    private taskRepository: Repository<Task>,
     private checklistService: ChecklistService,
     private fileService: FileService,
   ) {}
 
   async createTasks(
-    listId: Types.ObjectId,
+    listId: string,
     createTasksDto: CreateTasksDto,
-    workspaceId: Types.ObjectId,
-    currentMemberId: Types.ObjectId,
-    space: Types.ObjectId,
-  ): Promise<TaskDocument[]> {
-    const createdTasks: TaskDocument[] = [];
+    workspaceId: string,
+    currentMemberId: string,
+    space: string,
+  ): Promise<Task[]> {
+    const createdTasks: Task[] = [];
 
     for (const taskData of createTasksDto.tasks) {
-      const newTask = new this.taskModel({
+      const newTask = this.taskRepository.create({
         task_id: `TASK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: taskData.name,
         description: taskData.description,
         priority: taskData.priority,
         status: taskData.status,
         timeframe: taskData.timeframe,
-        assignee: [],
-        list: listId,
-        space: space,
-        workspace: workspaceId,
-        createdBy: currentMemberId,
+        assigneeIds: [],
+        listId,
+        spaceId: space,
+        workspaceId,
+        createdById: currentMemberId,
       });
 
-      const savedTask = await newTask.save();
+      const savedTask = await this.taskRepository.save(newTask);
       createdTasks.push(savedTask);
     }
 
@@ -68,19 +67,19 @@ export class TaskService {
   }
 
   async updateTask(
-    listId: Types.ObjectId,
-    taskId: Types.ObjectId,
+    listId: string,
+    taskId: string,
     updateTaskDto: UpdateTaskDto,
-    workspaceId: Types.ObjectId,
-  ): Promise<TaskDocument> {
-    const task = await this.taskModel
-      .findOne({
-        _id: taskId,
-        list: listId,
-        workspace: workspaceId,
+    workspaceId: string,
+  ): Promise<Task> {
+    const task = await this.taskRepository.findOne({
+      where: {
+        id: taskId,
+        listId,
+        workspaceId,
         isDeleted: false,
-      })
-      .exec();
+      },
+    });
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -107,50 +106,38 @@ export class TaskService {
     }
 
     if (updateTaskDto.assignee !== undefined) {
-      task.assignee = updateTaskDto.assignee.map(
-        (id) => new Types.ObjectId(id),
-      );
+      task.assigneeIds = updateTaskDto.assignee;
     }
 
-    return await task.save();
+    return await this.taskRepository.save(task);
   }
 
   async getAllTasksByGroup(
-    listId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    listId: string,
+    workspaceId: string,
     queryParams: GetTasksByGroupQueryDto,
-    currentMemberId?: Types.ObjectId,
-  ): Promise<{ tasks: TaskDocument[]; totalCount: number; hasMore: boolean }> {
-    interface TaskFilter {
-      list: Types.ObjectId;
-      workspace: Types.ObjectId;
-      isDeleted: boolean;
-      assignee?: Types.ObjectId;
-      status?: string;
-      priority?: string;
-      'timeframe.end'?: any;
-      $or?: any[];
-    }
-
-    const filter: TaskFilter = {
-      list: listId,
-      workspace: workspaceId,
-      isDeleted: false,
-    };
+    currentMemberId?: string,
+  ): Promise<{ tasks: Task[]; totalCount: number; hasMore: boolean }> {
+    const queryBuilder = this.taskRepository
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.createdBy', 'createdBy')
+      .where('task.listId = :listId', { listId })
+      .andWhere('task.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('task.isDeleted = :isDeleted', { isDeleted: false });
 
     if (queryParams.meMode && currentMemberId) {
-      filter.assignee = currentMemberId;
+      queryBuilder.andWhere(':memberId = ANY(task.assigneeIds)', { memberId: currentMemberId });
     }
 
     if (queryParams.status) {
-      filter.status = queryParams.status;
+      queryBuilder.andWhere('task.status = :status', { status: queryParams.status });
     }
 
     if (queryParams.priority) {
       if (queryParams.priority === 'none') {
-        filter.$or = [{ priority: null }, { priority: { $exists: false } }];
+        queryBuilder.andWhere('task.priority IS NULL');
       } else {
-        filter.priority = queryParams.priority;
+        queryBuilder.andWhere('task.priority = :priority', { priority: queryParams.priority });
       }
     }
 
@@ -164,48 +151,40 @@ export class TaskService {
 
       switch (queryParams.due_status) {
         case 'overdue':
-          filter['timeframe.end'] = { $lt: today };
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp < :today", { today });
           break;
         case 'today':
-          filter['timeframe.end'] = { $gte: today, $lt: tomorrow };
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp >= :today AND (task.timeframe->>'end')::timestamp < :tomorrow", { today, tomorrow });
           break;
         case 'tomorrow':
-          filter['timeframe.end'] = {
-            $gte: tomorrow,
-            $lt: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000),
-          };
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp >= :tomorrow AND (task.timeframe->>'end')::timestamp < :dayAfterTomorrow", { 
+            tomorrow, 
+            dayAfterTomorrow: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000) 
+          });
           break;
         case 'this_week':
-          filter['timeframe.end'] = {
-            $gte: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000),
-            $lte: endOfWeek,
-          };
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp >= :dayAfterTomorrow AND (task.timeframe->>'end')::timestamp <= :endOfWeek", { 
+            dayAfterTomorrow: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000),
+            endOfWeek 
+          });
           break;
         case 'later':
-          filter['timeframe.end'] = { $gt: endOfWeek };
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp > :endOfWeek", { endOfWeek });
           break;
         case 'none':
-          filter.$or = [
-            { 'timeframe.end': null },
-            { 'timeframe.end': { $exists: false } },
-            { timeframe: null },
-            { timeframe: { $exists: false } },
-          ];
+          queryBuilder.andWhere("(task.timeframe->>'end' IS NULL OR task.timeframe IS NULL)");
           break;
       }
     }
 
     const skip = (queryParams.page - 1) * queryParams.limit;
-    const totalCount = await this.taskModel.countDocuments(filter as any);
+    const totalCount = await queryBuilder.getCount();
 
-    const tasks = await this.taskModel
-      .find(filter as any)
-      .populate('assignee', 'firstName lastName primaryEmail avatarURL')
-      .populate('createdBy', 'firstName lastName primaryEmail avatarURL')
-      .sort({ createdAt: -1 })
+    const tasks = await queryBuilder
+      .orderBy('task.createdAt', 'DESC')
       .skip(skip)
-      .limit(queryParams.limit)
-      .exec();
+      .take(queryParams.limit)
+      .getMany();
 
     const hasMore = skip + tasks.length < totalCount;
 
@@ -217,63 +196,45 @@ export class TaskService {
   }
 
   async getTasksGroupedByPriority(
-    listId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    listId: string,
+    workspaceId: string,
     queryParams: GetTasksByListQueryDto,
-    currentMemberId?: Types.ObjectId,
+    currentMemberId?: string,
   ): Promise<GroupedTasks> {
-    interface TaskFilter {
-      list: Types.ObjectId;
-      workspace: Types.ObjectId;
-      isDeleted: boolean;
-      assignee?: Types.ObjectId;
-      priority?: string;
-      $or?: any[];
-      'timeframe.end'?: {
-        $gte: Date;
-        $lt: Date;
-      };
-    }
-
-    const filter: TaskFilter = {
-      list: listId,
-      workspace: workspaceId,
-      isDeleted: false,
-    };
-
-    if (queryParams.meMode && currentMemberId) {
-      filter.assignee = currentMemberId;
-    }
-
-    if (queryParams.dueDate) {
-      filter['timeframe.end'] = {
-        $gte: new Date(queryParams.dueDate.setHours(0, 0, 0, 0)),
-        $lt: new Date(queryParams.dueDate.setHours(23, 59, 59, 999)),
-      };
-    }
-
     const grouped: GroupedTasks = {};
-
     const priorities = [...Object.values(TaskPriority), 'unassigned'];
 
     for (const priority of priorities) {
-      let priorityFilter: TaskFilter;
-      if (priority === 'unassigned') {
-        priorityFilter = {
-          ...filter,
-          $or: [{ priority: null }, { priority: { $exists: false } }],
-        };
-      } else {
-        priorityFilter = { ...filter, priority };
+      const queryBuilder = this.taskRepository
+        .createQueryBuilder('task')
+        .leftJoinAndSelect('task.createdBy', 'createdBy')
+        .where('task.listId = :listId', { listId })
+        .andWhere('task.workspaceId = :workspaceId', { workspaceId })
+        .andWhere('task.isDeleted = :isDeleted', { isDeleted: false });
+
+      if (queryParams.meMode && currentMemberId) {
+        queryBuilder.andWhere(':memberId = ANY(task.assigneeIds)', { memberId: currentMemberId });
       }
 
-      const tasks = await this.taskModel
-        .find(priorityFilter as any)
-        .populate('assignee', 'firstName lastName primaryEmail')
-        .populate('createdBy', 'firstName lastName primaryEmail')
-        .sort({ createdAt: -1 })
+      if (queryParams.dueDate) {
+        const startOfDay = new Date(queryParams.dueDate.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(queryParams.dueDate.setHours(23, 59, 59, 999));
+        queryBuilder.andWhere("(task.timeframe->>'end')::timestamp >= :startOfDay AND (task.timeframe->>'end')::timestamp < :endOfDay", { 
+          startOfDay, 
+          endOfDay 
+        });
+      }
+
+      if (priority === 'unassigned') {
+        queryBuilder.andWhere('task.priority IS NULL');
+      } else {
+        queryBuilder.andWhere('task.priority = :priority', { priority });
+      }
+
+      const tasks = await queryBuilder
+        .orderBy('task.createdAt', 'DESC')
         .limit(50)
-        .exec();
+        .getMany();
 
       grouped[priority] = {
         count: tasks.length,
@@ -285,90 +246,48 @@ export class TaskService {
   }
 
   async getTasksGroupedByDueDate(
-    listId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    listId: string,
+    workspaceId: string,
     queryParams: GetTasksByListQueryDto,
-    currentMemberId?: Types.ObjectId,
+    currentMemberId?: string,
   ): Promise<GroupedTasks> {
-    interface TaskFilter {
-      list: Types.ObjectId;
-      workspace: Types.ObjectId;
-      isDeleted: boolean;
-      assignee?: Types.ObjectId;
-      'timeframe.end'?: any;
-      $or?: any[];
-      timeframe?: any;
-    }
-
-    const baseFilter: TaskFilter = {
-      list: listId,
-      workspace: workspaceId,
-      isDeleted: false,
-    };
-
-    if (queryParams.meMode && currentMemberId) {
-      baseFilter.assignee = currentMemberId;
-    }
-
     const grouped: GroupedTasks = {};
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const endOfWeek = new Date(today);
-    endOfWeek.setDate(today.getDate() + (6 - today.getDay())); // End of current week (Saturday)
+    endOfWeek.setDate(today.getDate() + (6 - today.getDay()));
 
-    const dueStatusFilters: Record<string, TaskFilter> = {
-      overdue: {
-        ...baseFilter,
-        'timeframe.end': { $lt: today },
-      },
-      today: {
-        ...baseFilter,
-        'timeframe.end': {
-          $gte: today,
-          $lt: tomorrow,
-        },
-      },
-      tomorrow: {
-        ...baseFilter,
-        'timeframe.end': {
-          $gte: tomorrow,
-          $lt: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000),
-        },
-      },
-      this_week: {
-        ...baseFilter,
-        'timeframe.end': {
-          $gte: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000),
-          $lte: endOfWeek,
-        },
-      },
-      later: {
-        ...baseFilter,
-        'timeframe.end': { $gt: endOfWeek },
-      },
-      none: {
-        ...baseFilter,
-        $or: [
-          { 'timeframe.end': null },
-          { 'timeframe.end': { $exists: false } },
-          { timeframe: null },
-          { timeframe: { $exists: false } },
-        ],
-      },
-    };
+    const dueStatusConfigs = [
+      { status: 'overdue', where: "(task.timeframe->>'end')::timestamp < :today", params: { today } },
+      { status: 'today', where: "(task.timeframe->>'end')::timestamp >= :today AND (task.timeframe->>'end')::timestamp < :tomorrow", params: { today, tomorrow } },
+      { status: 'tomorrow', where: "(task.timeframe->>'end')::timestamp >= :tomorrow AND (task.timeframe->>'end')::timestamp < :dayAfterTomorrow", params: { tomorrow, dayAfterTomorrow: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000) } },
+      { status: 'this_week', where: "(task.timeframe->>'end')::timestamp >= :dayAfterTomorrow AND (task.timeframe->>'end')::timestamp <= :endOfWeek", params: { dayAfterTomorrow: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000), endOfWeek } },
+      { status: 'later', where: "(task.timeframe->>'end')::timestamp > :endOfWeek", params: { endOfWeek } },
+      { status: 'none', where: "(task.timeframe->>'end' IS NULL OR task.timeframe IS NULL)", params: {} },
+    ];
 
-    for (const [dueStatus, filter] of Object.entries(dueStatusFilters)) {
-      const tasks = await this.taskModel
-        .find(filter as any)
-        .populate('assignee', 'firstName lastName primaryEmail')
-        .populate('createdBy', 'firstName lastName primaryEmail')
-        .sort({ 'timeframe.end': 1, createdAt: -1 })
+    for (const config of dueStatusConfigs) {
+      const queryBuilder = this.taskRepository
+        .createQueryBuilder('task')
+        .leftJoinAndSelect('task.createdBy', 'createdBy')
+        .where('task.listId = :listId', { listId })
+        .andWhere('task.workspaceId = :workspaceId', { workspaceId })
+        .andWhere('task.isDeleted = :isDeleted', { isDeleted: false })
+        .andWhere(config.where, config.params);
+
+      if (queryParams.meMode && currentMemberId) {
+        queryBuilder.andWhere(':memberId = ANY(task.assigneeIds)', { memberId: currentMemberId });
+      }
+
+      const tasks = await queryBuilder
+        .orderBy("(task.timeframe->>'end')::timestamp", 'ASC')
+        .addOrderBy('task.createdAt', 'DESC')
         .limit(50)
-        .exec();
+        .getMany();
 
-      grouped[dueStatus] = {
+      grouped[config.status] = {
         count: tasks.length,
         tasks,
       };
@@ -378,42 +297,41 @@ export class TaskService {
   }
 
   async deleteTask(
-    listId: Types.ObjectId,
-    taskId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<TaskDocument> {
-    const task = await this.taskModel
-      .findOne({
-        _id: taskId,
-        list: listId,
-        workspace: workspaceId,
+    listId: string,
+    taskId: string,
+    workspaceId: string,
+  ): Promise<Task> {
+    const task = await this.taskRepository.findOne({
+      where: {
+        id: taskId,
+        listId,
+        workspaceId,
         isDeleted: false,
-      })
-      .exec();
+      },
+    });
 
     if (!task) {
       throw new NotFoundException('Task not found');
     }
 
     task.isDeleted = true;
-    return await task.save();
+    return await this.taskRepository.save(task);
   }
 
   async getTaskDetails(
-    listId: Types.ObjectId,
-    taskId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    listId: string,
+    taskId: string,
+    workspaceId: string,
   ): Promise<TaskDetailsResponse> {
-    const task = await this.taskModel
-      .findOne({
-        _id: taskId,
-        list: listId,
-        workspace: workspaceId,
+    const task = await this.taskRepository.findOne({
+      where: {
+        id: taskId,
+        listId,
+        workspaceId,
         isDeleted: false,
-      })
-      .populate('assignee', 'firstName lastName primaryEmail avatarURL')
-      .populate('createdBy', 'firstName lastName primaryEmail avatarURL')
-      .exec();
+      },
+      relations: ['createdBy'],
+    });
 
     if (!task) {
       throw new NotFoundException('Task not found');

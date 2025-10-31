@@ -18,7 +18,6 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { TaskService } from './services/task.service';
 import { AuthGuard } from '../../../auth/guards/auth.guard';
 import {
@@ -64,11 +63,11 @@ export class TaskController {
     },
   ) {
     const result = await this.taskService.createTasks(
-      new Types.ObjectId(listId),
+      listId,
       createTasksDto,
-      req.workspace._id,
-      req.workspaceMember._id,
-      req.space._id,
+      req.workspace.id,
+      req.workspaceMember.id,
+      req.space.id,
     );
 
     return createSuccessResponse('Tasks created successfully', result);
@@ -88,15 +87,11 @@ export class TaskController {
       list: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(taskId)) {
-      throw new BadRequestException('Invalid task ID format');
-    }
-
     const task = await this.taskService.updateTask(
-      new Types.ObjectId(listId),
-      new Types.ObjectId(taskId),
+      listId,
+      taskId,
       updateTaskDto,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Task updated successfully', task);
@@ -115,15 +110,11 @@ export class TaskController {
       list: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(listId)) {
-      throw new BadRequestException('Invalid list ID format');
-    }
-
     const tasks = await this.taskService.getAllTasksByGroup(
-      new Types.ObjectId(listId),
-      req.workspace._id,
+      listId,
+      req.workspace.id,
       queryParams,
-      queryParams.meMode ? req.workspaceMember._id : undefined,
+      queryParams.meMode ? req.workspaceMember.id : undefined,
     );
 
     return createSuccessResponse('Tasks retrieved successfully', tasks);
@@ -141,18 +132,10 @@ export class TaskController {
       list: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(listId)) {
-      throw new BadRequestException('Invalid list ID format');
-    }
-
-    if (!Types.ObjectId.isValid(taskId)) {
-      throw new BadRequestException('Invalid task ID format');
-    }
-
     const taskDetails = await this.taskService.getTaskDetails(
-      new Types.ObjectId(listId),
-      new Types.ObjectId(taskId),
-      req.workspace._id,
+      listId,
+      taskId,
+      req.workspace.id,
     );
 
     return createSuccessResponse(
@@ -173,18 +156,10 @@ export class TaskController {
       list: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(listId)) {
-      throw new BadRequestException('Invalid list ID format');
-    }
-
-    if (!Types.ObjectId.isValid(taskId)) {
-      throw new BadRequestException('Invalid task ID format');
-    }
-
     const task = await this.taskService.deleteTask(
-      new Types.ObjectId(listId),
-      new Types.ObjectId(taskId),
-      req.workspace._id,
+      listId,
+      taskId,
+      req.workspace.id,
     );
 
     return createSuccessResponse('Task deleted successfully', task);
@@ -210,24 +185,16 @@ export class TaskController {
       list: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(listId)) {
-      throw new BadRequestException('Invalid list ID format');
-    }
-
-    if (!Types.ObjectId.isValid(taskId)) {
-      throw new BadRequestException('Invalid task ID format');
-    }
-
     if (!files || files.length === 0) {
       throw new BadRequestException('No files provided');
     }
 
-    const uploadPath = `/spaces/${req.space._id}/lists/${listId}/tasks/${taskId}`;
+    const uploadPath = `/spaces/${req.space.id}/lists/${listId}/tasks/${taskId}`;
 
     const uploadResults = await this.uploadService.uploadFiles(
       files,
       uploadPath,
-      String(req.workspace._id),
+      String(req.workspace.id),
     );
 
     const savedFiles = [];
@@ -239,11 +206,11 @@ export class TaskController {
           mimeType: uploadResult.mimeType,
           fileURL: uploadResult.secureUrl,
           fileKey: uploadResult.publicId,
-          task: new Types.ObjectId(taskId),
-          space: req.space._id,
+          taskId: taskId,
+          spaceId: req.space.id,
         },
-        req.workspace._id,
-        req.workspaceMember._id,
+        req.workspace.id,
+        req.workspaceMember.id,
       );
       savedFiles.push(savedFile);
     }

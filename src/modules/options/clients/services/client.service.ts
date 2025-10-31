@@ -1,15 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable prettier/prettier */
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import {
-  Model,
-  Types,
-  PaginateModel,
-  FilterQuery,
-  PaginateResult,
-} from 'mongoose';
-import { Client, ClientDocument } from '../schemas/client.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, ILike } from 'typeorm';
+import { Client } from '../schemas/client.schema';
 import { CreateClientDto, UpdateClientDto } from '../dto/client.dto';
 import {
   PaginationDto,
@@ -19,87 +12,99 @@ import {
 @Injectable()
 export class ClientService {
   constructor(
-    @InjectModel(Client.name)
-    private clientModel: Model<ClientDocument> & PaginateModel<ClientDocument>,
+    @InjectRepository(Client)
+    private clientRepository: Repository<Client>,
   ) {}
 
   async create(
     createClientDto: CreateClientDto,
-    workspaceId: Types.ObjectId,
-    createdBy: Types.ObjectId,
-  ): Promise<ClientDocument> {
-    const client = new this.clientModel({
+    workspaceId: string,
+    createdById: string,
+  ): Promise<Client> {
+    const client = this.clientRepository.create({
       ...createClientDto,
-      workspace: workspaceId,
-      createdBy,
-      offices:
-        createClientDto.offices?.map((id) => new Types.ObjectId(id)) || [],
+      workspaceId,
+      createdById,
+      officeIds: createClientDto.offices || [],
     });
 
-    return await client.save();
+    return await this.clientRepository.save(client);
   }
 
   async findAll(
-    workspaceId: Types.ObjectId,
+    workspaceId: string,
     pagination: PaginationDto,
-  ): Promise<PaginateResult<ClientDocument>> {
+  ): Promise<{ data: Client[]; total: number; page: number; limit: number }> {
     const { search, isActive, paginationOptions } =
       extractPaginationOptions(pagination);
 
-    const query: FilterQuery<ClientDocument> = {
-      workspace: workspaceId,
-      isDeleted: false,
-    };
+    const queryBuilder = this.clientRepository
+      .createQueryBuilder('client')
+      .leftJoinAndSelect('client.createdBy', 'createdBy')
+      .leftJoinAndSelect('client.workspace', 'workspace')
+      .where('client.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('client.isDeleted = :isDeleted', { isDeleted: false });
 
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
+      queryBuilder.andWhere(
+        '(client.name ILIKE :search OR client.description ILIKE :search)',
+        { search: `%${search}%` },
+      );
     }
 
     if (isActive && isActive !== 'all') {
-      query.isActive = isActive === 'true';
+      queryBuilder.andWhere('client.isActive = :isActive', {
+        isActive: isActive === 'true',
+      });
     }
 
-    return await this.clientModel.paginate(query, {
-      ...paginationOptions,
-      populate: ['createdBy', 'offices'],
-    });
+    const total = await queryBuilder.getCount();
+
+    const data = await queryBuilder
+      .skip((paginationOptions.page - 1) * paginationOptions.limit)
+      .take(paginationOptions.limit)
+      .getMany();
+
+    return {
+      data,
+      total,
+      page: paginationOptions.page,
+      limit: paginationOptions.limit,
+    };
   }
 
-  async findById(id: Types.ObjectId): Promise<ClientDocument> {
-    const client = await this.clientModel
-      .findById(id)
-      .populate('offices')
-      .exec();
-    if (!client || client.isDeleted) {
+  async findById(id: string): Promise<Client> {
+    const client = await this.clientRepository.findOne({
+      where: { id, isDeleted: false },
+      relations: ['offices'],
+    });
+    
+    if (!client) {
       throw new NotFoundException('Client not found');
     }
     return client;
   }
 
   async update(
-    id: Types.ObjectId,
+    id: string,
     updateClientDto: UpdateClientDto,
-    workspaceId: Types.ObjectId,
-  ): Promise<ClientDocument> {
-    const updateData: Record<string, any> = { ...updateClientDto };
+    workspaceId: string,
+  ): Promise<Client> {
+    const updateData: Partial<Client> = { ...updateClientDto };
 
     if (updateClientDto.offices) {
-      updateData.offices = updateClientDto.offices.map(
-        (officeId) => new Types.ObjectId(officeId),
-      );
+      updateData.officeIds = updateClientDto.offices;
     }
 
-    const client = await this.clientModel
-      .findOneAndUpdate(
-        { _id: id, workspace: workspaceId, isDeleted: false },
-        updateData,
-        { new: true },
-      )
-      .populate(['createdBy', 'offices'])
-      .exec();
+    await this.clientRepository.update(
+      { id, workspaceId, isDeleted: false },
+      updateData,
+    );
+
+    const client = await this.clientRepository.findOne({
+      where: { id },
+      relations: ['createdBy'],
+    });
 
     if (!client) {
       throw new NotFoundException('Client not found');
@@ -108,17 +113,15 @@ export class ClientService {
     return client;
   }
 
-  async moveToTrash(
-    id: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<ClientDocument> {
-    const client = await this.clientModel
-      .findOneAndUpdate(
-        { _id: id, workspace: workspaceId, isDeleted: false },
-        { isDeleted: true },
-        { new: true },
-      )
-      .exec();
+  async moveToTrash(id: string, workspaceId: string): Promise<Client> {
+    await this.clientRepository.update(
+      { id, workspaceId, isDeleted: false },
+      { isDeleted: true },
+    );
+
+    const client = await this.clientRepository.findOne({
+      where: { id },
+    });
 
     if (!client) {
       throw new NotFoundException('Client not found');
@@ -128,18 +131,19 @@ export class ClientService {
   }
 
   async toggleActive(
-    id: Types.ObjectId,
+    id: string,
     isActive: boolean,
-    workspaceId: Types.ObjectId,
-  ): Promise<ClientDocument> {
-    const client = await this.clientModel
-      .findOneAndUpdate(
-        { _id: id, workspace: workspaceId, isDeleted: false },
-        { isActive },
-        { new: true },
-      )
-      .populate(['createdBy', 'offices'])
-      .exec();
+    workspaceId: string,
+  ): Promise<Client> {
+    await this.clientRepository.update(
+      { id, workspaceId, isDeleted: false },
+      { isActive },
+    );
+
+    const client = await this.clientRepository.findOne({
+      where: { id },
+      relations: ['createdBy'],
+    });
 
     if (!client || client.isDeleted) {
       throw new NotFoundException('Client not found');

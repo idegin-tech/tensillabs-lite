@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, PaginateModel } from 'mongoose';
-import { File, FileDocument } from '../schemas/file.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { File } from '../schemas/file.schema';
 
 @Injectable()
 export class FileService {
   constructor(
-    @InjectModel(File.name)
-    private fileModel: Model<FileDocument> & PaginateModel<FileDocument>,
+    @InjectRepository(File)
+    private fileRepository: Repository<File>,
   ) {}
 
   async create(
@@ -19,44 +19,45 @@ export class FileService {
       mimeType?: string;
       fileURL?: string;
       fileKey?: string;
-      task?: Types.ObjectId;
-      space?: Types.ObjectId;
+      taskId?: string;
+      spaceId?: string;
     },
-    workspaceId: Types.ObjectId,
-    createdBy: Types.ObjectId,
-  ): Promise<FileDocument> {
-    const file = new this.fileModel({
+    workspaceId: string,
+    createdById: string,
+  ): Promise<File> {
+    const file = this.fileRepository.create({
       ...fileData,
-      workspace: workspaceId,
-      createdBy,
+      workspaceId,
+      createdById,
     });
 
-    return await file.save();
+    return await this.fileRepository.save(file);
   }
 
   async update(
-    fileId: Types.ObjectId,
+    fileId: string,
     updateData: {
       name?: string;
       thumbnailURL?: string;
       description?: string;
-      task?: Types.ObjectId;
-      space?: Types.ObjectId;
+      taskId?: string;
+      spaceId?: string;
       isActive?: boolean;
     },
-    workspaceId: Types.ObjectId,
-  ): Promise<FileDocument> {
-    const file = await this.fileModel
-      .findOneAndUpdate(
-        {
-          _id: fileId,
-          workspace: workspaceId,
-          isDeleted: false,
-        },
-        { $set: updateData },
-        { new: true },
-      )
-      .exec();
+    workspaceId: string,
+  ): Promise<File> {
+    await this.fileRepository.update(
+      {
+        id: fileId,
+        workspaceId,
+        isDeleted: false,
+      },
+      updateData,
+    );
+
+    const file = await this.fileRepository.findOne({
+      where: { id: fileId },
+    });
 
     if (!file) {
       throw new NotFoundException('File not found');
@@ -65,21 +66,19 @@ export class FileService {
     return file;
   }
 
-  async delete(
-    fileId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<FileDocument> {
-    const file = await this.fileModel
-      .findOneAndUpdate(
-        {
-          _id: fileId,
-          workspace: workspaceId,
-          isDeleted: false,
-        },
-        { $set: { isDeleted: true } },
-        { new: true },
-      )
-      .exec();
+  async delete(fileId: string, workspaceId: string): Promise<File> {
+    await this.fileRepository.update(
+      {
+        id: fileId,
+        workspaceId,
+        isDeleted: false,
+      },
+      { isDeleted: true },
+    );
+
+    const file = await this.fileRepository.findOne({
+      where: { id: fileId },
+    });
 
     if (!file) {
       throw new NotFoundException('File not found');
@@ -88,18 +87,17 @@ export class FileService {
     return file;
   }
 
-  async findByTask(
-    taskId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<FileDocument[]> {
-    return await this.fileModel
-      .find({
-        task: taskId,
-        workspace: workspaceId,
+  async findByTask(taskId: string, workspaceId: string): Promise<File[]> {
+    return await this.fileRepository.find({
+      where: {
+        taskId,
+        workspaceId,
         isDeleted: false,
         isActive: true,
-      })
-      .sort({ createdAt: -1 })
-      .exec();
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
   }
 }

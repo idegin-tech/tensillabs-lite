@@ -10,10 +10,8 @@ import {
   Query,
   UseGuards,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { SpaceParticipantService } from './services/space-participant.service';
 import { AuthGuard } from '../../../auth/guards/auth.guard';
 import {
@@ -55,14 +53,10 @@ export class SpaceParticipantController {
       space: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(spaceId)) {
-      throw new BadRequestException('Invalid space ID format');
-    }
-
     const participant = await this.spaceParticipantService.inviteParticipant(
-      new Types.ObjectId(spaceId),
+      spaceId,
       inviteParticipantDto,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse(
@@ -84,14 +78,10 @@ export class SpaceParticipantController {
       space: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(participantId)) {
-      throw new BadRequestException('Invalid participant ID format');
-    }
-
     const participant = await this.spaceParticipantService.updateParticipant(
-      new Types.ObjectId(participantId),
+      participantId,
       updateParticipantDto,
-      req.workspace._id,
+      req.workspace.id,
     );
 
     return createSuccessResponse(
@@ -111,14 +101,10 @@ export class SpaceParticipantController {
       space: any;
     },
   ) {
-    if (!Types.ObjectId.isValid(spaceId)) {
-      throw new BadRequestException('Invalid space ID format');
-    }
-
     const participants =
       await this.spaceParticipantService.getSpaceParticipants(
-        new Types.ObjectId(spaceId),
-        req.workspace._id,
+        spaceId,
+        req.workspace.id,
         pagination,
       );
 

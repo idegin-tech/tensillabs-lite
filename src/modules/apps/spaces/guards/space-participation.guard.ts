@@ -8,26 +8,25 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Request } from 'express';
 import {
   SpaceParticipant,
-  SpaceParticipantDocument,
   ParticipantStatus,
 } from '../space-participants/schemas/space-participant.schema';
-import { List, ListDocument } from '../lists/schemas/list.schema';
-import { Space, SpaceDocument } from '../schemas/space.schema';
+import { List } from '../lists/schemas/list.schema';
+import { Space } from '../schemas/space.schema';
 
 @Injectable()
 export class SpaceParticipationGuard implements CanActivate {
   constructor(
-    @InjectModel(SpaceParticipant.name)
-    private spaceParticipantModel: Model<SpaceParticipantDocument>,
-    @InjectModel(List.name)
-    private listModel: Model<ListDocument>,
-    @InjectModel(Space.name)
-    private spaceModel: Model<SpaceDocument>,
+    @InjectRepository(SpaceParticipant)
+    private spaceParticipantRepository: Repository<SpaceParticipant>,
+    @InjectRepository(List)
+    private listRepository: Repository<List>,
+    @InjectRepository(Space)
+    private spaceRepository: Repository<Space>,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -40,31 +39,30 @@ export class SpaceParticipationGuard implements CanActivate {
       throw new ForbiddenException('Workspace member context required');
     }
 
-    let targetSpaceId: Types.ObjectId;
+    let targetSpaceId: string;
 
     if (spaceId) {
-      if (!Types.ObjectId.isValid(spaceId)) {
-        throw new BadRequestException('Invalid space ID format');
-      }
-      targetSpaceId = new Types.ObjectId(spaceId);
+      targetSpaceId = spaceId;
 
-      const space = await this.spaceModel.findById(targetSpaceId).exec();
+      const space = await this.spaceRepository.findOne({
+        where: { id: targetSpaceId },
+      });
       if (!space) {
         throw new NotFoundException('Space not found');
       }
       (request as any).space = space;
     } else if (listId) {
-      if (!Types.ObjectId.isValid(listId)) {
-        throw new BadRequestException('Invalid list ID format');
-      }
-
-      const list = await this.listModel.findById(listId).exec();
+      const list = await this.listRepository.findOne({
+        where: { id: listId },
+      });
       if (!list) {
         throw new NotFoundException('List not found');
       }
 
-      targetSpaceId = list.space;
-      const space = await this.spaceModel.findById(targetSpaceId).exec();
+      targetSpaceId = list.spaceId;
+      const space = await this.spaceRepository.findOne({
+        where: { id: targetSpaceId },
+      });
       if (!space) {
         throw new NotFoundException('Space not found');
       }
@@ -75,14 +73,14 @@ export class SpaceParticipationGuard implements CanActivate {
       throw new BadRequestException('Either spaceId or listId is required');
     }
 
-    const participant = await this.spaceParticipantModel
-      .findOne({
-        space: targetSpaceId,
-        member: workspaceMember._id,
-        workspace: workspace._id,
+    const participant = await this.spaceParticipantRepository.findOne({
+      where: {
+        spaceId: targetSpaceId,
+        memberId: workspaceMember.id,
+        workspaceId: workspace.id,
         status: ParticipantStatus.ACTIVE,
-      })
-      .exec();
+      },
+    });
 
     if (!participant) {
       throw new ForbiddenException(

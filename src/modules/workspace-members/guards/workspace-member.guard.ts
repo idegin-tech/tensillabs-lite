@@ -9,7 +9,6 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 import { WorkspaceMemberService } from '../services/workspace-member.service';
 import { WorkspaceService } from '../../workspaces/services/workspace.service';
 import { MemberStatus } from '../schemas/workspace-member.schema';
@@ -42,13 +41,9 @@ export class WorkspaceMemberGuard implements CanActivate {
       throw new BadRequestException('Member ID header is required');
     }
 
-    if (!Types.ObjectId.isValid(memberId)) {
-      throw new BadRequestException('Invalid member ID format');
-    }
-
     try {
       const workspaceMember = await this.workspaceMemberService.findById(
-        new Types.ObjectId(memberId),
+        memberId,
       );
 
       if (!workspaceMember) {
@@ -60,7 +55,7 @@ export class WorkspaceMemberGuard implements CanActivate {
       }
 
       const workspace = await this.workspaceService.findWorkspaceById(
-        workspaceMember.workspace.toString(),
+        workspaceMember.workspaceId,
       );
 
       if (!workspace) {

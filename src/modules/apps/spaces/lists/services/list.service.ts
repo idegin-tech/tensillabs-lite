@@ -1,143 +1,151 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, PaginateModel } from 'mongoose';
-import { List, ListDocument } from '../schemas/list.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { List } from '../schemas/list.schema';
 import { CreateListDto } from '../dto/list.dto';
 import { Task } from '../../tasks/schemas/task.schema';
-import { File, FileDocument } from '../../../../files/schemas/file.schema';
+import { File } from '../../../../files/schemas/file.schema';
 import { GetListFilesQueryDto } from '../dto/list-files.dto';
 
 @Injectable()
 export class ListService {
   constructor(
-    @InjectModel(List.name)
-    private listModel: Model<ListDocument>,
-    @InjectModel(Task.name)
-    private taskModel: Model<any>,
-    @InjectModel(File.name)
-    private fileModel: Model<FileDocument> & PaginateModel<FileDocument>,
+    @InjectRepository(List)
+    private listRepository: Repository<List>,
+    @InjectRepository(Task)
+    private taskRepository: Repository<Task>,
+    @InjectRepository(File)
+    private fileRepository: Repository<File>,
   ) {}
 
   async create(
     createListDto: CreateListDto,
-    spaceId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<ListDocument> {
-    const list = new this.listModel({
+    spaceId: string,
+    workspaceId: string,
+  ): Promise<List> {
+    const list = this.listRepository.create({
       ...createListDto,
-      space: spaceId,
-      workspace: workspaceId,
+      spaceId: spaceId,
+      workspaceId: workspaceId,
     });
 
-    return await list.save();
+    return await this.listRepository.save(list);
   }
 
   async getListsBySpace(
-    spaceId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
-  ): Promise<ListDocument[]> {
-    return await this.listModel
-      .find({
-        space: spaceId,
-        workspace: workspaceId,
+    spaceId: string,
+    workspaceId: string,
+  ): Promise<List[]> {
+    return await this.listRepository.find({
+      where: {
+        spaceId: spaceId,
+        workspaceId: workspaceId,
         isDeleted: false,
-      })
-      .sort({ createdAt: -1 })
-      .exec();
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
   }
 
   async getListDetails(
-    listId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    listId: string,
+    workspaceId: string,
   ): Promise<any> {
-    const list = await this.listModel
-      .findOne({
-        _id: listId,
-        workspace: workspaceId,
+    const list = await this.listRepository.findOne({
+      where: {
+        id: listId,
+        workspaceId: workspaceId,
         isDeleted: false,
-      })
-      .exec();
+      },
+    });
 
     if (!list) {
       throw new NotFoundException('List not found');
     }
 
-    const taskCount = await this.taskModel.countDocuments({
-      list: listId,
-      workspace: workspaceId,
-      isDeleted: false,
+    const taskCount = await this.taskRepository.count({
+      where: {
+        listId: listId,
+        workspaceId: workspaceId,
+        isDeleted: false,
+      },
     });
 
     return {
-      ...list.toObject(),
+      ...list,
       taskCount,
     };
   }
 
   async getListFiles(
-    listId: Types.ObjectId,
-    workspaceId: Types.ObjectId,
+    listId: string,
+    workspaceId: string,
     queryParams: GetListFilesQueryDto,
   ): Promise<{
-    files: FileDocument[];
+    files: File[];
     totalCount: number;
     page: number;
     limit: number;
     totalPages: number;
   }> {
-    const list = await this.listModel.findOne({
-      _id: listId,
-      workspace: workspaceId,
-      isDeleted: false,
+    const list = await this.listRepository.findOne({
+      where: {
+        id: listId,
+        workspaceId: workspaceId,
+        isDeleted: false,
+      },
     });
 
     if (!list) {
       throw new NotFoundException('List not found');
     }
 
-    const tasks = await this.taskModel
-      .find({
-        list: listId,
-        workspace: workspaceId,
+    const tasks = await this.taskRepository.find({
+      where: {
+        listId: listId,
+        workspaceId: workspaceId,
         isDeleted: false,
-      })
-      .select('_id')
-      .lean();
+      },
+      select: ['id'],
+    });
 
-    const taskIds = tasks.map((task) => task._id);
+    const taskIds = tasks.map((task) => task.id);
 
-    const query: Record<string, any> = {
-      task: { $in: taskIds },
-      workspace: workspaceId,
-      isDeleted: false,
-      isActive: true,
-    };
+    const queryBuilder = this.fileRepository
+      .createQueryBuilder('file')
+      .where('file.taskId IN (:...taskIds)', { taskIds })
+      .andWhere('file.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('file.isDeleted = :isDeleted', { isDeleted: false })
+      .andWhere('file.isActive = :isActive', { isActive: true });
 
     if (queryParams.search) {
-      query.$or = [
-        { name: { $regex: queryParams.search, $options: 'i' } },
-        { description: { $regex: queryParams.search, $options: 'i' } },
-      ];
+      queryBuilder.andWhere(
+        '(file.name ILIKE :search OR file.description ILIKE :search)',
+        { search: `%${queryParams.search}%` },
+      );
     }
 
     if (queryParams.mimeType) {
-      query.mimeType = { $regex: queryParams.mimeType, $options: 'i' };
+      queryBuilder.andWhere('file.mimeType ILIKE :mimeType', {
+        mimeType: `%${queryParams.mimeType}%`,
+      });
     }
 
     const sortField = queryParams.sortBy || 'createdAt';
-    const sortOrder = queryParams.sortOrder === 'asc' ? 1 : -1;
-    const sort: Record<string, 1 | -1> = { [sortField]: sortOrder };
+    const sortOrder = queryParams.sortOrder === 'asc' ? 'ASC' : 'DESC';
+    queryBuilder.orderBy(`file.${sortField}`, sortOrder);
 
-    const totalCount = await this.fileModel.countDocuments(query);
+    const totalCount = await queryBuilder.getCount();
     const totalPages = Math.ceil(totalCount / queryParams.limit);
 
-    const files = await this.fileModel
-      .find(query)
-      .sort(sort)
+    queryBuilder
       .skip((queryParams.page - 1) * queryParams.limit)
-      .limit(queryParams.limit)
-      .populate('createdBy', 'firstName lastName email')
-      .exec();
+      .take(queryParams.limit);
+
+    queryBuilder.leftJoinAndSelect('file.createdBy', 'createdBy');
+
+    const files = await queryBuilder.getMany();
 
     return {
       files,

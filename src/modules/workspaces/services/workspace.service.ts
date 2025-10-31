@@ -1,49 +1,46 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, PaginateModel } from 'mongoose';
-import { Workspace, WorkspaceDocument } from '../schemas/workspace.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Workspace } from '../schemas/workspace.schema';
 import { CreateWorkspaceDto } from '../dto/workspace.dto';
 import { WorkspaceMemberService } from 'src/modules/workspace-members/services/workspace-member.service';
-import { WorkspaceMemberDocument } from 'src/modules/workspace-members/schemas/workspace-member.schema';
+import { WorkspaceMember } from 'src/modules/workspace-members/schemas/workspace-member.schema';
 import { WalletService } from 'src/modules/billing/wallets/services/wallet.service';
-import { UserDocument } from 'src/modules/users/schemas/user.schema';
+import { User } from 'src/modules/users/schemas/user.schema';
 
 @Injectable()
 export class WorkspaceService {
   constructor(
-    @InjectModel(Workspace.name)
-    private workspaceModel: Model<WorkspaceDocument> &
-      PaginateModel<WorkspaceDocument>,
+    @InjectRepository(Workspace)
+    private workspaceRepository: Repository<Workspace>,
     private workspaceMemberService: WorkspaceMemberService,
     private walletService: WalletService,
   ) {}
 
   async createWorkspace(
     createWorkspaceDto: CreateWorkspaceDto,
-    user: UserDocument,
+    user: User,
   ): Promise<{
-    workspace: WorkspaceDocument;
-    member: WorkspaceMemberDocument;
+    workspace: Workspace;
+    member: WorkspaceMember;
   }> {
-    const workspace = new this.workspaceModel({
+    const workspace = this.workspaceRepository.create({
       ...createWorkspaceDto,
-      createdBy: user._id,
+      createdById: user.id,
     });
 
-    const savedWorkspace = await workspace.save();
+    const savedWorkspace = await this.workspaceRepository.save(workspace);
 
     const workspaceMember =
       await this.workspaceMemberService.initializeWorkspaceOwner(
-        user._id as Types.ObjectId,
-        savedWorkspace._id as Types.ObjectId,
+        user.id,
+        savedWorkspace.id,
         user.email,
         'Admin',
         savedWorkspace.name,
       );
 
-    await this.walletService.initializeWallet(
-      savedWorkspace._id as Types.ObjectId,
-    );
+    await this.walletService.initializeWallet(savedWorkspace.id);
 
     return {
       workspace: savedWorkspace,
@@ -51,42 +48,36 @@ export class WorkspaceService {
     };
   }
 
-  async findWorkspaceById(
-    workspaceId: string,
-  ): Promise<WorkspaceDocument | null> {
+  async findWorkspaceById(workspaceId: string): Promise<Workspace | null> {
     try {
-      return await this.workspaceModel
-        .findById(workspaceId)
-        .populate('createdBy', 'email timezone isEmailVerified')
-        .exec();
+      return await this.workspaceRepository.findOne({
+        where: { id: workspaceId },
+        relations: ['createdBy'],
+      });
     } catch {
       return null;
     }
   }
 
-  async findUserWorkspaces(
-    userId: Types.ObjectId,
-  ): Promise<WorkspaceDocument[]> {
-    return await this.workspaceModel
-      .find({ createdBy: userId })
-      .sort({ createdAt: -1 })
-      .exec();
+  async findUserWorkspaces(userId: string): Promise<Workspace[]> {
+    return await this.workspaceRepository.find({
+      where: { createdById: userId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async updateWorkspace(
-    workspaceId: Types.ObjectId,
+    workspaceId: string,
     updateData: Partial<Workspace>,
-  ): Promise<WorkspaceDocument | null> {
-    return await this.workspaceModel
-      .findByIdAndUpdate(workspaceId, updateData, { new: true })
-      .exec();
+  ): Promise<Workspace | null> {
+    await this.workspaceRepository.update(workspaceId, updateData);
+    return await this.workspaceRepository.findOne({
+      where: { id: workspaceId },
+    });
   }
 
-  async deleteWorkspace(workspaceId: Types.ObjectId): Promise<boolean> {
-    const result = await this.workspaceModel
-      .deleteOne({ _id: workspaceId })
-      .exec();
-
-    return result.deletedCount > 0;
+  async deleteWorkspace(workspaceId: string): Promise<boolean> {
+    const result = await this.workspaceRepository.delete(workspaceId);
+    return result.affected > 0;
   }
 }
