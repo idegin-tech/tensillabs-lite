@@ -29,11 +29,13 @@ export class UserSecretsService {
   }
 
   async verifyPassword(userId: string, password: string): Promise<boolean> {
-    const userSecrets = await this.userSecretsRepository.findOne({
-      where: { userId },
-    });
+    const userSecrets = await this.userSecretsRepository
+      .createQueryBuilder('userSecrets')
+      .where('userSecrets.userId = :userId', { userId })
+      .addSelect('userSecrets.passwordHash')
+      .getOne();
 
-    if (!userSecrets) {
+    if (!userSecrets || !userSecrets.passwordHash) {
       return false;
     }
 
