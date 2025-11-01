@@ -46,7 +46,6 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
     )
 
     const allTasks = allTasksData?.payload?.tasks || tasks
-    const tasksWithTimeframes = allTasks.filter(task => task.timeframe?.start && task.timeframe?.end)
 
     const debouncedUpdateTask = useCallback((taskId: string, startDate: Date, endDate: Date) => {
         if (debounceTimerRef.current) {
@@ -99,7 +98,7 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
                 console.error('Failed to update task:', error)
                 queryClient.setQueryData(queryKey, previousData)
             }
-        }, 800)
+        }, 1800)
     }, [updateTaskMutation, queryClient, listId, state.meMode])
 
     useEffect(() => {
@@ -133,19 +132,19 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
         gantt.plugins({
             marker: true,
             drag_timeline: true,
-            quick_info: true,
-            export_api: true,
+            // quick_info: true,
+            // export_api: true,
             tooltip: true
         })
 
         gantt.config.columns = [
             { name: 'text', label: 'Task Name', width: 200, tree: true },
-            { name: 'status', label: 'Status', width: 80, align: 'center' },
+            { name: 'status', label: 'Status', width: 100, align: 'center' },
             { name: 'priority', label: 'Priority', width: 70, align: 'center' }
         ]
 
         gantt.templates.task_class = function (start, end, task) {
-            const taskData = tasksWithTimeframes.find(t => t._id === task.id)
+            const taskData = allTasks.find(t => t._id === task.id)
             if (!taskData) return ''
 
             switch (taskData.status) {
@@ -168,9 +167,9 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
 
         gantt.attachEvent("onAfterTaskDrag", function(id, mode) {
             const task = gantt.getTask(id)
-            const originalTask = tasksWithTimeframes.find(t => t._id === id)
+            const originalTask = allTasks.find(t => t._id === id)
             
-            if (!originalTask || !task.start_date || !task.duration) return
+            if (!originalTask || !task.start_date || !task.duration) return true
 
             const startDate = typeof task.start_date === 'string' ? new Date(task.start_date) : task.start_date
             const endDate = gantt.calculateEndDate({
@@ -178,26 +177,6 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
                 duration: task.duration as number,
                 unit: gantt.config.duration_unit
             })
-
-            // console.log('📅 Task Updated via Drag/Resize:', {
-            //     taskId: id,
-            //     taskName: task.text,
-            //     mode: mode,
-            //     originalTimeframe: {
-            //         start: originalTask.timeframe?.start,
-            //         end: originalTask.timeframe?.end
-            //     },
-            //     newTimeframe: {
-            //         start: startDate,
-            //         end: endDate
-            //     },
-            //     duration: {
-            //         original: originalTask.timeframe?.start && originalTask.timeframe?.end 
-            //             ? Math.ceil((new Date(originalTask.timeframe.end).getTime() - new Date(originalTask.timeframe.start).getTime()) / (1000 * 60 * 60 * 24))
-            //             : 0,
-            //         new: task.duration
-            //     }
-            // })
 
             debouncedUpdateTask(String(id), startDate, endDate)
 
@@ -211,21 +190,21 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
         gantt.init(ganttRef.current)
 
         return () => {
-            gantt.clearAll()
+            gantt.detachAllEvents()
         }
-    }, [tasksWithTimeframes, debouncedUpdateTask])
+    }, [debouncedUpdateTask])
 
     useEffect(() => {
-        if (!tasksWithTimeframes.length) return
+        if (!allTasks.length) return
 
-        const ganttTasks = transformTasksToGanttFormat(tasksWithTimeframes)
+        const ganttTasks = transformTasksToGanttFormat(allTasks)
 
         let earliestDate = new Date()
         let latestDate = new Date()
 
-        tasksWithTimeframes.forEach(task => {
-            const startDate = new Date(task.timeframe!.start!)
-            const endDate = new Date(task.timeframe!.end!)
+        allTasks.forEach(task => {
+            const startDate = task.timeframe?.start ? new Date(task.timeframe.start) : new Date()
+            const endDate = task.timeframe?.end ? new Date(task.timeframe.end) : new Date(new Date().setDate(new Date().getDate() + 7))
             
             if (startDate < earliestDate || earliestDate.getTime() === new Date().setHours(0, 0, 0, 0)) {
                 earliestDate = startDate
@@ -259,12 +238,12 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
             text: "Today",
             title: format(today, 'MMM dd, yyyy')
         })
-    }, [tasksWithTimeframes])
+    }, [allTasks])
 
     const transformTasksToGanttFormat = (tasks: Task[]): GanttTask[] => {
         return tasks.map(task => {
-            const startDate = new Date(task.timeframe!.start!)
-            const endDate = new Date(task.timeframe!.end!)
+            const startDate = task.timeframe?.start ? new Date(task.timeframe.start) : new Date()
+            const endDate = task.timeframe?.end ? new Date(task.timeframe.end) : new Date(new Date().setDate(new Date().getDate() + 7))
             const durationInDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
 
             let progress = 0
@@ -305,7 +284,7 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
         )
     }
 
-    if (tasksWithTimeframes.length === 0) {
+    if (allTasks.length === 0) {
         return (
             <div className="flex items-center justify-center h-full min-h-[500px]">
                 <div className="text-center">
@@ -314,9 +293,9 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">No Timeline Data</h3>
-                    <p className="text-muted-foreground mb-4">Tasks need start and end dates to appear in the timeline view.</p>
-                    <p className="text-sm text-muted-foreground">Add timeframes to your tasks to see them here.</p>
+                    <h3 className="text-lg font-semibold mb-2">No Tasks</h3>
+                    <p className="text-muted-foreground mb-4">Create tasks to see them in the timeline view.</p>
+                    <p className="text-sm text-muted-foreground">Tasks without dates will appear with default timeframes.</p>
                 </div>
             </div>
         )

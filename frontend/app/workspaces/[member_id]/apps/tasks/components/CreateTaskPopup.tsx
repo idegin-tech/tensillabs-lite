@@ -35,11 +35,14 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
+import { Controller } from 'react-hook-form'
+import { DateRange } from 'react-day-picker'
 import { cn } from '@/lib/utils'
 import { TaskStatus, TaskPriority } from '@/types/tasks.types'
 import { useCreateTasks } from '../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 
 const taskFormSchema = z.object({
     name: z
@@ -81,6 +84,7 @@ interface Props {
 export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCreated }: Props) {
     const params = useParams()
     const listId = params.list_id as string
+    const queryClient = useQueryClient()
     const createTasks = useCreateTasks(listId)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -110,7 +114,6 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                     end: data.timeframe.end?.toISOString()
                 } : undefined
             }
-
             const response = await createTasks.mutateAsync({
                 tasks: [formattedData]
             })
@@ -119,6 +122,10 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                 const createdTask = response.payload[0]
                 onTaskCreated?.(createdTask)
             }
+
+            await queryClient.invalidateQueries({
+                queryKey: ['tasks-by-group', listId]
+            })
 
             toast.success('Task created successfully!')
             handleClose()
@@ -296,92 +303,80 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="timeframe.start"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                            <FormLabel>Start Date</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant="outline"
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                            disabled={isSubmitting}
-                                                        >
-                                                            {field.value ? (
-                                                                format(field.value, "PPP")
-                                                            ) : (
-                                                                <span>Pick a date</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={field.value}
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) =>
-                                                            isSubmitting
-                                                        }
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                            <div className="grid grid-cols-1 gap-4">
+                                <FormItem>
+                                    <FormLabel>Timeline</FormLabel>
+                                    <Controller
+                                        control={form.control}
+                                        name="timeframe"
+                                        render={({ field }) => {
+                                            const selectedRange: DateRange | undefined = field.value
+                                                ? {
+                                                    from: field.value.start ?? undefined,
+                                                    to: field.value.end ?? undefined,
+                                                }
+                                                : undefined
 
-                                <FormField
-                                    control={form.control}
-                                    name="timeframe.end"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                            <FormLabel>Due Date</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant="outline"
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                            disabled={isSubmitting}
-                                                        >
-                                                            {field.value ? (
-                                                                format(field.value, "PPP")
-                                                            ) : (
-                                                                <span>Pick a date</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={field.value}
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) =>
-                                                            isSubmitting
-                                                        }
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                            const formatTimeframe = (range?: DateRange | undefined) => {
+                                                if (!range || (!range.from && !range.to)) return 'No timeframe'
+                                                if (range.from && range.to) return `${format(range.from, 'MMM d')} → ${format(range.to, 'MMM d')}`
+                                                if (range.from) return `From ${format(range.from, 'MMM d')}`
+                                                if (range.to) return `Until ${format(range.to, 'MMM d')}`
+                                                return 'No timeframe'
+                                            }
+
+                                            return (
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <FormControl>
+                                                            <Button
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    'w-full pl-3 text-left font-normal',
+                                                                    !(selectedRange && (selectedRange.from || selectedRange.to)) && 'text-muted-foreground'
+                                                                )}
+                                                                disabled={isSubmitting}
+                                                            >
+                                                                {formatTimeframe(selectedRange)}
+                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                            </Button>
+                                                        </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <Calendar
+                                                            mode="range"
+                                                            selected={selectedRange}
+                                                            onSelect={(range) => {
+                                                                // range may be undefined or have from/to
+                                                                const newVal = range
+                                                                    ? {
+                                                                        start: range.from ?? undefined,
+                                                                        end: range.to ?? undefined,
+                                                                    }
+                                                                    : undefined
+
+                                                                field.onChange(newVal)
+                                                            }}
+                                                            numberOfMonths={2}
+                                                            className="rounded-md border"
+                                                        />
+                                                        <div className="p-3 border-t">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => field.onChange(undefined)}
+                                                                className="w-full"
+                                                            >
+                                                                Clear timeframe
+                                                            </Button>
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            )
+                                        }}
+                                    />
+                                    <FormMessage />
+                                </FormItem>
                             </div>
                         </div>
                         
