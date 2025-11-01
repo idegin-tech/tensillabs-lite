@@ -132,7 +132,14 @@ export class ListService {
       });
     }
 
-    const sortField = queryParams.sortBy || 'createdAt';
+    const sortFieldMap: Record<string, string> = {
+      name: 'name',
+      size: 'size',
+      createdAt: 'createdAt',
+      uploadedAt: 'createdAt',
+    };
+
+    const sortField = sortFieldMap[queryParams.sortBy || 'createdAt'] || 'createdAt';
     const sortOrder = queryParams.sortOrder === 'asc' ? 'ASC' : 'DESC';
     queryBuilder.orderBy(`file.${sortField}`, sortOrder);
 

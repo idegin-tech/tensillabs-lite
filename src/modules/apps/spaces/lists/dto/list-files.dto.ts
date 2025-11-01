@@ -5,7 +5,7 @@ export const getListFilesQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional().default(20),
   search: z.string().trim().optional(),
   mimeType: z.string().trim().optional(),
-  sortBy: z.enum(['name', 'size', 'createdAt']).optional().default('createdAt'),
+  sortBy: z.enum(['name', 'size', 'createdAt', 'uploadedAt']).optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 

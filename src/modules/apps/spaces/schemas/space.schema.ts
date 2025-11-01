@@ -6,10 +6,12 @@ import {
   UpdateDateColumn,
   Index,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { WorkspaceMember } from '../../../workspace-members/schemas/workspace-member.schema';
 import { Workspace } from '../../../workspaces/schemas/workspace.schema';
+import { List } from '../lists/schemas/list.schema';
 
 @Entity('spaces')
 @Index(['workspaceId'])
@@ -51,6 +53,9 @@ export class Space {
   @ManyToOne(() => Workspace)
   @JoinColumn({ name: 'workspaceId' })
   workspace: Workspace;
+
+  @OneToMany(() => List, (list) => list.space)
+  lists: List[];
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

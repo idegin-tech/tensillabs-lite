@@ -179,25 +179,25 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
                 unit: gantt.config.duration_unit
             })
 
-            console.log('📅 Task Updated via Drag/Resize:', {
-                taskId: id,
-                taskName: task.text,
-                mode: mode,
-                originalTimeframe: {
-                    start: originalTask.timeframe?.start,
-                    end: originalTask.timeframe?.end
-                },
-                newTimeframe: {
-                    start: startDate,
-                    end: endDate
-                },
-                duration: {
-                    original: originalTask.timeframe?.start && originalTask.timeframe?.end 
-                        ? Math.ceil((new Date(originalTask.timeframe.end).getTime() - new Date(originalTask.timeframe.start).getTime()) / (1000 * 60 * 60 * 24))
-                        : 0,
-                    new: task.duration
-                }
-            })
+            // console.log('📅 Task Updated via Drag/Resize:', {
+            //     taskId: id,
+            //     taskName: task.text,
+            //     mode: mode,
+            //     originalTimeframe: {
+            //         start: originalTask.timeframe?.start,
+            //         end: originalTask.timeframe?.end
+            //     },
+            //     newTimeframe: {
+            //         start: startDate,
+            //         end: endDate
+            //     },
+            //     duration: {
+            //         original: originalTask.timeframe?.start && originalTask.timeframe?.end 
+            //             ? Math.ceil((new Date(originalTask.timeframe.end).getTime() - new Date(originalTask.timeframe.start).getTime()) / (1000 * 60 * 60 * 24))
+            //             : 0,
+            //         new: task.duration
+            //     }
+            // })
 
             debouncedUpdateTask(String(id), startDate, endDate)
 

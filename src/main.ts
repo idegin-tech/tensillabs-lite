@@ -8,6 +8,7 @@ import * as cookieParser from 'cookie-parser';
 import * as connectPgSimple from 'connect-pg-simple';
 import * as express from 'express';
 import { Pool } from 'pg';
+import { TransformIdInterceptor } from './lib/interceptors/transform-id.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -17,6 +18,8 @@ async function bootstrap() {
         : ['log', 'debug', 'error', 'verbose', 'warn'],
   });
 
+  app.useGlobalInterceptors(new TransformIdInterceptor());
+
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
 
@@ -24,7 +27,9 @@ async function bootstrap() {
     origin: [
       process.env.FRONTEND_URL || 'http://localhost:3001',
       'http://localhost:3001',
+      'http://localhost:3037',
       'http://127.0.0.1:3001',
+      'http://127.0.0.1:3037',
     ],
     credentials: true,
     allowedHeaders: [

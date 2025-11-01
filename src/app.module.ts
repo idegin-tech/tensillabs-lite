@@ -14,6 +14,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { AppsModule } from './modules/apps/apps.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { FilesModule } from './modules/files/files.module';
+import { SeederModule } from './database/seeds/seeder.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { FilesModule } from './modules/files/files.module';
       envFilePath: '.env',
     }),
     DatabaseModule,
+    SeederModule,
     AuthModule,
     WorkspacesModule,
     WorkspaceMembersModule,
