@@ -8,7 +8,7 @@ export class FileService {
   constructor(
     @InjectRepository(File)
     private fileRepository: Repository<File>,
-  ) {}
+  ) { }
 
   async create(
     fileData: {
@@ -103,5 +103,16 @@ export class FileService {
         createdAt: 'DESC',
       },
     });
+  }
+
+  async deleteByCommentId(commentId: string, workspaceId: string): Promise<void> {
+    await this.fileRepository.update(
+      {
+        commentId,
+        workspaceId,
+        isDeleted: false,
+      },
+      { isDeleted: true },
+    );
   }
 }

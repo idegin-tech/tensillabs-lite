@@ -32,14 +32,13 @@ import {
     TbPaperclip,
     TbX,
     TbStrikethrough,
-    TbMicrophone,
     TbMoodSmile,
-    TbDotsVertical,
     TbLink,
     TbPhoto,
 } from 'react-icons/tb'
 import { cn } from '@/lib/utils'
 import type { EmojiClickData } from 'emoji-picker-react'
+import { EmojiStyle } from 'emoji-picker-react'
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
 
@@ -164,7 +163,7 @@ export default function ChatInput({
 
     return (
         <TooltipProvider>
-            <div 
+            <div
                 className={cn(
                     'flex flex-col rounded-lg border bg-background transition-all duration-200',
                     isFocused ? 'ring-2 ring-primary border-primary' : 'border-input',
@@ -423,7 +422,7 @@ export default function ChatInput({
                             className="hidden"
                             disabled={disabled || attachedFiles.length >= maxFiles}
                         />
-                        
+
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
@@ -444,33 +443,6 @@ export default function ChatInput({
 
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={disabled}
-                                    className="h-8 w-8 p-0 hover:bg-accent"
-                                >
-                                    <TbPhoto className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                                <p>Add image</p>
-                            </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={disabled}
-                                    className="h-8 w-8 p-0 hover:bg-accent"
-                                >
-                                    <TbMicrophone className="h-4 w-4" />
-                        <Tooltip>
-                            <TooltipTrigger asChild>
                                 <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
                                     <PopoverTrigger asChild>
                                         <Button
@@ -483,8 +455,8 @@ export default function ChatInput({
                                             <TbMoodSmile className="h-4 w-4" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent 
-                                        className="w-auto p-0 border-0" 
+                                    <PopoverContent
+                                        className="w-auto p-0 border-0"
                                         align="start"
                                         side="top"
                                     >
@@ -493,36 +465,13 @@ export default function ChatInput({
                                             autoFocusSearch={false}
                                             width={350}
                                             height={400}
+                                            emojiStyle={EmojiStyle.APPLE}
                                         />
                                     </PopoverContent>
                                 </Popover>
                             </TooltipTrigger>
                             <TooltipContent side="top">
                                 <p>Add emoji</p>
-                            </TooltipContent>
-                        </Tooltip>
-                                    <TbMoodSmile className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                                <p>Add emoji</p>
-                            </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={disabled}
-                                    className="h-8 w-8 p-0 hover:bg-accent"
-                                >
-                                    <TbDotsVertical className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                                <p>More options</p>
                             </TooltipContent>
                         </Tooltip>
                     </div>

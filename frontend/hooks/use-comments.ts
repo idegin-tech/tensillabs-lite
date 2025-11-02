@@ -20,7 +20,7 @@ export interface CommentFile {
 }
 
 export interface Comment {
-  id: string
+  _id: string
   content: string
   createdById: string
   workspaceId: string
@@ -33,7 +33,7 @@ export interface Comment {
   createdAt: string
   updatedAt: string
   createdBy: {
-    id: string
+    _id: string
     firstName: string
     lastName: string
     email: string
@@ -43,7 +43,7 @@ export interface Comment {
 }
 
 export interface GetCommentsResponse {
-  data: {
+  payload: {
     comments: Comment[]
     total: number
     page: number
@@ -52,7 +52,7 @@ export interface GetCommentsResponse {
 }
 
 export interface CreateCommentResponse {
-  data: {
+  payload: {
     comment: Comment
     files: CommentFile[]
   }

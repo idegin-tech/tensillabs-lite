@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import ChatInput, { ChatFile } from '@/components/ChatInput'
+import ChatInput, { ChatFile } from '@/components/chat/ChatInput'
 import FileThumbnailRenderer from '@/components/FileThumbnailRenderer'
 import {
     Carousel,
@@ -71,7 +71,7 @@ function formatTimeAgo(dateString: string): string {
 }
 
 function convertCommentToMessage(comment: Comment, currentMemberId: string): Message {
-    const isCurrentUser = comment.createdBy.id === currentMemberId
+    const isCurrentUser = comment.createdById === currentMemberId
     
     const initials = comment.createdBy.firstName && comment.createdBy.lastName
         ? `${comment.createdBy.firstName[0]}${comment.createdBy.lastName[0]}`
@@ -82,18 +82,18 @@ function convertCommentToMessage(comment: Comment, currentMemberId: string): Mes
         : comment.createdBy.email
 
     return {
-        id: comment.id,
+        id: comment._id,
         user: {
             name: isCurrentUser ? 'You' : name,
             avatar: comment.createdBy.avatar || null,
             initials,
-            memberId: comment.createdBy.id
+            memberId: comment.createdById
         },
         message: comment.content,
         timestamp: formatTimeAgo(comment.createdAt),
         isCurrentUser,
         files: comment.files?.map((file: any) => ({
-            id: file.id,
+            id: file._id || file.id,
             name: file.name,
             type: file.mimeType,
             size: file.size,
@@ -129,7 +129,16 @@ function MessageBubble({ message, onReactionClick, onAddReaction }: MessageBubbl
                 : 'bg-muted'
                 }`}>
                 {!message.isCurrentUser && (
-                    <div className="font-medium text-sm mb-1">{message.user.name}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-sm">{message.user.name}</span>
+                        <span className="text-xs text-muted-foreground">{message.timestamp}</span>
+                    </div>
+                )}
+                {message.isCurrentUser && (
+                    <div className="flex items-center gap-2 mb-1 justify-end">
+                        <span className="font-medium text-sm">{message.user.name}</span>
+                        <span className="text-xs text-muted-foreground">{message.timestamp}</span>
+                    </div>
                 )}
                 <div className="text-sm whitespace-pre-wrap pr-6">{message.message}</div>
 
@@ -256,7 +265,7 @@ function MessageBubble({ message, onReactionClick, onAddReaction }: MessageBubbl
                             </button>
                         </PopoverTrigger>
                         <PopoverContent 
-                            className="w-auto p-0 border-0" 
+                            className="w-auto p-0 border-0 rounded-full" 
                             align={message.isCurrentUser ? 'end' : 'start'}
                             side="top"
                         >
@@ -287,7 +296,7 @@ function MessageBubble({ message, onReactionClick, onAddReaction }: MessageBubbl
                             </button>
                         </PopoverTrigger>
                         <PopoverContent 
-                            className="w-auto p-0 border-0" 
+                            className="w-auto p-0 border-0 rounded-full" 
                             align={message.isCurrentUser ? 'end' : 'start'}
                             side="top"
                         >
@@ -303,10 +312,6 @@ function MessageBubble({ message, onReactionClick, onAddReaction }: MessageBubbl
                     </Popover>
                 </div>
             )}
-
-            <div className={`text-xs text-muted-foreground mt-1 ${message.isCurrentUser ? 'text-right' : 'text-left'}`}>
-                {message.timestamp}
-            </div>
         </div>
     )
 }
@@ -315,64 +320,7 @@ interface TaskChatProps {
     taskId: string
 }
 
-const messages = [
-    {
-        id: '1',
-        user: { name: 'John Doe', avatar: null, initials: 'JD' },
-        message: 'Hey team, I started working on this task. Should be completed by end of week.',
-        timestamp: '2 hours ago',
-        isCurrentUser: false
-    },
-    {
-        id: '2',
-        user: { name: 'You', avatar: null, initials: 'ME' },
-        message: 'Great! Let me know if you need any clarification on the requirements.',
-        timestamp: '1 hour ago',
-        isCurrentUser: true
-    },
-    {
-        id: '3',
-        user: { name: 'Sarah Wilson', avatar: null, initials: 'SW' },
-        message: 'I can help with the design review once you have a draft ready.',
-        timestamp: '45 minutes ago',
-        isCurrentUser: false
-    },
-    {
-        id: '4',
-        user: { name: 'Mike Johnson', avatar: null, initials: 'MJ' },
-        message: 'Just a heads up - we might need to adjust the timeline based on the client feedback we received yesterday.',
-        timestamp: '30 minutes ago',
-        isCurrentUser: false
-    },
-    {
-        id: '5',
-        user: { name: 'You', avatar: null, initials: 'ME' },
-        message: 'Thanks for the update Mike. Let\'s discuss this in tomorrow\'s standup meeting.',
-        timestamp: '25 minutes ago',
-        isCurrentUser: true
-    },
-    {
-        id: '6',
-        user: { name: 'Emily Davis', avatar: null, initials: 'ED' },
-        message: 'I\'ve updated the design mockups based on the latest requirements. You can find them in the shared folder.',
-        timestamp: '15 minutes ago',
-        isCurrentUser: false
-    },
-    {
-        id: '7',
-        user: { name: 'Sarah Wilson', avatar: null, initials: 'SW' },
-        message: 'Perfect timing Emily! I\'ll review them this afternoon and get back to you with feedback.',
-        timestamp: '10 minutes ago',
-        isCurrentUser: false
-    },
-    {
-        id: '8',
-        user: { name: 'You', avatar: null, initials: 'ME' },
-        message: 'Great work everyone! Keep up the momentum. 🚀',
-        timestamp: '5 minutes ago',
-        isCurrentUser: true
-    }
-]
+
 
 export default function TaskChat({ taskId }: TaskChatProps) {
     const [newMessage, setNewMessage] = useState('')
@@ -390,8 +338,8 @@ export default function TaskChat({ taskId }: TaskChatProps) {
     const removeReactionMutation = useRemoveReaction()
 
     const messages: Message[] = React.useMemo(() => {
-        if (!commentsData?.data?.comments || !workspaceMember) return []
-        return commentsData.data.comments.map((comment: any) => 
+        if (!commentsData?.payload?.comments || !workspaceMember) return []
+        return commentsData.payload.comments.map((comment: any) => 
             convertCommentToMessage(comment, workspaceMember._id)
         )
     }, [commentsData, workspaceMember])
