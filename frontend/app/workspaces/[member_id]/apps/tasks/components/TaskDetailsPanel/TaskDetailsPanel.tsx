@@ -3,6 +3,7 @@ import React from 'react'
 import TaskDetailsTabs from './TaskDetailsTabs'
 import TaskDetails from './TaskDetails/TaskDetails'
 import TaskChat from './TaskChat/TaskChat'
+import TaskChatLoading from './TaskChat/TaskChatLoading'
 import TaskActivities from './TaskActivities/TaskActivities'
 import TaskDetailsPanelLoading from './TaskDetailsPanelLoading'
 import { ScrollArea } from '@radix-ui/react-scroll-area'
@@ -20,6 +21,7 @@ interface TaskDetailsPanelProps {
 
 export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelProps) {
     const [activeTab, setActiveTab] = React.useState<'details' | 'chat' | 'activities'>('details')
+    const [isChatLoading, setIsChatLoading] = React.useState(false)
     const params = useParams()
     const listId = params.list_id as string
     const queryClient = useQueryClient()
@@ -35,6 +37,16 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
         onClose()
     }, [onClose, queryClient, listId])
 
+    React.useEffect(() => {
+        if (activeTab === 'chat') {
+            setIsChatLoading(true)
+            const timer = setTimeout(() => {
+                setIsChatLoading(false)
+            }, 800)
+            return () => clearTimeout(timer)
+        }
+    }, [activeTab])
+
     const renderTabContent = () => {
         if (!taskDetailsData?.payload) {
             return <TaskDetails />
@@ -47,7 +59,7 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
             case 'details':
                 return <TaskDetails task={task} checklist={checklist} files={files} />
             case 'chat':
-                return <TaskChat />
+                return isChatLoading ? <TaskChatLoading /> : <TaskChat />
             case 'activities':
                 return <TaskActivities />
             default:
@@ -117,7 +129,6 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
                     <ScrollArea className='col-span-10 md:col-span-11 overflow-y-auto overflow-x-hidden h-[calc(100vh-10vh)]'>
                         <div className='grid grid-cols-1'>
                             {renderTabContent()}
-                            <div className='h-20' />
                         </div>
                     </ScrollArea>
                     <TaskDetailsTabs

@@ -168,6 +168,7 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
                         </TabsContent>
                     </Tabs>
                 </div>
+                <div className='h-20' />
             </div>
         </div>
     )

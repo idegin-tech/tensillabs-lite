@@ -70,7 +70,7 @@ export class Task {
     end?: Date;
   };
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ type: 'text', array: true, nullable: true, default: '{}' })
   assigneeIds: string[];
 
   @Column({ type: 'uuid' })

@@ -63,13 +63,13 @@ export default function EachTaskGroup({
         } else if (apiTasks.length === 0 && hasInitiallyLoaded) {
             setLocalTasks([])
         }
-    }, [apiTasks, hasInitiallyLoaded])
+    }, [tasksData, hasInitiallyLoaded])
 
     useEffect(() => {
         if (tasksData && !hasInitiallyLoaded) {
             setHasInitiallyLoaded(true)
         }
-    }, [tasksData, hasInitiallyLoaded])
+    }, [tasksData])
 
     useEffect(() => {
         if (isExpanded) {

@@ -25,7 +25,9 @@ export class CloudinaryService {
     resourceType: string;
     bytes: number;
   }> {
-    const fullPath = `tensillabs/${workspaceId}${path}/${fileName}`;
+    const timestamp = Date.now();
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fullPath = `tensillabs/${workspaceId}${path}/${timestamp}_${sanitizedFileName}`;
 
     return new Promise((resolve, reject) => {
       cloudinary.uploader
@@ -33,8 +35,8 @@ export class CloudinaryService {
           {
             public_id: fullPath,
             resource_type: 'auto',
-            use_filename: true,
-            unique_filename: false,
+            use_filename: false,
+            unique_filename: true,
           },
           (error, result) => {
             if (error) {

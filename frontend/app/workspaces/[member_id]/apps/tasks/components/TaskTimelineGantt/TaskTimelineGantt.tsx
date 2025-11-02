@@ -46,6 +46,11 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
     )
 
     const allTasks = allTasksData?.payload?.tasks || tasks
+    const meModeRef = React.useRef(state.meMode)
+    
+    React.useEffect(() => {
+        meModeRef.current = state.meMode
+    }, [state.meMode])
 
     const debouncedUpdateTask = useCallback((taskId: string, startDate: Date, endDate: Date) => {
         if (debounceTimerRef.current) {
@@ -57,7 +62,7 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
                 page: 1,
                 limit: 100,
                 groupBy: 'none',
-                meMode: state.meMode
+                meMode: meModeRef.current
             })]
 
             const previousData = queryClient.getQueryData(queryKey)
@@ -99,7 +104,7 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
                 queryClient.setQueryData(queryKey, previousData)
             }
         }, 1800)
-    }, [updateTaskMutation, queryClient, listId, state.meMode])
+    }, [updateTaskMutation, queryClient, listId])
 
     useEffect(() => {
         return () => {
@@ -229,10 +234,13 @@ export default function TaskTimelineGantt({ tasks = [], className = '' }: TaskTi
             links: []
         })
 
+        gantt.deleteMarker("today")
+        
         const today = new Date()
         today.setHours(12, 0, 0, 0)
         
         gantt.addMarker({
+            id: "today",
             start_date: today,
             css: "today-marker",
             text: "Today",

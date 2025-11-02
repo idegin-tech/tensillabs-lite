@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task, TaskPriority } from '../schemas/task.schema';
+import { Comment } from '../../../../comments/schemas/comment.schema';
 import {
   UpdateTaskDto,
   CreateTasksDto,
@@ -29,6 +30,8 @@ export class TaskService {
   constructor(
     @InjectRepository(Task)
     private taskRepository: Repository<Task>,
+    @InjectRepository(Comment)
+    private commentRepository: Repository<Comment>,
     private checklistService: ChecklistService,
     private fileService: FileService,
   ) {}
@@ -346,6 +349,37 @@ export class TaskService {
       task,
       checklist,
       files,
+    };
+  }
+
+  async getTaskComments(
+    taskId: string,
+    workspaceId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ comments: Comment[]; totalCount: number; hasMore: boolean }> {
+    const skip = (page - 1) * limit;
+
+    const [comments, totalCount] = await this.commentRepository.findAndCount({
+      where: {
+        taskId,
+        workspaceId,
+        isDeleted: false,
+      },
+      relations: ['createdBy', 'parentComment'],
+      order: {
+        createdAt: 'ASC',
+      },
+      skip,
+      take: limit,
+    });
+
+    const hasMore = skip + comments.length < totalCount;
+
+    return {
+      comments,
+      totalCount,
+      hasMore,
     };
   }
 }

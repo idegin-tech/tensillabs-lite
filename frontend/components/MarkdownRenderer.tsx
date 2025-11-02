@@ -137,7 +137,7 @@ export default function MarkdownRenderer({
             a: ({ href, children, ...props }) => (
               <a
                 href={href}
-                className="text-blue-600 hover:text-blue-800 underline"
+                className="dark:text-blue-300 dark:hover:text-blue-600 underline text-blue-600 hover:text-blue-800"
                 target="_blank"
                 rel="noopener noreferrer"
                 {...props}
@@ -200,7 +200,7 @@ export default function MarkdownRenderer({
             variant="ghost"
             size="sm"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-blue-600 hover:text-blue-800 h-auto p-0 font-normal"
+            className="text-primary h-auto p-0 font-normal"
           >
             {isExpanded ? 'Show less' : 'Show more'}
           </Button>

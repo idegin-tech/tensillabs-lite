@@ -189,7 +189,7 @@ export class TaskController {
       throw new BadRequestException('No files provided');
     }
 
-    const uploadPath = `/spaces/${req.space.id}/lists/${listId}/tasks/${taskId}`;
+    const uploadPath = `/tasks/${taskId}`;
 
     const uploadResults = await this.uploadService.uploadFiles(
       files,
@@ -216,5 +216,32 @@ export class TaskController {
     }
 
     return createSuccessResponse('Files uploaded successfully', savedFiles);
+  }
+
+  @Get(':taskId/comments')
+  async getTaskComments(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
+  ) {
+    const pageNumber = page ? parseInt(page, 10) : 1;
+    const limitNumber = limit ? parseInt(limit, 10) : 20;
+
+    const result = await this.taskService.getTaskComments(
+      taskId,
+      req.workspace.id,
+      pageNumber,
+      limitNumber,
+    );
+
+    return createSuccessResponse('Comments retrieved successfully', result);
   }
 }
