@@ -59,7 +59,7 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
             case 'details':
                 return <TaskDetails task={task} checklist={checklist} files={files} />
             case 'chat':
-                return isChatLoading ? <TaskChatLoading /> : <TaskChat />
+                return isChatLoading ? <TaskChatLoading /> : <TaskChat taskId={taskID} />
             case 'activities':
                 return <TaskActivities />
             default:

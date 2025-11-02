@@ -21,6 +21,8 @@ export class FileService {
       fileKey?: string;
       taskId?: string;
       spaceId?: string;
+      commentId?: string;
+      listId?: string;
     },
     workspaceId: string,
     createdById: string,
@@ -42,6 +44,8 @@ export class FileService {
       description?: string;
       taskId?: string;
       spaceId?: string;
+      commentId?: string;
+      listId?: string;
       isActive?: boolean;
     },
     workspaceId: string,

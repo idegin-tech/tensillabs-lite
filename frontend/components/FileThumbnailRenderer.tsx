@@ -1,11 +1,13 @@
 
 import Image from 'next/image'
 import React from 'react'
+import { cn } from '@/lib/utils'
 
 type Props = {
     fileType?: string
     mimeType?: string
-    size?: number
+    preview?: string
+    size?: 'sm' | 'md' | 'lg'
 }
 
 const getFileTypeIcon = (mimeType?: string, fileName?: string): string => {
@@ -75,18 +77,41 @@ const getFileTypeIcon = (mimeType?: string, fileName?: string): string => {
     return '/files/default.svg'
 }
 
-export default function FileThumbnailRenderer({ fileType, mimeType }: Props) {
+export default function FileThumbnailRenderer({ fileType, mimeType, preview, size = 'md' }: Props) {
     const iconSrc = getFileTypeIcon(mimeType, fileType)
+    const isImage = mimeType?.startsWith('image/')
+    
+    const sizeClasses = {
+        sm: 'h-10 w-10',
+        md: 'h-12 w-12',
+        lg: 'h-16 w-16'
+    }
+    
+    const imageSizes = {
+        sm: 40,
+        md: 48,
+        lg: 64
+    }
     
     return (
-        <div className='rounded-md h-12 w-12 overflow-hidden flex items-center justify-center relative flex-shrink-0'>
-            <Image
-                src={iconSrc}
-                alt="File thumbnail"
-                width={64}
-                height={64}
-                className="object-contain w-full h-full"
-            />
+        <div className={cn('rounded-md overflow-hidden flex items-center justify-center relative flex-shrink-0', sizeClasses[size])}>
+            {isImage && preview ? (
+                <Image
+                    src={preview}
+                    alt="File preview"
+                    width={imageSizes[size]}
+                    height={imageSizes[size]}
+                    className="object-cover w-full h-full"
+                />
+            ) : (
+                <Image
+                    src={iconSrc}
+                    alt="File thumbnail"
+                    width={imageSizes[size]}
+                    height={imageSizes[size]}
+                    className="object-contain w-full h-full"
+                />
+            )}
         </div>
     )
 }

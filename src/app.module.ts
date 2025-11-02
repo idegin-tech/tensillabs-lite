@@ -14,6 +14,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { AppsModule } from './modules/apps/apps.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { FilesModule } from './modules/files/files.module';
+import { CommentsModule } from './modules/comments/comments.module';
 import { SeederModule } from './database/seeds/seeder.module';
 
 @Module({
@@ -32,6 +33,7 @@ import { SeederModule } from './database/seeds/seeder.module';
     AppsModule,
     BillingModule,
     FilesModule,
+    CommentsModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'frontend', 'dist'),
       exclude: ['/api/v1*'],

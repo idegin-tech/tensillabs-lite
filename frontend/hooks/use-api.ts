@@ -11,6 +11,7 @@ import {
   InfiniteData
 } from '@tanstack/react-query'
 import { api, ApiError } from '@/lib/api'
+import useCommon from './use-common'
 
 export type QueryConfig<T> = Omit<UseQueryOptions<T, ApiError>, 'queryKey' | 'queryFn'>
 export type InfiniteQueryConfig<T> = Omit<UseInfiniteQueryOptions<T, ApiError, InfiniteData<T, unknown>>, 'queryKey' | 'queryFn' | 'getNextPageParam' | 'initialPageParam'>
@@ -20,9 +21,15 @@ export function useApiQuery<T>(
   endpoint: string,
   config?: QueryConfig<T>
 ) {
+  const { member_id } = useCommon()
+  
   return useQuery<T, ApiError>({
     queryKey,
-    queryFn: () => api.get<T>(endpoint),
+    queryFn: () => api.get<T>(endpoint, {
+      headers: {
+        'X-Member-ID': member_id,
+      },
+    }),
     ...config,
   })
 }
@@ -33,10 +40,16 @@ export function useApiInfiniteQuery<T>(
   getNextPageParam: (lastPage: T, allPages: T[]) => any,
   config?: InfiniteQueryConfig<T>
 ) {
+  const { member_id } = useCommon()
+  
   return useInfiniteQuery<T, ApiError>({
     queryKey,
     queryFn: ({ pageParam = 1 }) => {
-      return api.get<T>(getEndpoint(pageParam as number))
+      return api.get<T>(getEndpoint(pageParam as number), {
+        headers: {
+          'X-Member-ID': member_id,
+        },
+      })
     },
     getNextPageParam,
     initialPageParam: 1,

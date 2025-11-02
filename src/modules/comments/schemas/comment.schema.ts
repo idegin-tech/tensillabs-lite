@@ -48,6 +48,18 @@ export class Comment {
   @JoinColumn({ name: 'parentCommentId' })
   parentComment: Comment;
 
+  @Column({ type: 'jsonb', nullable: true, default: '[]' })
+  reactions: Array<{
+    emoji: string;
+    memberIds: string[];
+  }>;
+
+  @Column({ type: 'uuid', nullable: true })
+  listId: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  spaceId: string;
+
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 

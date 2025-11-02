@@ -16,6 +16,8 @@ import { Workspace } from '../../workspaces/schemas/workspace.schema';
 @Index(['createdById'])
 @Index(['taskId'])
 @Index(['spaceId'])
+@Index(['commentId'])
+@Index(['listId'])
 @Index(['isDeleted'])
 @Index(['isActive'])
 @Index(['createdAt'])
@@ -50,6 +52,12 @@ export class File {
 
   @Column({ type: 'uuid', nullable: true })
   spaceId: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  commentId: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  listId: string;
 
   @Column({ type: 'bigint', default: 0 })
   size: number;

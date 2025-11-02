@@ -4,15 +4,23 @@ import React, { useState, useRef, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip'
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+} from '@/components/ui/carousel'
 import FileThumbnailRenderer from '@/components/FileThumbnailRenderer'
 import {
     TbBold,
@@ -31,6 +39,9 @@ import {
     TbPhoto,
 } from 'react-icons/tb'
 import { cn } from '@/lib/utils'
+import type { EmojiClickData } from 'emoji-picker-react'
+
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
 
 export interface ChatFile {
     id: string
@@ -69,6 +80,7 @@ export default function ChatInput({
 }: ChatInputProps) {
     const [attachedFiles, setAttachedFiles] = useState<ChatFile[]>(files)
     const [isFocused, setIsFocused] = useState(false)
+    const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const editor = useEditor({
@@ -136,12 +148,17 @@ export default function ChatInput({
             fileInputRef.current.value = ''
         }
     }, [attachedFiles, maxFiles, onFilesChange])
-
     const handleRemoveFile = useCallback((fileId: string) => {
         const updatedFiles = attachedFiles.filter(f => f.id !== fileId)
         setAttachedFiles(updatedFiles)
         onFilesChange?.(updatedFiles)
     }, [attachedFiles, onFilesChange])
+
+    const handleEmojiClick = useCallback((emojiData: EmojiClickData) => {
+        if (!editor) return
+        editor.chain().focus().insertContent(emojiData.emoji).run()
+        setEmojiPickerOpen(false)
+    }, [editor])
 
     const canSend = editor?.getText().trim() || attachedFiles.length > 0
 
@@ -313,39 +330,59 @@ export default function ChatInput({
                 )}
 
                 {attachedFiles.length > 0 && (
-                    <div className="px-3 pt-3">
-                        <ScrollArea className="max-h-28">
-                            <div className="flex flex-wrap gap-2 pb-2">
-                                {attachedFiles.map((file) => (
-                                    <div
-                                        key={file.id}
-                                        className="relative group flex items-center gap-2 p-2 pr-8 border rounded-md bg-muted/50 hover:bg-muted transition-colors"
-                                    >
-                                        <FileThumbnailRenderer
-                                            mimeType={file.file.type}
-                                            fileType={file.file.name}
-                                        />
-                                        <div className="flex flex-col min-w-0 max-w-[120px]">
-                                            <span className="text-xs font-medium truncate">
-                                                {file.file.name}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {(file.file.size / 1024).toFixed(1)} KB
-                                            </span>
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleRemoveFile(file.id)}
-                                            className="absolute -top-1.5 -right-1.5 h-5 w-5 p-0 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                                        >
-                                            <TbX className="h-3 w-3" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
+                    <div className="border-t border-border px-3 py-3">
+                        <Carousel
+                            opts={{
+                                align: 'start',
+                                loop: false,
+                            }}
+                            className="w-full"
+                        >
+                            <CarouselContent className="-ml-2">
+                                {attachedFiles.map((file) => {
+                                    const isImage = file.file.type.startsWith('image/')
+                                    return (
+                                        <CarouselItem key={file.id} className="pl-2 basis-auto">
+                                            <div className="relative group flex items-center gap-2 p-2 pr-8 border rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                                                {isImage && file.preview ? (
+                                                    <FileThumbnailRenderer
+                                                        fileType={file.file.name}
+                                                        mimeType={file.file.type}
+                                                        preview={file.preview}
+                                                        size="sm"
+                                                    />
+                                                ) : (
+                                                    <FileThumbnailRenderer
+                                                        fileType={file.file.name}
+                                                        mimeType={file.file.type}
+                                                        size="sm"
+                                                    />
+                                                )}
+                                                <div className="flex flex-col min-w-0 max-w-[120px]">
+                                                    <span className="text-xs font-medium truncate">
+                                                        {file.file.name}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {(file.file.size / 1024).toFixed(1)} KB
+                                                    </span>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleRemoveFile(file.id)}
+                                                    className="absolute top-1 right-1 h-5 w-5 p-0 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                                                >
+                                                    <TbX className="h-3 w-3" />
+                                                </Button>
+                                            </div>
+                                        </CarouselItem>
+                                    )
+                                })}
+                            </CarouselContent>
+                            <CarouselPrevious className="-left-3" />
+                            <CarouselNext className="-right-3" />
+                        </Carousel>
                     </div>
                 )}
 
@@ -432,22 +469,38 @@ export default function ChatInput({
                                     className="h-8 w-8 p-0 hover:bg-accent"
                                 >
                                     <TbMicrophone className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                                <p>Voice note</p>
-                            </TooltipContent>
-                        </Tooltip>
-
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={disabled}
-                                    className="h-8 w-8 p-0 hover:bg-accent"
-                                >
+                                <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={disabled}
+                                            className="h-8 w-8 p-0 hover:bg-accent"
+                                        >
+                                            <TbMoodSmile className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent 
+                                        className="w-auto p-0 border-0" 
+                                        align="start"
+                                        side="top"
+                                    >
+                                        <EmojiPicker
+                                            onEmojiClick={handleEmojiClick}
+                                            autoFocusSearch={false}
+                                            width={350}
+                                            height={400}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                                <p>Add emoji</p>
+                            </TooltipContent>
+                        </Tooltip>
                                     <TbMoodSmile className="h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>

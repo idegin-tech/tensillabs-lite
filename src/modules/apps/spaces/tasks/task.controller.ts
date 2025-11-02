@@ -36,6 +36,13 @@ import {
   getTasksByGroupQuerySchema,
   GetTasksByGroupQueryDto,
 } from './dto/task.dto';
+import {
+  createCommentSchema,
+  CreateCommentDto,
+  addReactionSchema,
+  AddReactionDto,
+} from '../../../comments/dto/comment.dto';
+import { CommentService } from '../../../comments/services/comment.service';
 import { UploadService, UploadedFile } from '../../../../lib/upload.lib';
 import { FileService } from '../../../files/services/file.service';
 
@@ -47,6 +54,7 @@ export class TaskController {
     private readonly taskService: TaskService,
     private readonly uploadService: UploadService,
     private readonly fileService: FileService,
+    private readonly commentService: CommentService,
   ) {}
 
   @Post()
@@ -235,7 +243,7 @@ export class TaskController {
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 20;
 
-    const result = await this.taskService.getTaskComments(
+    const result = await this.commentService.getTaskComments(
       taskId,
       req.workspace.id,
       pageNumber,
@@ -243,5 +251,72 @@ export class TaskController {
     );
 
     return createSuccessResponse('Comments retrieved successfully', result);
+  }
+
+  @Post(':taskId/comments')
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  async createComment(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @Body(new ZodValidationPipe(createCommentSchema))
+    createCommentDto: CreateCommentDto,
+    @UploadedFiles() files: UploadedFile[],
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
+  ) {
+    const comment = await this.commentService.create(
+      createCommentDto,
+      req.workspace.id,
+      req.workspaceMember.id,
+      taskId,
+      listId,
+      req.space.id,
+    );
+
+    let uploadedFiles = [];
+    if (files && files.length > 0) {
+      const uploadPath = `/tasks/${taskId}/comments/${comment.id}`;
+
+      const uploadResults = await this.uploadService.uploadFiles(
+        files,
+        uploadPath,
+        String(req.workspace.id),
+      );
+
+      for (const uploadResult of uploadResults) {
+        const savedFile = await this.fileService.create(
+          {
+            name: uploadResult.originalName,
+            size: uploadResult.bytes,
+            mimeType: uploadResult.mimeType,
+            fileURL: uploadResult.secureUrl,
+            fileKey: uploadResult.publicId,
+            taskId: taskId,
+            spaceId: req.space.id,
+            commentId: comment.id,
+            listId: listId,
+          },
+          req.workspace.id,
+          req.workspaceMember.id,
+        );
+        uploadedFiles.push(savedFile);
+      }
+    }
+
+    return createSuccessResponse('Comment created successfully', {
+      comment,
+      files: uploadedFiles,
+    });
   }
 }
