@@ -46,10 +46,12 @@ export function useWorkspaceMembers(params: UseWorkspaceMembersParams = {}) {
         'x-member-id': member_id
       }
     }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
     enabled: !!member_id,
-    refetchOnReconnect: true,
+    refetchOnReconnect: false,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
   })
 
   const members = useMemo(() => {

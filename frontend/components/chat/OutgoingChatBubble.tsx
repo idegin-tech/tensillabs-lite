@@ -2,13 +2,14 @@
 
 import React from 'react'
 import { cn } from '@/lib/utils'
-import MarkdownRenderer from '@/components/MarkdownRenderer'
+import MarkdownRenderer, { MentionedMember } from '@/components/MarkdownRenderer'
 
 export interface OutgoingChatBubbleProps {
     message: string
     files?: React.ReactNode
     isSending?: boolean
     className?: string
+    mentionedMembers?: MentionedMember[]
 }
 
 export default function OutgoingChatBubble({
@@ -16,13 +17,14 @@ export default function OutgoingChatBubble({
     files,
     isSending = false,
     className,
+    mentionedMembers,
 }: OutgoingChatBubbleProps) {
     return (
         <div
             className={cn(
                 'relative rounded-2xl rounded-tr-md p-3.5 shadow-md ml-auto max-w-[85%]',
                 'bg-accent/60 text-accent-foreground border border-primary/20',
-                'transition-colors duration-200',
+                'transition-colors duration-200 min-w-[70%]',
                 isSending && 'opacity-70 cursor-wait',
                 className
             )}
@@ -31,8 +33,10 @@ export default function OutgoingChatBubble({
                 <MarkdownRenderer
                     content={message}
                     collapsible={true}
-                    maxLength={300}
+                    maxLength={900}
                     className="prose-p:mb-1 prose-p:last:mb-0 prose-a:text-primary-foreground prose-a:underline prose-code:bg-primary-foreground/10 prose-code:text-primary-foreground"
+                    mentionedMembers={mentionedMembers}
+                    allowHtml={true}
                 />
             </div>
 

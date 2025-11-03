@@ -21,6 +21,7 @@ export interface ChatMessageData {
     onlineStatus?: OnlineStatus
     files?: ChatFile[]
     reactions?: ChatReaction[]
+    mentionedMembers?: Array<{ id: string; label: string; email?: string }>
 }
 
 export interface ChatMessageProps {
@@ -88,6 +89,7 @@ export default function ChatMessage({
                 message={data.message}
                 files={filesCarousel}
                 isSending={data.isCurrentUser ? isSending : undefined}
+                mentionedMembers={data.mentionedMembers}
             />
         </ChatBubbleContainer>
     )

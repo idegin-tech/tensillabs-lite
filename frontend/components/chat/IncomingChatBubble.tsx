@@ -2,18 +2,20 @@
 
 import React from 'react'
 import { cn } from '@/lib/utils'
-import MarkdownRenderer from '@/components/MarkdownRenderer'
+import MarkdownRenderer, { MentionedMember } from '@/components/MarkdownRenderer'
 
 export interface IncomingChatBubbleProps {
     message: string
     files?: React.ReactNode
     className?: string
+    mentionedMembers?: MentionedMember[]
 }
 
 export default function IncomingChatBubble({
     message,
     files,
     className,
+    mentionedMembers,
 }: IncomingChatBubbleProps) {
     return (
         <div
@@ -28,8 +30,10 @@ export default function IncomingChatBubble({
                 <MarkdownRenderer
                     content={message}
                     collapsible={true}
-                    maxLength={300}
+                    maxLength={900}
                     className="prose-p:mb-1 prose-p:last:mb-0"
+                    mentionedMembers={mentionedMembers}
+                    allowHtml={true}
                 />
             </div>
 

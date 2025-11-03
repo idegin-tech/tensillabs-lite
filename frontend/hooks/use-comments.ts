@@ -29,6 +29,15 @@ export interface Comment {
   spaceId: string
   parentCommentId?: string
   reactions: CommentReaction[]
+  mentionedMemberIds?: string[]
+  mentionedMembers?: Array<{
+    _id: string
+    firstName: string
+    lastName: string
+    primaryEmail?: string
+    email?: string
+    avatarURL?: any
+  }>
   isDeleted: boolean
   createdAt: string
   updatedAt: string
@@ -64,6 +73,7 @@ export interface CreateCommentVariables {
   content: string
   files?: File[]
   parentCommentId?: string
+  mentionedMemberIds?: string[]
 }
 
 export interface UpdateCommentVariables {
@@ -101,12 +111,16 @@ export function useCreateComment() {
   const { member_id } = useCommon()
 
   return useApiMutation<CreateCommentResponse, CreateCommentVariables>(
-    async ({ listId, taskId, content, files, parentCommentId }) => {
+    async ({ listId, taskId, content, files, parentCommentId, mentionedMemberIds }) => {
       const formData = new FormData()
       formData.append('content', content)
       
       if (parentCommentId) {
         formData.append('parentCommentId', parentCommentId)
+      }
+
+      if (mentionedMemberIds && mentionedMemberIds.length > 0) {
+        formData.append('mentionedMemberIds', JSON.stringify(mentionedMemberIds))
       }
       
       if (files && files.length > 0) {

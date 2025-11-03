@@ -1,14 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Comment } from '../schemas/comment.schema';
 import { CreateCommentDto, UpdateCommentDto } from '../dto/comment.dto';
+import { WorkspaceMember } from '../../workspace-members/schemas/workspace-member.schema';
 
 @Injectable()
 export class CommentService {
   constructor(
     @InjectRepository(Comment)
     private readonly commentRepository: Repository<Comment>,
+    @InjectRepository(WorkspaceMember)
+    private readonly workspaceMemberRepository: Repository<WorkspaceMember>,
   ) {}
 
   async create(
@@ -140,8 +143,37 @@ export class CommentService {
       take: limit,
     });
 
+    const allMentionedMemberIds = new Set<string>();
+    comments.forEach(comment => {
+      if (comment.mentionedMemberIds && comment.mentionedMemberIds.length > 0) {
+        comment.mentionedMemberIds.forEach(id => allMentionedMemberIds.add(id));
+      }
+    });
+
+    let mentionedMembersMap = new Map<string, WorkspaceMember>();
+    if (allMentionedMemberIds.size > 0) {
+      const mentionedMembers = await this.workspaceMemberRepository.find({
+        where: {
+          id: In(Array.from(allMentionedMemberIds)),
+          workspaceId,
+        },
+      });
+      mentionedMembers.forEach(member => {
+        mentionedMembersMap.set(member.id, member);
+      });
+    }
+
+    const commentsWithMembers = comments.map(comment => {
+      if (comment.mentionedMemberIds && comment.mentionedMemberIds.length > 0) {
+        (comment as any).mentionedMembers = comment.mentionedMemberIds
+          .map(id => mentionedMembersMap.get(id))
+          .filter(member => member !== undefined);
+      }
+      return comment;
+    });
+
     return {
-      comments,
+      comments: commentsWithMembers,
       total,
       page,
       limit,

@@ -27,6 +27,14 @@ function convertCommentToMessage(comment: Comment, currentMemberId: string): Cha
         ? `${comment.createdBy.firstName} ${comment.createdBy.lastName}`
         : comment.createdBy.email
 
+    const mentionedMembers = comment.mentionedMembers?.map((member: any) => ({
+        id: member._id,
+        label: member.firstName && member.lastName 
+            ? `${member.firstName} ${member.lastName}`.trim()
+            : member.primaryEmail || member.email,
+        email: member.primaryEmail || member.email
+    })) || []
+
     return {
         id: comment._id,
         user: {
@@ -52,7 +60,8 @@ function convertCommentToMessage(comment: Comment, currentMemberId: string): Cha
             count: reaction.memberIds.length,
             hasReacted: reaction.memberIds.includes(currentMemberId),
             memberIds: reaction.memberIds
-        })) || []
+        })) || [],
+        mentionedMembers
     }
 }
 
@@ -141,14 +150,15 @@ export default function TaskChat({ taskId }: TaskChatProps) {
         }
     }
 
-    const handleSendMessage = async (message: string, files: File[]) => {
+    const handleSendMessage = async (message: string, files: File[], mentionedMemberIds: string[]) => {
         if (message.trim() || files.length > 0) {
             try {
                 await createCommentMutation.mutateAsync({
                     listId,
                     taskId,
                     content: message,
-                    files
+                    files,
+                    mentionedMemberIds
                 })
                 
                 setNewMessage('')

@@ -8,3 +8,5 @@ Don't add code comments.
 - Use the schema dir and not the entity dir for database models.
 - Frontend nextjs app is in the /frontend dir.
 - Don't create any .md files unless I asked you to.
+- For new components, make sure they depend on props a lot.
+

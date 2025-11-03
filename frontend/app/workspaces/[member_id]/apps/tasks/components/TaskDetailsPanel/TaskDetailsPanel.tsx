@@ -21,7 +21,6 @@ interface TaskDetailsPanelProps {
 
 export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelProps) {
     const [activeTab, setActiveTab] = React.useState<'details' | 'chat' | 'activities'>('details')
-    const [isChatLoading, setIsChatLoading] = React.useState(false)
     const params = useParams()
     const listId = params.list_id as string
     const queryClient = useQueryClient()
@@ -37,16 +36,6 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
         onClose()
     }, [onClose, queryClient, listId])
 
-    React.useEffect(() => {
-        if (activeTab === 'chat') {
-            setIsChatLoading(true)
-            const timer = setTimeout(() => {
-                setIsChatLoading(false)
-            }, 800)
-            return () => clearTimeout(timer)
-        }
-    }, [activeTab])
-
     const renderTabContent = () => {
         if (!taskDetailsData?.payload) {
             return <TaskDetails />
@@ -59,7 +48,7 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
             case 'details':
                 return <TaskDetails task={task} checklist={checklist} files={files} />
             case 'chat':
-                return isChatLoading ? <TaskChatLoading /> : <TaskChat taskId={taskID} />
+                return <TaskChat taskId={taskID} />
             case 'activities':
                 return <TaskActivities />
             default:
@@ -109,7 +98,7 @@ export default function TaskDetailsPanel({ taskID, onClose }: TaskDetailsPanelPr
 
 
     return (
-        <div className='bg-popover/95 backdrop-blur-sm select-none shadow-2xl md:w-[700px] w-screen border-l z-50 fixed right-0 bottom-0 md:h-app-body h-screen grid grid-cols-1 md:mb-[8px] transition-all duration-300 ease-in-out'>
+        <div className='bg-popover/95 backdrop-blur-sm select-none shadow-2xl md:w-[700px] w-screen border-l z-50 fixed right-2 bottom-0 md:h-app-body h-screen grid grid-cols-1 md:mb-[8px] transition-all duration-300 ease-in-out'>
             <div className="flex flex-col h-full">                
                 <header className='border-b h-app-header-sm bg-background/50 backdrop-blur-sm flex items-center justify-between px-4'>
                     <div className="flex items-center gap-3">

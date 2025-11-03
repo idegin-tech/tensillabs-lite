@@ -170,7 +170,6 @@ export default function TaskDetailsAttachments({ files = [], taskId }: TaskDetai
                             <FileThumbnailRenderer
                                 fileType={file.name}
                                 mimeType={file.mimeType}
-                                size={file.size}
                             />
                             
                             <div className="flex-grow min-w-0 space-y-1">

@@ -9,12 +9,19 @@ import DOMPurify from 'dompurify'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
+export interface MentionedMember {
+  id: string
+  label: string
+  email?: string
+}
+
 interface MarkdownRendererProps {
   content: string
   className?: string
   allowHtml?: boolean
   collapsible?: boolean
   maxLength?: number
+  mentionedMembers?: MentionedMember[]
 }
 
 export default function MarkdownRenderer({ 
@@ -22,7 +29,8 @@ export default function MarkdownRenderer({
   className, 
   allowHtml = false, 
   collapsible = false, 
-  maxLength = 300 
+  maxLength = 300,
+  mentionedMembers = []
 }: MarkdownRendererProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -59,11 +67,12 @@ export default function MarkdownRenderer({
           'ul', 'ol', 'li',
           'blockquote',
           'a', 'img',
-          'table', 'thead', 'tbody', 'tr', 'th', 'td'
+          'table', 'thead', 'tbody', 'tr', 'th', 'td',
+          'span'
         ],
         ALLOWED_ATTR: [
           'href', 'src', 'alt', 'title', 'target', 'rel',
-          'class', 'style'
+          'class', 'style', 'data-type', 'data-id', 'data-label'
         ],
         ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
       })
@@ -187,6 +196,21 @@ export default function MarkdownRenderer({
                   {children}
                 </code>
               )
+            },
+            span: ({ children, className, node, ...props }) => {
+              const properties = (node as any)?.properties
+              const dataType = properties?.dataType || properties?.['data-type']
+              if (dataType === 'mention') {
+                return (
+                  <span
+                    className="mention inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/10 text-secondary font-medium text-sm border border-secondary/20 hover:bg-secondary/20 transition-colors"
+                    {...props}
+                  >
+                    {children}
+                  </span>
+                )
+              }
+              return <span className={className} {...props}>{children}</span>
             }
           }}
         >

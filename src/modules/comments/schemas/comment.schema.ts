@@ -59,6 +59,10 @@ export class Comment {
     memberIds: string[];
   }>;
 
+  @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+  @Index()
+  mentionedMemberIds: string[];
+
   @Column({ type: 'uuid', nullable: true })
   listId: string;
 

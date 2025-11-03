@@ -46,11 +46,11 @@ export function NavMemberInfo({
 
   const displayName = member.firstName && member.lastName
     ? `${member.firstName} ${member.lastName}`
-    : member.email
+    : member.primaryEmail
 
   const initials = member.firstName && member.lastName
     ? `${member.firstName[0]}${member.lastName[0]}`
-    : member.email[0].toUpperCase()
+    : member.primaryEmail[0].toUpperCase()
 
   const avatarUrl = member.avatarURL?.original || null
 
@@ -69,7 +69,7 @@ export function NavMemberInfo({
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{displayName}</span>
-                <span className="truncate text-xs">{member.email}</span>
+                <span className="truncate text-xs">{member.primaryEmail}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -88,7 +88,7 @@ export function NavMemberInfo({
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{displayName}</span>
-                  <span className="truncate text-xs">{member.email}</span>
+                  <span className="truncate text-xs">{member.primaryEmail}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

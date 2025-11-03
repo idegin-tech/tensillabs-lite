@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -35,10 +35,15 @@ import {
     TbMoodSmile,
     TbLink,
     TbPhoto,
+    TbAt,
 } from 'react-icons/tb'
 import { cn } from '@/lib/utils'
 import type { EmojiClickData } from 'emoji-picker-react'
 import { EmojiStyle } from 'emoji-picker-react'
+import { CustomMention } from './CustomMention'
+import { createMentionSuggestion } from './mentionSuggestion'
+import type { MentionItem } from './MentionList'
+import { useWorkspaceMembers } from '@/hooks/use-workspace-members'
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
 
@@ -54,7 +59,7 @@ interface ChatInputProps {
     disabled?: boolean
     maxLength?: number
     files?: ChatFile[]
-    onSend: (message: string, files: File[]) => void
+    onSend: (message: string, files: File[], mentionedMemberIds: string[]) => void
     onChange?: (message: string) => void
     onFilesChange?: (files: ChatFile[]) => void
     className?: string
@@ -81,6 +86,61 @@ export default function ChatInput({
     const [isFocused, setIsFocused] = useState(false)
     const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const { members: workspaceMembers, isLoading: membersLoading, error: membersError } = useWorkspaceMembers({ limit: 100 })
+    
+    const membersRef = useRef<any[]>([])
+    
+    useEffect(() => {
+        if (workspaceMembers && workspaceMembers.length > 0) {
+            membersRef.current = workspaceMembers
+        }
+    }, [workspaceMembers])
+
+    const fetchMembers = useCallback(
+        async (query: string): Promise<MentionItem[]> => {
+            const currentMembers = membersRef.current
+            
+            if (!currentMembers || currentMembers.length === 0) {
+                return []
+            }
+
+            const lowerQuery = query.toLowerCase()
+            
+            const filtered = currentMembers.filter((member: any) => {
+                if (!lowerQuery) return true
+                
+                const fullName = `${member.firstName || ''} ${member.lastName || ''}`.trim().toLowerCase()
+                const firstName = (member.firstName || '').toLowerCase()
+                const lastName = (member.lastName || '').toLowerCase()
+                const email = (member.primaryEmail || '').toLowerCase()
+                
+                return (
+                    fullName.includes(lowerQuery) ||
+                    firstName.includes(lowerQuery) ||
+                    lastName.includes(lowerQuery) ||
+                    email.includes(lowerQuery)
+                )
+            })
+
+            const result = filtered.map((member: any) => {
+                const fullName = `${member.firstName || ''} ${member.lastName || ''}`.trim()
+                return {
+                    id: member._id,
+                    label: fullName || member.primaryEmail,
+                    email: member.primaryEmail,
+                    avatar: member.avatarURL?.original || member.avatarURL?.sm,
+                }
+            })
+
+            return result
+        },
+        []
+    )
+
+    const mentionSuggestion = useMemo(
+        () => createMentionSuggestion(fetchMembers),
+        [fetchMembers]
+    )
 
     const editor = useEditor({
         extensions: [
@@ -91,7 +151,10 @@ export default function ChatInput({
             }),
             Placeholder.configure({
                 placeholder
-            })
+            }),
+            CustomMention.configure({
+                suggestion: mentionSuggestion,
+            }),
         ],
         content: value,
         editable: !disabled,
@@ -112,8 +175,17 @@ export default function ChatInput({
         const text = editor.getText().trim()
         if (!text && attachedFiles.length === 0) return
 
+        const mentionedMemberIds: string[] = []
+        editor.state.doc.descendants((node) => {
+            if (node.type.name === 'mention' && node.attrs.id) {
+                mentionedMemberIds.push(node.attrs.id)
+            }
+        })
+
+        const uniqueMemberIds = [...new Set(mentionedMemberIds)]
         const filesToSend = attachedFiles.map(f => f.file)
-        onSend(text, filesToSend)
+        const htmlContent = editor.getHTML()
+        onSend(htmlContent, filesToSend, uniqueMemberIds)
 
         editor.commands.clearContent()
         setAttachedFiles([])
@@ -146,7 +218,8 @@ export default function ChatInput({
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
-    }, [attachedFiles, maxFiles, onFilesChange])
+    }, [attachedFiles, maxFiles, onFilesChange]);
+
     const handleRemoveFile = useCallback((fileId: string) => {
         const updatedFiles = attachedFiles.filter(f => f.id !== fileId)
         setAttachedFiles(updatedFiles)
@@ -290,6 +363,26 @@ export default function ChatInput({
                             </TooltipTrigger>
                             <TooltipContent side="top">
                                 <p>Code</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        <Separator orientation="vertical" className="h-5 mx-1" />
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => editor?.chain().focus().insertContent('@').run()}
+                                    disabled={disabled}
+                                    className="h-7 w-7 p-0 hover:bg-accent"
+                                >
+                                    <TbAt className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                                <p>Mention</p>
                             </TooltipContent>
                         </Tooltip>
 
