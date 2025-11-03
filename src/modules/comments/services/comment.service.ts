@@ -35,7 +35,7 @@ export class CommentService {
   async findOne(id: string, workspaceId: string): Promise<Comment> {
     const comment = await this.commentRepository.findOne({
       where: { id, workspaceId, isDeleted: false },
-      relations: ['createdBy'],
+      relations: ['createdBy', 'files'],
     });
 
     if (!comment) {
@@ -134,8 +134,8 @@ export class CommentService {
   ): Promise<{ comments: Comment[]; total: number; page: number; limit: number }> {
     const [comments, total] = await this.commentRepository.findAndCount({
       where: { taskId, workspaceId, isDeleted: false, parentCommentId: null },
-      relations: ['createdBy'],
-      order: { createdAt: 'DESC' },
+      relations: ['createdBy', 'files'],
+      order: { createdAt: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,
     });

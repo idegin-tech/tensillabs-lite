@@ -159,7 +159,7 @@ export function AppSidebar({
 }: React.ComponentProps<typeof Sidebar> & {
   navContent?: React.ReactNode;
 }) {
-  const { state: { workspace } } = useWorkspaceMember();
+  const { state: { workspace, member } } = useWorkspaceMember();
 
   return (
     <Sidebar variant="inset" {...props} className="flex select-none">
@@ -189,7 +189,7 @@ export function AppSidebar({
           <NavSecondary items={data.navSecondary} className="mt-auto" />
         </SidebarContent>
         <SidebarFooter>
-          <NavMemberInfo user={data.user} />
+          <NavMemberInfo member={member} />
         </SidebarFooter>
       </div>
     </Sidebar>

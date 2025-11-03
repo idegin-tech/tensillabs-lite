@@ -1,76 +1,22 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import dynamic from 'next/dynamic'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { 
+    ChatMessage, 
+    ChatBubbleLoading,
+    type ChatMessageData,
+    type ChatReaction
+} from '@/components/chat'
 import ChatInput, { ChatFile } from '@/components/chat/ChatInput'
-import FileThumbnailRenderer from '@/components/FileThumbnailRenderer'
-import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-    CarouselNext,
-    CarouselPrevious,
-} from '@/components/ui/carousel'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { TbMessageCircle, TbDots, TbEdit, TbTrash, TbCopy, TbFlag, TbLoader2, TbAlertCircle, TbMoodSmile } from 'react-icons/tb'
-import { cn } from '@/lib/utils'
+import { TbMessageCircle, TbLoader2, TbAlertCircle } from 'react-icons/tb'
 import { useParams } from 'next/navigation'
 import { useTaskComments, useCreateComment, useAddReaction, useRemoveReaction, Comment } from '@/hooks/use-comments'
 import { useWorkspaceMember } from '@/contexts/workspace-member.context'
 import SectionPlaceholder from '@/components/placeholders/SectionPlaceholder'
-import type { EmojiClickData } from 'emoji-picker-react'
+import { formatDistanceToNow } from 'date-fns'
 
-const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
-
-interface MessageFile {
-    id: string
-    name: string
-    type: string
-    size: number
-    url: string
-}
-
-interface MessageReaction {
-    emoji: string
-    count: number
-    hasReacted: boolean
-    memberIds: string[]
-}
-
-interface Message {
-    id: string
-    user: { name: string; avatar: string | null; initials: string; memberId: string }
-    message: string
-    timestamp: string
-    isCurrentUser: boolean
-    files?: MessageFile[]
-    reactions?: MessageReaction[]
-}
-
-function formatTimeAgo(dateString: string): string {
-    const date = new Date(dateString)
-    const now = new Date()
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-    if (seconds < 60) return 'just now'
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`
-    return date.toLocaleDateString()
-}
-
-function convertCommentToMessage(comment: Comment, currentMemberId: string): Message {
+function convertCommentToMessage(comment: Comment, currentMemberId: string): ChatMessageData {
     const isCurrentUser = comment.createdById === currentMemberId
     
     const initials = comment.createdBy.firstName && comment.createdBy.lastName
@@ -90,14 +36,16 @@ function convertCommentToMessage(comment: Comment, currentMemberId: string): Mes
             memberId: comment.createdById
         },
         message: comment.content,
-        timestamp: formatTimeAgo(comment.createdAt),
+        timestamp: formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }),
         isCurrentUser,
+        onlineStatus: 'online',
         files: comment.files?.map((file: any) => ({
             id: file._id || file.id,
             name: file.name,
             type: file.mimeType,
             size: file.size,
-            url: file.fileURL
+            url: file.fileURL,
+            thumbnailUrl: file.thumbnailURL
         })) || [],
         reactions: comment.reactions?.map((reaction: any) => ({
             emoji: reaction.emoji,
@@ -108,224 +56,15 @@ function convertCommentToMessage(comment: Comment, currentMemberId: string): Mes
     }
 }
 
-interface MessageBubbleProps {
-    message: Message
-    onReactionClick: (commentId: string, emoji: string, hasReacted: boolean) => void
-    onAddReaction: (commentId: string, emoji: string) => void
-}
-
-function MessageBubble({ message, onReactionClick, onAddReaction }: MessageBubbleProps) {
-    const [reactionPickerOpen, setReactionPickerOpen] = useState(false)
-
-    const handleEmojiClick = (emojiData: EmojiClickData) => {
-        onAddReaction(message.id, emojiData.emoji)
-        setReactionPickerOpen(false)
-    }
-
-    return (
-        <div className={`flex-1 max-w-[80%] ${message.isCurrentUser ? 'items-end' : 'items-start'}`}>
-            <div className={`relative rounded-lg p-3 ${message.isCurrentUser
-                ? 'bg-primary/20 text-primary-foreground ml-auto'
-                : 'bg-muted'
-                }`}>
-                {!message.isCurrentUser && (
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">{message.user.name}</span>
-                        <span className="text-xs text-muted-foreground">{message.timestamp}</span>
-                    </div>
-                )}
-                {message.isCurrentUser && (
-                    <div className="flex items-center gap-2 mb-1 justify-end">
-                        <span className="font-medium text-sm">{message.user.name}</span>
-                        <span className="text-xs text-muted-foreground">{message.timestamp}</span>
-                    </div>
-                )}
-                <div className="text-sm whitespace-pre-wrap pr-6">{message.message}</div>
-
-                {message.files && message.files.length > 0 && (
-                    <div className="mt-3 -mb-1">
-                        {message.files.length === 1 ? (
-                            <div className="flex items-center gap-2 p-2 rounded-md border bg-background/50 hover:bg-background/80 transition-colors">
-                                <FileThumbnailRenderer
-                                    fileType={message.files[0].name}
-                                    mimeType={message.files[0].type}
-                                    preview={message.files[0].type.startsWith('image/') ? message.files[0].url : undefined}
-                                    size="sm"
-                                />
-                                <div className="flex flex-col min-w-0 flex-1">
-                                    <span className="text-xs font-medium truncate">
-                                        {message.files[0].name}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {(message.files[0].size / 1024).toFixed(1)} KB
-                                    </span>
-                                </div>
-                            </div>
-                        ) : (
-                            <Carousel
-                                opts={{
-                                    align: 'start',
-                                    loop: false,
-                                }}
-                                className="w-full"
-                            >
-                                <CarouselContent className="-ml-2">
-                                    {message.files.map((file) => (
-                                        <CarouselItem key={file.id} className="pl-2 basis-auto">
-                                            <div className="flex items-center gap-2 p-2 rounded-md border bg-background/50 hover:bg-background/80 transition-colors">
-                                                <FileThumbnailRenderer
-                                                    fileType={file.name}
-                                                    mimeType={file.type}
-                                                    preview={file.type.startsWith('image/') ? file.url : undefined}
-                                                    size="sm"
-                                                />
-                                                <div className="flex flex-col min-w-0 max-w-[100px]">
-                                                    <span className="text-xs font-medium truncate">
-                                                        {file.name}
-                                                    </span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {(file.size / 1024).toFixed(1)} KB
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </CarouselItem>
-                                    ))}
-                                </CarouselContent>
-                                <CarouselPrevious className="-left-2 h-6 w-6" />
-                                <CarouselNext className="-right-2 h-6 w-6" />
-                            </Carousel>
-                        )}
-                    </div>
-                )}
-                
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`absolute top-2 ${message.isCurrentUser ? 'left-2' : 'right-2'} h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity`}
-                        >
-                            <TbDots className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align={message.isCurrentUser ? 'start' : 'end'}>
-                        {message.isCurrentUser && (
-                            <>
-                                <DropdownMenuItem>
-                                    <TbEdit className="mr-2 h-4 w-4" />
-                                    <span>Edit</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">
-                                    <TbTrash className="mr-2 h-4 w-4" />
-                                    <span>Delete</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                            </>
-                        )}
-                        <DropdownMenuItem>
-                            <TbCopy className="mr-2 h-4 w-4" />
-                            <span>Copy</span>
-                        </DropdownMenuItem>
-                        {!message.isCurrentUser && (
-                            <DropdownMenuItem>
-                                <TbFlag className="mr-2 h-4 w-4" />
-                                <span>Report</span>
-                            </DropdownMenuItem>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-
-            {message.reactions && message.reactions.length > 0 && (
-                <div className={cn("flex flex-wrap gap-1 mt-1.5", message.isCurrentUser ? 'justify-end' : 'justify-start')}>
-                    {message.reactions.map((reaction, index) => (
-                        <button
-                            key={index}
-                            onClick={() => onReactionClick(message.id, reaction.emoji, reaction.hasReacted)}
-                            className={cn(
-                                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors",
-                                reaction.hasReacted
-                                    ? "bg-primary/10 border-primary/30 hover:bg-primary/20"
-                                    : "bg-muted hover:bg-muted/80"
-                            )}
-                        >
-                            <span>{reaction.emoji}</span>
-                            <span className="text-xs font-medium">{reaction.count}</span>
-                        </button>
-                    ))}
-                    <Popover open={reactionPickerOpen} onOpenChange={setReactionPickerOpen}>
-                        <PopoverTrigger asChild>
-                            <button
-                                className={cn(
-                                    "inline-flex items-center justify-center h-6 w-6 rounded-full text-xs border transition-colors",
-                                    "bg-muted hover:bg-muted/80 border-border"
-                                )}
-                            >
-                                <TbMoodSmile className="h-3.5 w-3.5" />
-                            </button>
-                        </PopoverTrigger>
-                        <PopoverContent 
-                            className="w-auto p-0 border-0 rounded-full" 
-                            align={message.isCurrentUser ? 'end' : 'start'}
-                            side="top"
-                        >
-                            <EmojiPicker
-                                onEmojiClick={handleEmojiClick}
-                                autoFocusSearch={false}
-                                reactionsDefaultOpen={true}
-                                reactions={['1f44d', '2764-fe0f', '1f389', '1f44f', '1f525', '1f4af']}
-                                width={350}
-                                height={400}
-                            />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-            )}
-            
-            {(!message.reactions || message.reactions.length === 0) && (
-                <div className={cn("flex gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity", message.isCurrentUser ? 'justify-end' : 'justify-start')}>
-                    <Popover open={reactionPickerOpen} onOpenChange={setReactionPickerOpen}>
-                        <PopoverTrigger asChild>
-                            <button
-                                className={cn(
-                                    "inline-flex items-center justify-center h-6 w-6 rounded-full text-xs border transition-colors",
-                                    "bg-muted hover:bg-muted/80 border-border"
-                                )}
-                            >
-                                <TbMoodSmile className="h-3.5 w-3.5" />
-                            </button>
-                        </PopoverTrigger>
-                        <PopoverContent 
-                            className="w-auto p-0 border-0 rounded-full" 
-                            align={message.isCurrentUser ? 'end' : 'start'}
-                            side="top"
-                        >
-                            <EmojiPicker
-                                onEmojiClick={handleEmojiClick}
-                                autoFocusSearch={false}
-                                reactionsDefaultOpen={true}
-                                reactions={['1f44d', '2764-fe0f', '1f389', '1f44f', '1f525', '1f4af']}
-                                width={350}
-                                height={400}
-                            />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-            )}
-        </div>
-    )
-}
-
 interface TaskChatProps {
     taskId: string
 }
-
-
 
 export default function TaskChat({ taskId }: TaskChatProps) {
     const [newMessage, setNewMessage] = useState('')
     const [chatFiles, setChatFiles] = useState<ChatFile[]>([])
     const [isLoadingMore, setIsLoadingMore] = useState(false)
+    const [optimisticReactions, setOptimisticReactions] = useState<Record<string, { emoji: string; action: 'add' | 'remove' }[]>>({})
     const scrollAreaRef = useRef<HTMLDivElement>(null)
     const params = useParams()
     const listId = params.list_id as string
@@ -337,12 +76,60 @@ export default function TaskChat({ taskId }: TaskChatProps) {
     const addReactionMutation = useAddReaction()
     const removeReactionMutation = useRemoveReaction()
 
-    const messages: Message[] = React.useMemo(() => {
+    const messages: ChatMessageData[] = React.useMemo(() => {
         if (!commentsData?.payload?.comments || !workspaceMember) return []
-        return commentsData.payload.comments.map((comment: any) => 
-            convertCommentToMessage(comment, workspaceMember._id)
-        )
-    }, [commentsData, workspaceMember])
+        
+        return commentsData.payload.comments.map((comment: any) => {
+            const messageData = convertCommentToMessage(comment, workspaceMember._id)
+            
+            const commentOptimisticReactions = optimisticReactions[comment._id] || []
+            if (commentOptimisticReactions.length > 0) {
+                const reactionsMap = new Map<string, ChatReaction>()
+                
+                messageData.reactions?.forEach(reaction => {
+                    reactionsMap.set(reaction.emoji, { ...reaction })
+                })
+                
+                commentOptimisticReactions.forEach(({ emoji, action }) => {
+                    const existing = reactionsMap.get(emoji)
+                    
+                    if (action === 'add') {
+                        if (existing) {
+                            if (!existing.memberIds.includes(workspaceMember._id)) {
+                                existing.memberIds.push(workspaceMember._id)
+                                existing.count++
+                                existing.hasReacted = true
+                            }
+                        } else {
+                            reactionsMap.set(emoji, {
+                                emoji,
+                                count: 1,
+                                hasReacted: true,
+                                memberIds: [workspaceMember._id]
+                            })
+                        }
+                    } else if (action === 'remove') {
+                        if (existing) {
+                            const memberIndex = existing.memberIds.indexOf(workspaceMember._id)
+                            if (memberIndex > -1) {
+                                existing.memberIds.splice(memberIndex, 1)
+                                existing.count--
+                                existing.hasReacted = false
+                                
+                                if (existing.count === 0) {
+                                    reactionsMap.delete(emoji)
+                                }
+                            }
+                        }
+                    }
+                })
+                
+                messageData.reactions = Array.from(reactionsMap.values())
+            }
+            
+            return messageData
+        })
+    }, [commentsData, workspaceMember, optimisticReactions])
 
     const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
         const target = event.currentTarget
@@ -372,24 +159,56 @@ export default function TaskChat({ taskId }: TaskChatProps) {
         }
     }
 
-    const handleReactionClick = async (commentId: string, emoji: string, hasReacted: boolean) => {
+    const handleReactionClick = async (messageId: string, emoji: string, hasReacted: boolean) => {
+        const action = hasReacted ? 'remove' : 'add'
+        
+        setOptimisticReactions(prev => ({
+            ...prev,
+            [messageId]: [...(prev[messageId] || []), { emoji, action }]
+        }))
+
         try {
             if (hasReacted) {
-                await removeReactionMutation.mutateAsync({ listId, taskId, commentId, emoji })
+                await removeReactionMutation.mutateAsync({ listId, taskId, commentId: messageId, emoji })
             } else {
-                await addReactionMutation.mutateAsync({ listId, taskId, commentId, emoji })
+                await addReactionMutation.mutateAsync({ listId, taskId, commentId: messageId, emoji })
             }
         } catch (error) {
             console.error('Failed to toggle reaction:', error)
+            
+            setOptimisticReactions(prev => {
+                const messageReactions = prev[messageId] || []
+                return {
+                    ...prev,
+                    [messageId]: messageReactions.filter(r => !(r.emoji === emoji && r.action === action))
+                }
+            })
         }
     }
 
-    const handleAddReaction = async (commentId: string, emoji: string) => {
+    const handleAddReaction = async (messageId: string, emoji: string) => {
+        setOptimisticReactions(prev => ({
+            ...prev,
+            [messageId]: [...(prev[messageId] || []), { emoji, action: 'add' }]
+        }))
+
         try {
-            await addReactionMutation.mutateAsync({ listId, taskId, commentId, emoji })
+            await addReactionMutation.mutateAsync({ listId, taskId, commentId: messageId, emoji })
         } catch (error) {
             console.error('Failed to add reaction:', error)
+            
+            setOptimisticReactions(prev => {
+                const messageReactions = prev[messageId] || []
+                return {
+                    ...prev,
+                    [messageId]: messageReactions.filter(r => !(r.emoji === emoji && r.action === 'add'))
+                }
+            })
         }
+    }
+
+    const handleCopy = (message: string) => {
+        navigator.clipboard.writeText(message)
     }
 
     if (error) {
@@ -434,115 +253,52 @@ export default function TaskChat({ taskId }: TaskChatProps) {
                 )}
 
                 {isLoading ? (
-                    <div className="space-y-4">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="flex gap-3">
-                                <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
-                                <div className="flex-1 space-y-2">
-                                    <Skeleton className="h-4 w-24" />
-                                    <Skeleton className="h-16 w-full max-w-md" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <ChatBubbleLoading count={5} showIncoming={true} showOutgoing={true} />
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-6 max-w-full">
                         {messages.map((message) => (
-                            <div
+                            <ChatMessage
                                 key={message.id}
-                                className={`flex gap-3 group ${message.isCurrentUser ? 'flex-row-reverse' : ''}`}
-                            >
-                                <Avatar className="h-8 w-8 flex-shrink-0">
-                                    <AvatarImage src={message.user.avatar || undefined} />
-                                    <AvatarFallback className="text-xs">{message.user.initials}</AvatarFallback>
-                                </Avatar>
-
-                                <MessageBubble 
-                                    message={message} 
-                                    onReactionClick={handleReactionClick}
-                                    onAddReaction={handleAddReaction}
-                                />
-                            </div>
+                                data={message}
+                                onReactionClick={(emoji, hasReacted) => 
+                                    handleReactionClick(message.id, emoji, hasReacted)
+                                }
+                                onAddReaction={(emoji) => 
+                                    handleAddReaction(message.id, emoji)
+                                }
+                                onCopy={() => handleCopy(message.message)}
+                                onFileClick={(file) => {
+                                    window.open(file.url, '_blank')
+                                }}
+                            />
                         ))}
                         
-                        {createCommentMutation.isPending && (
-                            <div className="flex gap-3 flex-row-reverse">
-                                <Avatar className="h-8 w-8 flex-shrink-0">
-                                    <AvatarImage src={workspaceMember?.avatarURL?.original || undefined} />
-                                    <AvatarFallback className="text-xs">
-                                        {workspaceMember?.firstName?.[0]}{workspaceMember?.lastName?.[0]}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 max-w-[80%] items-end">
-                                    <div className="relative rounded-lg p-3 bg-primary/20 text-primary-foreground ml-auto opacity-70">
-                                        <div className="text-sm whitespace-pre-wrap mb-2">{newMessage}</div>
-                                        
-                                        {chatFiles.length > 0 && (
-                                            <div className="mt-2 mb-2">
-                                                {chatFiles.length === 1 ? (
-                                                    <div className="flex items-center gap-2 p-2 rounded-md border bg-background/50 opacity-70">
-                                                        <FileThumbnailRenderer
-                                                            fileType={chatFiles[0].file.name}
-                                                            mimeType={chatFiles[0].file.type}
-                                                            preview={chatFiles[0].file.type.startsWith('image/') ? chatFiles[0].preview : undefined}
-                                                            size="sm"
-                                                        />
-                                                        <div className="flex flex-col min-w-0 flex-1">
-                                                            <span className="text-xs font-medium truncate">
-                                                                {chatFiles[0].file.name}
-                                                            </span>
-                                                            <span className="text-xs text-muted-foreground">
-                                                                {(chatFiles[0].file.size / 1024).toFixed(1)} KB
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <Carousel
-                                                        opts={{
-                                                            align: 'start',
-                                                            loop: false,
-                                                        }}
-                                                        className="w-full"
-                                                    >
-                                                        <CarouselContent className="-ml-2">
-                                                            {chatFiles.map((file, index) => (
-                                                                <CarouselItem key={index} className="pl-2 basis-auto">
-                                                                    <div className="flex items-center gap-2 p-2 rounded-md border bg-background/50 opacity-70">
-                                                                        <FileThumbnailRenderer
-                                                                            fileType={file.file.name}
-                                                                            mimeType={file.file.type}
-                                                                            preview={file.file.type.startsWith('image/') ? file.preview : undefined}
-                                                                            size="sm"
-                                                                        />
-                                                                        <div className="flex flex-col min-w-0 max-w-[100px]">
-                                                                            <span className="text-xs font-medium truncate">
-                                                                                {file.file.name}
-                                                                            </span>
-                                                                            <span className="text-xs text-muted-foreground">
-                                                                                {(file.file.size / 1024).toFixed(1)} KB
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                </CarouselItem>
-                                                            ))}
-                                                        </CarouselContent>
-                                                        <CarouselPrevious className="-left-2 h-6 w-6" />
-                                                        <CarouselNext className="-right-2 h-6 w-6" />
-                                                    </Carousel>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        <div className="flex items-center gap-2 text-xs">
-                                            <TbLoader2 className="h-3 w-3 animate-spin" />
-                                            <span>Sending...</span>
-                                        </div>
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mt-1 text-right">
-                                        just now
-                                    </div>
-                                </div>
-                            </div>
+                        {createCommentMutation.isPending && workspaceMember && (
+                            <ChatMessage
+                                data={{
+                                    id: 'sending',
+                                    message: newMessage,
+                                    isCurrentUser: true,
+                                    user: {
+                                        name: 'You',
+                                        avatar: workspaceMember.avatarURL?.original || null,
+                                        initials: `${workspaceMember.firstName?.[0] || ''}${workspaceMember.lastName?.[0] || ''}`,
+                                        memberId: workspaceMember._id
+                                    },
+                                    timestamp: 'just now',
+                                    onlineStatus: 'online',
+                                    files: chatFiles.map((file, index) => ({
+                                        id: `temp-${index}`,
+                                        name: file.file.name,
+                                        size: file.file.size,
+                                        type: file.file.type,
+                                        url: file.preview || '',
+                                        thumbnailUrl: file.preview
+                                    }))
+                                }}
+                                isSending={true}
+                                showDropdown={false}
+                            />
                         )}
                     </div>
                 )}
@@ -563,7 +319,7 @@ export default function TaskChat({ taskId }: TaskChatProps) {
             <div className="p-4 border-t bg-background/80 backdrop-blur-sm sticky bottom-0 z-30">
                 <ChatInput
                     value={newMessage}
-                    placeholder="Type your message... (Shift+Enter for new line)"
+                    placeholder="Type your message here... (Shift+Enter for new line)"
                     onSend={handleSendMessage}
                     onChange={setNewMessage}
                     files={chatFiles}
@@ -571,7 +327,7 @@ export default function TaskChat({ taskId }: TaskChatProps) {
                     showFormatting={true}
                     maxFiles={5}
                     acceptedFileTypes="image/*,application/pdf,.doc,.docx,.txt"
-                    disabled={isLoading || createCommentMutation.isPending}
+                    disabled={createCommentMutation.isPending}
                 />
             </div>
         </div>

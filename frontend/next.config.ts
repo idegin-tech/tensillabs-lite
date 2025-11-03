@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_NODE_ENV: process.env.NEXT_PUBLIC_NODE_ENV,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+    ],
+  },
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },

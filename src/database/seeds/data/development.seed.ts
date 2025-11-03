@@ -30,10 +30,10 @@ export const developmentSeedData: SeedData = {
 
     workspaces: [
         {
-            name: 'TensilLabs HQ',
-            description: 'Main workspace for TensilLabs team collaboration',
-            slug: 'tensillabs-hq',
-            createdByEmail: 'admin@tensillabs.com',
+            name: 'Hawksworth Inc.',
+            description: 'Best management consulting firm in Nigeria',
+            slug: 'hawksworth-inc',
+            createdByEmail: 'admin@hawksworth.com',
         },
         {
             name: 'Development Team',

@@ -30,6 +30,11 @@ class ApiClient {
     this.axiosInstance.interceptors.request.use(
       (config) => {
         config.headers['X-Request-ID'] = (++this.requestId).toString()
+        
+        if (config.data instanceof FormData) {
+          delete config.headers['Content-Type']
+        }
+        
         return config
       },
       (error) => Promise.reject(error)

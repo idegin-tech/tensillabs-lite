@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { useAuthActions } from "@/hooks/use-auth"
+import type { WorkspaceMember } from "@/types/workspace.types"
 
 import {
   Avatar,
@@ -32,16 +33,26 @@ import {
 } from "@/components/ui/sidebar"
 
 export function NavMemberInfo({
-  user,
+  member,
 }: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
+  member: WorkspaceMember | null
 }) {
   const { isMobile } = useSidebar()
   const { logout } = useAuthActions()
+
+  if (!member) {
+    return null
+  }
+
+  const displayName = member.firstName && member.lastName
+    ? `${member.firstName} ${member.lastName}`
+    : member.email
+
+  const initials = member.firstName && member.lastName
+    ? `${member.firstName[0]}${member.lastName[0]}`
+    : member.email[0].toUpperCase()
+
+  const avatarUrl = member.avatarURL?.original || null
 
   return (
     <SidebarMenu>
@@ -53,12 +64,12 @@ export function NavMemberInfo({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-medium">{displayName}</span>
+                <span className="truncate text-xs">{member.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -72,12 +83,12 @@ export function NavMemberInfo({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-medium">{displayName}</span>
+                  <span className="truncate text-xs">{member.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

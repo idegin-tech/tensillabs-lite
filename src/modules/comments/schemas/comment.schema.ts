@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -10,6 +11,7 @@ import {
 } from 'typeorm';
 import { WorkspaceMember } from '../../workspace-members/schemas/workspace-member.schema';
 import { Workspace } from '../../workspaces/schemas/workspace.schema';
+import { File } from '../../files/schemas/file.schema';
 
 @Entity('comments')
 @Index(['workspaceId'])
@@ -47,6 +49,9 @@ export class Comment {
   @ManyToOne(() => Comment, { nullable: true })
   @JoinColumn({ name: 'parentCommentId' })
   parentComment: Comment;
+
+  @OneToMany(() => File, (file) => file.comment)
+  files: File[];
 
   @Column({ type: 'jsonb', nullable: true, default: '[]' })
   reactions: Array<{

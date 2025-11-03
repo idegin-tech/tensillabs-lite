@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { WorkspaceMember } from '../../workspace-members/schemas/workspace-member.schema';
 import { Workspace } from '../../workspaces/schemas/workspace.schema';
+import { Comment } from '../../comments/schemas/comment.schema';
 
 @Entity('files')
 @Index(['workspaceId'])
@@ -55,6 +56,10 @@ export class File {
 
   @Column({ type: 'uuid', nullable: true })
   commentId: string;
+
+  @ManyToOne(() => Comment, (comment) => comment.files, { nullable: true })
+  @JoinColumn({ name: 'commentId' })
+  comment: Comment;
 
   @Column({ type: 'uuid', nullable: true })
   listId: string;
