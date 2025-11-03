@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Task, TaskPriority } from '../schemas/task.schema';
 import { Comment } from '../../../../comments/schemas/comment.schema';
+import { WorkspaceMember } from '../../../../workspace-members/schemas/workspace-member.schema';
 import {
   UpdateTaskDto,
   CreateTasksDto,
@@ -32,9 +33,52 @@ export class TaskService {
     private taskRepository: Repository<Task>,
     @InjectRepository(Comment)
     private commentRepository: Repository<Comment>,
+    @InjectRepository(WorkspaceMember)
+    private workspaceMemberRepository: Repository<WorkspaceMember>,
     private checklistService: ChecklistService,
     private fileService: FileService,
   ) {}
+
+  private async populateTaskAssignees(task: Task): Promise<any> {
+    if (!task.assigneeIds || task.assigneeIds.length === 0) {
+      return { ...task, assignee: [] };
+    }
+
+    const assignees = await this.workspaceMemberRepository.find({
+      where: {
+        id: In(task.assigneeIds),
+      },
+    });
+
+    return { ...task, assignee: assignees };
+  }
+
+  private async populateTasksAssignees(tasks: Task[]): Promise<any[]> {
+    if (tasks.length === 0) return [];
+
+    const allAssigneeIds = tasks
+      .flatMap(task => task.assigneeIds || [])
+      .filter((id, index, self) => id && self.indexOf(id) === index);
+
+    if (allAssigneeIds.length === 0) {
+      return tasks.map(task => ({ ...task, assignee: [] }));
+    }
+
+    const assignees = await this.workspaceMemberRepository.find({
+      where: {
+        id: In(allAssigneeIds),
+      },
+    });
+
+    const assigneeMap = new Map(assignees.map(a => [a.id, a]));
+
+    return tasks.map(task => ({
+      ...task,
+      assignee: (task.assigneeIds || [])
+        .map(id => assigneeMap.get(id))
+        .filter(Boolean),
+    }));
+  }
 
   async createTasks(
     listId: string,
@@ -64,7 +108,7 @@ export class TaskService {
       createdTasks.push(savedTask);
     }
 
-    return createdTasks;
+    return await this.populateTasksAssignees(createdTasks);
   }
 
   async updateTask(
@@ -110,7 +154,8 @@ export class TaskService {
       task.assigneeIds = updateTaskDto.assignee;
     }
 
-    return await this.taskRepository.save(task);
+    const savedTask = await this.taskRepository.save(task);
+    return await this.populateTaskAssignees(savedTask);
   }
 
   async getAllTasksByGroup(
@@ -128,6 +173,14 @@ export class TaskService {
 
     if (queryParams.meMode && currentMemberId) {
       queryBuilder.andWhere(':memberId = ANY(task.assigneeIds)', { memberId: currentMemberId });
+    }
+
+    if (queryParams.assignee_id) {
+      if (queryParams.assignee_id === 'unassigned') {
+        queryBuilder.andWhere('(task.assigneeIds IS NULL OR task.assigneeIds = ARRAY[]::text[] OR cardinality(task.assigneeIds) = 0)');
+      } else {
+        queryBuilder.andWhere(':assigneeId = ANY(task.assigneeIds)', { assigneeId: queryParams.assignee_id });
+      }
     }
 
     if (queryParams.status) {
@@ -189,8 +242,10 @@ export class TaskService {
 
     const hasMore = skip + tasks.length < totalCount;
 
+    const populatedTasks = await this.populateTasksAssignees(tasks);
+
     return {
-      tasks,
+      tasks: populatedTasks,
       totalCount,
       hasMore,
     };
@@ -237,9 +292,11 @@ export class TaskService {
         .limit(50)
         .getMany();
 
+      const populatedTasks = await this.populateTasksAssignees(tasks);
+
       grouped[priority] = {
-        count: tasks.length,
-        tasks,
+        count: populatedTasks.length,
+        tasks: populatedTasks,
       };
     }
 
@@ -288,9 +345,11 @@ export class TaskService {
         .limit(50)
         .getMany();
 
+      const populatedTasks = await this.populateTasksAssignees(tasks);
+
       grouped[config.status] = {
-        count: tasks.length,
-        tasks,
+        count: populatedTasks.length,
+        tasks: populatedTasks,
       };
     }
 
@@ -316,7 +375,8 @@ export class TaskService {
     }
 
     task.isDeleted = true;
-    return await this.taskRepository.save(task);
+    const deletedTask = await this.taskRepository.save(task);
+    return await this.populateTaskAssignees(deletedTask);
   }
 
   async getTaskDetails(
@@ -345,8 +405,10 @@ export class TaskService {
 
     const files = await this.fileService.findByTask(taskId, workspaceId);
 
+    const populatedTask = await this.populateTaskAssignees(task);
+
     return {
-      task,
+      task: populatedTask,
       checklist,
       files,
     };

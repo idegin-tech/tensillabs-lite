@@ -11,7 +11,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { TbDots, TbEdit, TbTrash, TbCopy, TbFlag, TbMoodSmile } from 'react-icons/tb'
+import { TbDots, TbEdit, TbTrash, TbCopy, TbFlag, TbMoodSmile, TbCornerUpLeft } from 'react-icons/tb'
 import dynamic from 'next/dynamic'
 import type { EmojiClickData } from 'emoji-picker-react'
 
@@ -37,6 +37,7 @@ export interface ChatBubbleContainerProps {
     reactions?: ChatReaction[]
     onReactionClick?: (emoji: string, hasReacted: boolean) => void
     onAddReaction?: (emoji: string) => void
+    onReply?: () => void
     onEdit?: () => void
     onDelete?: () => void
     onCopy?: () => void
@@ -57,6 +58,7 @@ export default function ChatBubbleContainer({
     reactions = [],
     onReactionClick,
     onAddReaction,
+    onReply,
     onEdit,
     onDelete,
     onCopy,
@@ -138,7 +140,7 @@ export default function ChatBubbleContainer({
                                     variant="ghost"
                                     size="sm"
                                     className={cn(
-                                        'absolute top-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background/80 bg-card shadow-lg z-10',
+                                        'absolute top-2 h-6 w-6 p-0 transition-opacity bg-sidebar shadow-md z-20 opacity-0 group-hover:opacity-100',
                                         isCurrentUser ? 'right-2' : 'left-2'
                                     )}
                                 >
@@ -146,6 +148,21 @@ export default function ChatBubbleContainer({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align={isCurrentUser ? 'end' : 'start'} className="min-w-[160px]">
+                                {onReply && (
+                                    <>
+                                        <DropdownMenuItem onClick={onReply}>
+                                            <TbCornerUpLeft className="mr-2 h-4 w-4" />
+                                            <span>Reply</span>
+                                        </DropdownMenuItem>
+                                        
+                                    </>
+                                )}
+                                {onCopy && (
+                                    <DropdownMenuItem onClick={onCopy}>
+                                        <TbCopy className="mr-2 h-4 w-4" />
+                                        <span>Copy</span>
+                                    </DropdownMenuItem>
+                                )}
                                 {isCurrentUser && (
                                     <>
                                         {onEdit && (
@@ -155,26 +172,17 @@ export default function ChatBubbleContainer({
                                             </DropdownMenuItem>
                                         )}
                                         {onDelete && (
+                                            <>
+                                            <DropdownMenuSeparator />
                                             <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
                                                 <TbTrash className="mr-2 h-4 w-4" />
                                                 <span>Delete</span>
                                             </DropdownMenuItem>
+                                            </>
                                         )}
-                                        {/* <DropdownMenuSeparator /> */}
                                     </>
                                 )}
-                                {onCopy && (
-                                    <DropdownMenuItem onClick={onCopy}>
-                                        <TbCopy className="mr-2 h-4 w-4" />
-                                        <span>Copy</span>
-                                    </DropdownMenuItem>
-                                )}
-                                {!isCurrentUser && onReport && (
-                                    <DropdownMenuItem onClick={onReport}>
-                                        <TbFlag className="mr-2 h-4 w-4" />
-                                        <span>Report</span>
-                                    </DropdownMenuItem>
-                                )}
+                                
                             </DropdownMenuContent>
                         </DropdownMenu>
                     )}

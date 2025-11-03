@@ -22,13 +22,26 @@ export interface ChatMessageData {
     files?: ChatFile[]
     reactions?: ChatReaction[]
     mentionedMembers?: Array<{ id: string; label: string; email?: string }>
+    quotedMessage?: {
+        id: string
+        content: string
+        member: {
+            name: string
+            avatar?: string
+        }
+        timestamp: string
+    }
+    isDeleted?: boolean
 }
 
 export interface ChatMessageProps {
     data: ChatMessageData
     isSending?: boolean
+    error?: string
+    onRetry?: () => void
     onReactionClick?: (emoji: string, hasReacted: boolean) => void
     onAddReaction?: (emoji: string) => void
+    onReply?: () => void
     onEdit?: () => void
     onDelete?: () => void
     onCopy?: () => void
@@ -43,8 +56,11 @@ export interface ChatMessageProps {
 export default function ChatMessage({
     data,
     isSending = false,
+    error,
+    onRetry,
     onReactionClick,
     onAddReaction,
+    onReply,
     onEdit,
     onDelete,
     onCopy,
@@ -78,6 +94,7 @@ export default function ChatMessage({
             reactions={data.reactions}
             onReactionClick={onReactionClick}
             onAddReaction={onAddReaction}
+            onReply={onReply}
             onEdit={data.isCurrentUser ? onEdit : undefined}
             onDelete={data.isCurrentUser ? onDelete : undefined}
             onCopy={onCopy}
@@ -90,6 +107,10 @@ export default function ChatMessage({
                 files={filesCarousel}
                 isSending={data.isCurrentUser ? isSending : undefined}
                 mentionedMembers={data.mentionedMembers}
+                quotedMessage={data.quotedMessage}
+                isDeleted={data.isDeleted}
+                error={data.isCurrentUser ? error : undefined}
+                onRetry={data.isCurrentUser ? onRetry : undefined}
             />
         </ChatBubbleContainer>
     )

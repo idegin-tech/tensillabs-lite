@@ -133,6 +133,7 @@ export const getTasksByGroupQuerySchema = z.object({
   due_status: z
     .enum(['overdue', 'today', 'tomorrow', 'this_week', 'later', 'none'])
     .optional(),
+  assignee_id: z.string().optional(),
 });
 
 export type SyncTaskDto = z.infer<typeof syncTaskSchema>;

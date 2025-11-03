@@ -2,7 +2,14 @@
 import React from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { TbEye, TbEdit, TbTrash, TbDownload } from 'react-icons/tb'
+import { TbEye, TbEdit, TbTrash, TbDownload, TbDots } from 'react-icons/tb'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import FileThumbnailRenderer from '@/components/FileThumbnailRenderer'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -45,8 +52,28 @@ export default function FileCard({
 }: FileCardProps) {
     const isLarge = size === 'large'
     
+    const handleView = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onView?.(file)
+    }
+
+    const handleEdit = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onEdit?.(file)
+    }
+
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onDelete?.(file)
+    }
+
+    const handleDownload = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onDownload?.(file)
+    }
+    
     return (
-        <Card className={`overflow-hidden hover:shadow-md transition-shadow ${isLarge ? 'p-4' : 'p-3'}`}>
+        <Card className={`overflow-hidden hover:shadow-md transition-shadow ${isLarge ? 'p-4' : 'p-3'} group`}>
             <div className="flex items-center gap-3">
                 <div className={`flex-shrink-0 ${isLarge ? 'w-16 h-16' : 'w-12 h-12'}`}>
                     <FileThumbnailRenderer 
@@ -73,47 +100,48 @@ export default function FileCard({
                     )}
                 </div>
                 
-                <div className="flex items-center gap-1 flex-shrink-0">
-                    {onDownload && (
-                        <Button
-                            variant="ghost"
-                            size={isLarge ? 'default' : 'sm'}
-                            onClick={() => onDownload(file)}
-                            className={isLarge ? 'h-9 w-9' : 'h-8 w-8'}
-                        >
-                            <TbDownload className={isLarge ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
-                        </Button>
-                    )}
-                    {onView && (
-                        <Button
-                            variant="ghost"
-                            size={isLarge ? 'default' : 'sm'}
-                            onClick={() => onView(file)}
-                            className={isLarge ? 'h-9 w-9' : 'h-8 w-8'}
-                        >
-                            <TbEye className={isLarge ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
-                        </Button>
-                    )}
-                    {onEdit && (
-                        <Button
-                            variant="ghost"
-                            size={isLarge ? 'default' : 'sm'}
-                            onClick={() => onEdit(file)}
-                            className={isLarge ? 'h-9 w-9' : 'h-8 w-8'}
-                        >
-                            <TbEdit className={isLarge ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
-                        </Button>
-                    )}
-                    {onDelete && (
-                        <Button
-                            variant="ghost"
-                            size={isLarge ? 'default' : 'sm'}
-                            onClick={() => onDelete(file)}
-                            className={`${isLarge ? 'h-9 w-9' : 'h-8 w-8'} hover:bg-destructive/10 hover:text-destructive`}
-                        >
-                            <TbTrash className={isLarge ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
-                        </Button>
-                    )}
+                <div className="flex-shrink-0">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <TbDots className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {onView && (
+                                <DropdownMenuItem onClick={handleView}>
+                                    <TbEye className="mr-2 h-4 w-4" />
+                                    View
+                                </DropdownMenuItem>
+                            )}
+                            {onDownload && (
+                                <DropdownMenuItem onClick={handleDownload}>
+                                    <TbDownload className="mr-2 h-4 w-4" />
+                                    Download
+                                </DropdownMenuItem>
+                            )}
+                            {onEdit && (
+                                <DropdownMenuItem onClick={handleEdit}>
+                                    <TbEdit className="mr-2 h-4 w-4" />
+                                    Edit
+                                </DropdownMenuItem>
+                            )}
+                            {onDelete && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+                                        <TbTrash className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </DropdownMenuItem>
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
         </Card>

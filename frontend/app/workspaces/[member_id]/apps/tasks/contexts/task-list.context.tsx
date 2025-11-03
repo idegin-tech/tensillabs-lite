@@ -7,7 +7,7 @@ import useCommon from '@/hooks/use-common'
 import { useParams } from 'next/navigation'
 import { TaskList } from '@/types/tasks.types'
 
-export type GroupByType = 'none' | 'status' | 'priority' | 'due_date'
+export type GroupByType = 'none' | 'status' | 'priority' | 'due_date' | 'assignee'
 
 interface GetListDetailsResponse {
     success: boolean

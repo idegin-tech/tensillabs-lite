@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
-import { TbEye, TbStack, TbUser, TbBan, TbCircleCheck, TbExclamationCircle, TbCalendarEvent, TbFlag2Filled } from 'react-icons/tb'
+import { TbEye, TbStack, TbUser, TbBan, TbCircleCheck, TbExclamationCircle, TbCalendarEvent, TbFlag2Filled, TbUsers } from 'react-icons/tb'
 import React from 'react'
 import { useTaskList } from '../../../../../contexts/task-list.context'
 import { cn } from '@/lib/utils'
@@ -19,7 +19,8 @@ export default function TasksListOptions() {
         { value: 'none', label: 'None', icon: TbBan },
         { value: 'status', label: 'Status', icon: TbCircleCheck },
         { value: 'priority', label: 'Priority', icon: TbFlag2Filled },
-        { value: 'due_date', label: 'Due Date', icon: TbCalendarEvent }
+        { value: 'due_date', label: 'Due Date', icon: TbCalendarEvent },
+        { value: 'assignee', label: 'Assignee', icon: TbUsers }
     ]
 
     const currentGroupOption = groupByOptions.find(opt => opt.value === state.groupBy) || groupByOptions[0]

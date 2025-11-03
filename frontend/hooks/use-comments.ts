@@ -19,6 +19,18 @@ export interface CommentFile {
   createdAt: string
 }
 
+export interface QuotedMessage {
+  id: string
+  content: string
+  member: {
+    id: string
+    name: string
+    avatar?: string
+    email?: string
+  }
+  timestamp: string
+}
+
 export interface Comment {
   _id: string
   content: string
@@ -28,6 +40,20 @@ export interface Comment {
   listId: string
   spaceId: string
   parentCommentId?: string
+  quotedCommentId?: string
+  quotedComment?: {
+    _id: string
+    content: string
+    createdBy: {
+      _id: string
+      firstName: string
+      lastName: string
+      primaryEmail?: string
+      email?: string
+      avatarURL?: any
+    }
+    createdAt: string
+  }
   reactions: CommentReaction[]
   mentionedMemberIds?: string[]
   mentionedMembers?: Array<{
@@ -73,6 +99,7 @@ export interface CreateCommentVariables {
   content: string
   files?: File[]
   parentCommentId?: string
+  quotedCommentId?: string
   mentionedMemberIds?: string[]
 }
 
@@ -111,12 +138,16 @@ export function useCreateComment() {
   const { member_id } = useCommon()
 
   return useApiMutation<CreateCommentResponse, CreateCommentVariables>(
-    async ({ listId, taskId, content, files, parentCommentId, mentionedMemberIds }) => {
+    async ({ listId, taskId, content, files, parentCommentId, quotedCommentId, mentionedMemberIds }) => {
       const formData = new FormData()
       formData.append('content', content)
       
       if (parentCommentId) {
         formData.append('parentCommentId', parentCommentId)
+      }
+
+      if (quotedCommentId) {
+        formData.append('quotedCommentId', quotedCommentId)
       }
 
       if (mentionedMemberIds && mentionedMemberIds.length > 0) {

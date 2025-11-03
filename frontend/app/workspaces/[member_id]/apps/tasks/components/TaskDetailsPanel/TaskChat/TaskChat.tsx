@@ -11,10 +11,20 @@ import {
 import ChatInput, { ChatFile } from '@/components/chat/ChatInput'
 import { TbMessageCircle, TbLoader2, TbAlertCircle } from 'react-icons/tb'
 import { useParams } from 'next/navigation'
-import { useTaskComments, useCreateComment, useAddReaction, useRemoveReaction, Comment } from '@/hooks/use-comments'
+import { useTaskComments, useCreateComment, useAddReaction, useRemoveReaction, useDeleteComment, Comment, QuotedMessage } from '@/hooks/use-comments'
 import { useWorkspaceMember } from '@/contexts/workspace-member.context'
 import SectionPlaceholder from '@/components/placeholders/SectionPlaceholder'
 import { formatDistanceToNow } from 'date-fns'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 function convertCommentToMessage(comment: Comment, currentMemberId: string): ChatMessageData {
     const isCurrentUser = comment.createdById === currentMemberId
@@ -34,6 +44,23 @@ function convertCommentToMessage(comment: Comment, currentMemberId: string): Cha
             : member.primaryEmail || member.email,
         email: member.primaryEmail || member.email
     })) || []
+
+    let quotedMessage: ChatMessageData['quotedMessage'] = undefined
+    if (comment.quotedComment && comment.quotedComment.createdBy) {
+        const quotedMemberName = comment.quotedComment.createdBy.firstName && comment.quotedComment.createdBy.lastName
+            ? `${comment.quotedComment.createdBy.firstName} ${comment.quotedComment.createdBy.lastName}`
+            : comment.quotedComment.createdBy.email || 'Unknown'
+
+        quotedMessage = {
+            id: comment.quotedComment._id,
+            content: comment.quotedComment.content,
+            member: {
+                name: quotedMemberName,
+                avatar: comment.quotedComment.createdBy.avatarURL?.sm || comment.quotedComment.createdBy.avatarURL?.original
+            },
+            timestamp: formatDistanceToNow(new Date(comment.quotedComment.createdAt), { addSuffix: true })
+        }
+    }
 
     return {
         id: comment._id,
@@ -61,7 +88,9 @@ function convertCommentToMessage(comment: Comment, currentMemberId: string): Cha
             hasReacted: reaction.memberIds.includes(currentMemberId),
             memberIds: reaction.memberIds
         })) || [],
-        mentionedMembers
+        mentionedMembers,
+        quotedMessage,
+        isDeleted: comment.isDeleted || false
     }
 }
 
@@ -72,9 +101,15 @@ interface TaskChatProps {
 export default function TaskChat({ taskId }: TaskChatProps) {
     const [newMessage, setNewMessage] = useState('')
     const [chatFiles, setChatFiles] = useState<ChatFile[]>([])
+    const [quotedMessage, setQuotedMessage] = useState<QuotedMessage | null>(null)
     const [isLoadingMore, setIsLoadingMore] = useState(false)
     const [optimisticReactions, setOptimisticReactions] = useState<Record<string, { emoji: string; action: 'add' | 'remove' }[]>>({})
+    const [optimisticDeletes, setOptimisticDeletes] = useState<Set<string>>(new Set())
+    const [failedMessages, setFailedMessages] = useState<Record<string, { error: string; originalData: any }>>({})
+    const [sendingMessages, setSendingMessages] = useState<Record<string, ChatMessageData>>({})
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
     const scrollAreaRef = useRef<HTMLDivElement>(null)
+    const messagesEndRef = useRef<HTMLDivElement>(null)
     const params = useParams()
     const listId = params.list_id as string
     const { state } = useWorkspaceMember()
@@ -84,12 +119,17 @@ export default function TaskChat({ taskId }: TaskChatProps) {
     const createCommentMutation = useCreateComment()
     const addReactionMutation = useAddReaction()
     const removeReactionMutation = useRemoveReaction()
+    const deleteCommentMutation = useDeleteComment()
 
     const messages: ChatMessageData[] = React.useMemo(() => {
         if (!commentsData?.payload?.comments || !workspaceMember) return []
         
-        return commentsData.payload.comments.map((comment: any) => {
+        const serverMessages = commentsData.payload.comments.map((comment: any) => {
             const messageData = convertCommentToMessage(comment, workspaceMember._id)
+            
+            if (optimisticDeletes.has(comment._id)) {
+                messageData.isDeleted = true
+            }
             
             const commentOptimisticReactions = optimisticReactions[comment._id] || []
             if (commentOptimisticReactions.length > 0) {
@@ -138,7 +178,21 @@ export default function TaskChat({ taskId }: TaskChatProps) {
             
             return messageData
         })
-    }, [commentsData, workspaceMember, optimisticReactions])
+        
+        const pendingMessages = Object.values(sendingMessages)
+        
+        return [...serverMessages, ...pendingMessages]
+    }, [commentsData, workspaceMember, optimisticReactions, optimisticDeletes, sendingMessages])
+    
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+    }
+    
+    React.useEffect(() => {
+        if (!isLoading && messages.length > 0) {
+            scrollToBottom()
+        }
+    }, [isLoading, messages.length])
 
     const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
         const target = event.currentTarget
@@ -152,21 +206,108 @@ export default function TaskChat({ taskId }: TaskChatProps) {
 
     const handleSendMessage = async (message: string, files: File[], mentionedMemberIds: string[]) => {
         if (message.trim() || files.length > 0) {
+            const tempId = `temp-${Date.now()}`
+            const messageData = {
+                message,
+                files,
+                mentionedMemberIds,
+                quotedCommentId: quotedMessage?.id
+            }
+            
+            if (!workspaceMember) return
+            
+            const optimisticMessage: ChatMessageData = {
+                id: tempId,
+                user: {
+                    name: 'You',
+                    avatar: workspaceMember.avatarURL?.sm || workspaceMember.avatarURL?.original || null,
+                    initials: workspaceMember.firstName && workspaceMember.lastName
+                        ? `${workspaceMember.firstName[0]}${workspaceMember.lastName[0]}`
+                        : 'Y',
+                    memberId: workspaceMember._id
+                },
+                message: message,
+                timestamp: 'Just now',
+                isCurrentUser: true,
+                onlineStatus: 'online',
+                files: files.map((file, index) => ({
+                    id: `temp-file-${index}`,
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    url: URL.createObjectURL(file),
+                    thumbnailUrl: undefined
+                })),
+                reactions: [],
+                mentionedMembers: mentionedMemberIds.map(id => ({ id, label: '', email: '' })),
+                quotedMessage: quotedMessage ? {
+                    id: quotedMessage.id,
+                    content: quotedMessage.content,
+                    member: {
+                        name: quotedMessage.member.name,
+                        avatar: quotedMessage.member.avatar
+                    },
+                    timestamp: quotedMessage.timestamp
+                } : undefined,
+                isDeleted: false
+            }
+            
+            setSendingMessages(prev => ({ ...prev, [tempId]: optimisticMessage }))
+            setNewMessage('')
+            setChatFiles([])
+            setQuotedMessage(null)
+            
             try {
                 await createCommentMutation.mutateAsync({
                     listId,
                     taskId,
                     content: message,
                     files,
-                    mentionedMemberIds
+                    mentionedMemberIds,
+                    quotedCommentId: messageData.quotedCommentId
                 })
                 
-                setNewMessage('')
-                setChatFiles([])
-            } catch (error) {
+                setSendingMessages(prev => {
+                    const newState = { ...prev }
+                    delete newState[tempId]
+                    return newState
+                })
+            } catch (error: any) {
                 console.error('Failed to send message:', error)
+                
+                setSendingMessages(prev => {
+                    const newState = { ...prev }
+                    delete newState[tempId]
+                    return newState
+                })
+                
+                setFailedMessages(prev => ({
+                    ...prev,
+                    [tempId]: {
+                        error: error?.message || 'Failed to send message',
+                        originalData: messageData
+                    }
+                }))
             }
         }
+    }
+
+    const handleReply = (message: ChatMessageData) => {
+        const quotedMsg: QuotedMessage = {
+            id: message.id,
+            content: message.message,
+            member: {
+                id: message.user.memberId,
+                name: message.user.name,
+                avatar: message.user.avatar || undefined,
+            },
+            timestamp: message.timestamp
+        }
+        setQuotedMessage(quotedMsg)
+    }
+
+    const handleClearQuote = () => {
+        setQuotedMessage(null)
     }
 
     const handleReactionClick = async (messageId: string, emoji: string, hasReacted: boolean) => {
@@ -221,6 +362,110 @@ export default function TaskChat({ taskId }: TaskChatProps) {
         navigator.clipboard.writeText(message)
     }
 
+    const handleDeleteClick = (messageId: string) => {
+        setDeleteConfirmId(messageId)
+    }
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteConfirmId) return
+        
+        const messageId = deleteConfirmId
+        setDeleteConfirmId(null)
+        
+        setOptimisticDeletes(prev => new Set([...prev, messageId]))
+        
+        try {
+            await deleteCommentMutation.mutateAsync({ listId, taskId, commentId: messageId })
+        } catch (error) {
+            console.error('Failed to delete message:', error)
+            setOptimisticDeletes(prev => {
+                const newSet = new Set(prev)
+                newSet.delete(messageId)
+                return newSet
+            })
+        }
+    }
+    
+    const handleDeleteCancel = () => {
+        setDeleteConfirmId(null)
+    }
+
+    const handleRetry = async (tempId: string) => {
+        const failedMsg = failedMessages[tempId]
+        if (!failedMsg || !workspaceMember) return
+        
+        const { originalData } = failedMsg
+        
+        const optimisticMessage: ChatMessageData = {
+            id: tempId,
+            user: {
+                name: 'You',
+                avatar: workspaceMember.avatarURL?.sm || workspaceMember.avatarURL?.original || null,
+                initials: workspaceMember.firstName && workspaceMember.lastName
+                    ? `${workspaceMember.firstName[0]}${workspaceMember.lastName[0]}`
+                    : 'Y',
+                memberId: workspaceMember._id
+            },
+            message: originalData.message,
+            timestamp: 'Just now',
+            isCurrentUser: true,
+            onlineStatus: 'online',
+            files: originalData.files?.map((file: File, index: number) => ({
+                id: `temp-file-${index}`,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                url: URL.createObjectURL(file),
+                thumbnailUrl: undefined
+            })) || [],
+            reactions: [],
+            mentionedMembers: originalData.mentionedMemberIds?.map((id: string) => ({ id, label: '', email: '' })) || [],
+            quotedMessage: undefined,
+            isDeleted: false
+        }
+        
+        setFailedMessages(prev => {
+            const newState = { ...prev }
+            delete newState[tempId]
+            return newState
+        })
+        
+        setSendingMessages(prev => ({ ...prev, [tempId]: optimisticMessage }))
+        
+        try {
+            await createCommentMutation.mutateAsync({
+                listId,
+                taskId,
+                content: originalData.message,
+                files: originalData.files,
+                mentionedMemberIds: originalData.mentionedMemberIds,
+                quotedCommentId: originalData.quotedCommentId
+            })
+            
+            setSendingMessages(prev => {
+                const newState = { ...prev }
+                delete newState[tempId]
+                return newState
+            })
+        } catch (error: any) {
+            console.error('Failed to retry message:', error)
+            
+            setSendingMessages(prev => {
+                const newState = { ...prev }
+                delete newState[tempId]
+                return newState
+            })
+            
+            setFailedMessages(prev => ({
+                ...prev,
+                [tempId]: {
+                    error: error?.message || 'Failed to send message',
+                    originalData
+                }
+            }))
+        }
+    }
+
     if (error) {
         return (
             <div className="flex flex-col h-full">
@@ -266,50 +511,75 @@ export default function TaskChat({ taskId }: TaskChatProps) {
                     <ChatBubbleLoading count={5} showIncoming={true} showOutgoing={true} />
                 ) : (
                     <div className="space-y-6 max-w-full">
-                        {messages.map((message) => (
-                            <ChatMessage
-                                key={message.id}
-                                data={message}
-                                onReactionClick={(emoji, hasReacted) => 
-                                    handleReactionClick(message.id, emoji, hasReacted)
-                                }
-                                onAddReaction={(emoji) => 
-                                    handleAddReaction(message.id, emoji)
-                                }
-                                onCopy={() => handleCopy(message.message)}
-                                onFileClick={(file) => {
-                                    window.open(file.url, '_blank')
-                                }}
-                            />
-                        ))}
+                        {messages.map((message) => {
+                            const isSending = message.id.startsWith('temp-') && !!sendingMessages[message.id]
+                            const failedMsg = failedMessages[message.id]
+                            const error = failedMsg?.error
+                            
+                            return (
+                                <ChatMessage
+                                    key={message.id}
+                                    data={message}
+                                    isSending={isSending}
+                                    error={error}
+                                    onRetry={error ? () => handleRetry(message.id) : undefined}
+                                    onReactionClick={!message.isDeleted && !isSending && !error ? (emoji, hasReacted) => 
+                                        handleReactionClick(message.id, emoji, hasReacted) : undefined
+                                    }
+                                    onAddReaction={!message.isDeleted && !isSending && !error ? (emoji) => 
+                                        handleAddReaction(message.id, emoji) : undefined
+                                    }
+                                    onReply={!message.isDeleted && !isSending && !error ? () => handleReply(message) : undefined}
+                                    onDelete={!message.isDeleted && !isSending && !error ? () => handleDeleteClick(message.id) : undefined}
+                                    onCopy={!message.isDeleted && !isSending && !error ? () => handleCopy(message.message) : undefined}
+                                    onFileClick={(file) => {
+                                        window.open(file.url, '_blank')
+                                    }}
+                                    showDropdown={!message.isDeleted && !isSending && !error}
+                                />
+                            )
+                        })}
                         
-                        {createCommentMutation.isPending && workspaceMember && (
-                            <ChatMessage
-                                data={{
-                                    id: 'sending',
-                                    message: newMessage,
-                                    isCurrentUser: true,
-                                    user: {
-                                        name: 'You',
-                                        avatar: workspaceMember.avatarURL?.original || null,
-                                        initials: `${workspaceMember.firstName?.[0] || ''}${workspaceMember.lastName?.[0] || ''}`,
-                                        memberId: workspaceMember._id
-                                    },
-                                    timestamp: 'just now',
-                                    onlineStatus: 'online',
-                                    files: chatFiles.map((file, index) => ({
-                                        id: `temp-${index}`,
-                                        name: file.file.name,
-                                        size: file.file.size,
-                                        type: file.file.type,
-                                        url: file.preview || '',
-                                        thumbnailUrl: file.preview
-                                    }))
-                                }}
-                                isSending={true}
-                                showDropdown={false}
-                            />
-                        )}
+                        {Object.entries(failedMessages).map(([tempId, failedMsg]) => {
+                            if (sendingMessages[tempId]) return null
+                            
+                            const failedMessage: ChatMessageData = {
+                                id: tempId,
+                                user: {
+                                    name: 'You',
+                                    avatar: workspaceMember?.avatarURL?.sm || workspaceMember?.avatarURL?.original || null,
+                                    initials: workspaceMember?.firstName && workspaceMember?.lastName
+                                        ? `${workspaceMember.firstName[0]}${workspaceMember.lastName[0]}`
+                                        : 'Y',
+                                    memberId: workspaceMember?._id || ''
+                                },
+                                message: failedMsg.originalData.message,
+                                timestamp: 'Failed',
+                                isCurrentUser: true,
+                                onlineStatus: 'online',
+                                files: failedMsg.originalData.files?.map((file: File, index: number) => ({
+                                    id: `failed-file-${index}`,
+                                    name: file.name,
+                                    type: file.type,
+                                    size: file.size,
+                                    url: URL.createObjectURL(file),
+                                    thumbnailUrl: undefined
+                                })) || [],
+                                reactions: [],
+                                mentionedMembers: [],
+                                isDeleted: false
+                            }
+                            
+                            return (
+                                <ChatMessage
+                                    key={tempId}
+                                    data={failedMessage}
+                                    error={failedMsg.error}
+                                    onRetry={() => handleRetry(tempId)}
+                                    showDropdown={false}
+                                />
+                            )
+                        })}
                     </div>
                 )}
 
@@ -323,7 +593,7 @@ export default function TaskChat({ taskId }: TaskChatProps) {
                         />
                     </div>
                 )}
-                <div className='h-[10rem]' />
+                <div ref={messagesEndRef} />
             </ScrollArea>
 
             <div className="p-4 border-t bg-background/80 backdrop-blur-sm sticky bottom-0 z-30">
@@ -333,13 +603,31 @@ export default function TaskChat({ taskId }: TaskChatProps) {
                     onSend={handleSendMessage}
                     onChange={setNewMessage}
                     files={chatFiles}
+                    quotedMessage={quotedMessage}
+                    onClearQuote={handleClearQuote}
                     onFilesChange={setChatFiles}
                     showFormatting={true}
                     maxFiles={5}
                     acceptedFileTypes="image/*,application/pdf,.doc,.docx,.txt"
-                    disabled={createCommentMutation.isPending}
                 />
             </div>
+
+            <AlertDialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && handleDeleteCancel()}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Message</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this message? This action cannot be reversed.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={handleDeleteCancel}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

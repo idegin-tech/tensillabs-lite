@@ -47,6 +47,7 @@ interface GetTasksByGroupParams {
   status?: string
   priority?: string
   due_status?: string
+  assignee_id?: string
 }
 
 interface UpdateTasksResponse {
@@ -105,6 +106,7 @@ export function useGetTasksByGroup(listId: string, params: GetTasksByGroupParams
   if (params.status) queryParams.append('status', params.status)
   if (params.priority) queryParams.append('priority', params.priority)
   if (params.due_status) queryParams.append('due_status', params.due_status)
+  if (params.assignee_id) queryParams.append('assignee_id', params.assignee_id)
 
   const endpoint = `/lists/${listId}/tasks/group?${queryParams}`
 

@@ -6,6 +6,17 @@ import { z } from 'zod'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { 
+    TbAlertTriangle, 
+    TbCircle, 
+    TbCircleCheck, 
+    TbClock, 
+    TbX,
+    TbFlag, 
+    TbFlag2Filled, 
+    TbFlagExclamation, 
+    TbFlagDown 
+} from 'react-icons/tb'
+import { 
     Dialog, 
     DialogContent, 
     DialogHeader, 
@@ -20,7 +31,6 @@ import {
     FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import {
     Select,
@@ -43,6 +53,7 @@ import { useCreateTasks } from '../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
+import RichTextEditor from '@/components/RichTextEditor'
 
 const taskFormSchema = z.object({
     name: z
@@ -159,6 +170,45 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
 
     const Icon = groupInfo?.icon
 
+    const getStatusIcon = (status: TaskStatus) => {
+        switch (status) {
+            case TaskStatus.COMPLETED:
+                return <TbCircleCheck className="h-4 w-4 text-green-600" />
+            case TaskStatus.IN_PROGRESS:
+                return <TbClock className="h-4 w-4 text-blue-600" />
+            case TaskStatus.IN_REVIEW:
+                return <TbAlertTriangle className="h-4 w-4 text-orange-600" />
+            case TaskStatus.CANCELED:
+                return <TbX className="h-4 w-4 text-red-600" />
+            default:
+                return <TbCircle className="h-4 w-4 text-gray-400" />
+        }
+    }
+
+    const getStatusLabel = (status: TaskStatus) => {
+        return status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }
+
+    const getPriorityIcon = (priority?: TaskPriority) => {
+        switch (priority) {
+            case TaskPriority.URGENT:
+                return <TbFlagExclamation className="h-4 w-4 text-red-600" />
+            case TaskPriority.HIGH:
+                return <TbFlag2Filled className="h-4 w-4 text-orange-600" />
+            case TaskPriority.NORMAL:
+                return <TbFlag className="h-4 w-4 text-blue-600" />
+            case TaskPriority.LOW:
+                return <TbFlagDown className="h-4 w-4 text-gray-600" />
+            default:
+                return <TbFlag className="h-4 w-4 text-gray-400" />
+        }
+    }
+
+    const getPriorityLabel = (priority?: TaskPriority) => {
+        if (!priority) return 'No Priority'
+        return priority.charAt(0).toUpperCase() + priority.slice(1)
+    }
+
     const statusOptions = [
         { value: TaskStatus.TODO, label: 'To Do' },
         { value: TaskStatus.IN_PROGRESS, label: 'In Progress' },
@@ -225,21 +275,16 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                                     <FormItem>
                                         <FormLabel>Description</FormLabel>
                                         <FormControl>
-                                            <Textarea
+                                            <RichTextEditor
+                                                value={field.value || ''}
+                                                onChange={field.onChange}
                                                 placeholder="Describe the task..."
-                                                className="resize-none"
-                                                rows={3}
-                                                maxLength={1000}
                                                 disabled={isSubmitting}
-                                                {...field}
+                                                maxLength={98000}
+                                                className="min-h-[120px]"
                                             />
                                         </FormControl>
-                                        <div className="flex justify-between items-center">
-                                            <FormMessage />
-                                            <span className="text-xs text-muted-foreground">
-                                                {field.value?.length || 0}/1000
-                                            </span>
-                                        </div>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -254,13 +299,23 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                                             <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                                                 <FormControl>
                                                     <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select status" />
+                                                        <SelectValue placeholder="Select status">
+                                                            {field.value && (
+                                                                <div className="flex items-center gap-2">
+                                                                    {getStatusIcon(field.value)}
+                                                                    <span>{getStatusLabel(field.value)}</span>
+                                                                </div>
+                                                            )}
+                                                        </SelectValue>
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
                                                     {statusOptions.map((option) => (
                                                         <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
+                                                            <div className="flex items-center gap-2">
+                                                                {getStatusIcon(option.value)}
+                                                                <span>{option.label}</span>
+                                                            </div>
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -285,14 +340,29 @@ export default function CreateTaskPopup({ isOpen, onClose, groupInfo, onTaskCrea
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select priority" />
+                                                        <SelectValue placeholder="Select priority">
+                                                            {(field.value || field.value === undefined) && (
+                                                                <div className="flex items-center gap-2">
+                                                                    {getPriorityIcon(field.value)}
+                                                                    <span>{getPriorityLabel(field.value)}</span>
+                                                                </div>
+                                                            )}
+                                                        </SelectValue>
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    <SelectItem value="none">No Priority</SelectItem>
+                                                    <SelectItem value="none">
+                                                        <div className="flex items-center gap-2">
+                                                            {getPriorityIcon(undefined)}
+                                                            <span>No Priority</span>
+                                                        </div>
+                                                    </SelectItem>
                                                     {priorityOptions.map((option) => (
                                                         <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
+                                                            <div className="flex items-center gap-2">
+                                                                {getPriorityIcon(option.value)}
+                                                                <span>{option.label}</span>
+                                                            </div>
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>

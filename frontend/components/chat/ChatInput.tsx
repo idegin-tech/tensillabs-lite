@@ -36,6 +36,7 @@ import {
     TbLink,
     TbPhoto,
     TbAt,
+    TbCornerUpLeft,
 } from 'react-icons/tb'
 import { cn } from '@/lib/utils'
 import type { EmojiClickData } from 'emoji-picker-react'
@@ -44,6 +45,7 @@ import { CustomMention } from './CustomMention'
 import { createMentionSuggestion } from './mentionSuggestion'
 import type { MentionItem } from './MentionList'
 import { useWorkspaceMembers } from '@/hooks/use-workspace-members'
+import { QuotedMessage } from '@/hooks/use-comments'
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
 
@@ -59,9 +61,11 @@ interface ChatInputProps {
     disabled?: boolean
     maxLength?: number
     files?: ChatFile[]
+    quotedMessage?: QuotedMessage | null
     onSend: (message: string, files: File[], mentionedMemberIds: string[]) => void
     onChange?: (message: string) => void
     onFilesChange?: (files: ChatFile[]) => void
+    onClearQuote?: () => void
     className?: string
     showFormatting?: boolean
     maxFiles?: number
@@ -74,9 +78,11 @@ export default function ChatInput({
     disabled = false,
     maxLength,
     files = [],
+    quotedMessage = null,
     onSend,
     onChange,
     onFilesChange,
+    onClearQuote,
     className,
     showFormatting = true,
     maxFiles = 10,
@@ -246,8 +252,39 @@ export default function ChatInput({
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
             >
+                {quotedMessage && (
+                    <div className="px-3 py-2.5 bg-secondary/5 flex items-start gap-3 group">
+                        <div className="flex-shrink-0 pt-0.5">
+                            <TbCornerUpLeft className="h-4 w-4 text-secondary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-xs font-semibold text-secondary">
+                                    Replying to {quotedMessage.member.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    {quotedMessage.timestamp}
+                                </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">
+                                {quotedMessage.content.replace(/<[^>]*>/g, '').substring(0, 150)}
+                                {quotedMessage.content.length > 150 && '...'}
+                            </div>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={onClearQuote}
+                            className="h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                        >
+                            <TbX className="h-3.5 w-3.5" />
+                        </Button>
+                    </div>
+                )}
+
                 {showFormatting && (
-                    <div className="flex items-center gap-0.5 px-3 py-2 border-b bg-muted/30">
+                    <div className="flex items-center gap-0.5 px-3 py-2">
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
@@ -504,7 +541,7 @@ export default function ChatInput({
                     />
                 </div>
 
-                <div className="flex items-center justify-between gap-2 px-3 py-2 border-t bg-muted/30">
+                <div className="flex items-center justify-between gap-2 px-3 py-2">
                     <div className="flex items-center gap-1">
                         <input
                             ref={fileInputRef}

@@ -4,6 +4,8 @@ import { Repository, In } from 'typeorm';
 import { Comment } from '../schemas/comment.schema';
 import { CreateCommentDto, UpdateCommentDto } from '../dto/comment.dto';
 import { WorkspaceMember } from '../../workspace-members/schemas/workspace-member.schema';
+import { FileService } from '../../files/services/file.service';
+import { UploadService } from '../../../lib/upload.lib';
 
 @Injectable()
 export class CommentService {
@@ -12,6 +14,8 @@ export class CommentService {
     private readonly commentRepository: Repository<Comment>,
     @InjectRepository(WorkspaceMember)
     private readonly workspaceMemberRepository: Repository<WorkspaceMember>,
+    private readonly fileService: FileService,
+    private readonly uploadService: UploadService,
   ) {}
 
   async create(
@@ -61,7 +65,28 @@ export class CommentService {
   }
 
   async delete(id: string, workspaceId: string): Promise<Comment> {
-    const comment = await this.findOne(id, workspaceId);
+    const comment = await this.commentRepository.findOne({
+      where: { id, workspaceId, isDeleted: false },
+      relations: ['files'],
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    if (comment.files && comment.files.length > 0) {
+      for (const file of comment.files) {
+        if (file.fileKey) {
+          try {
+            await this.uploadService.deleteFile(file.fileKey);
+          } catch (error) {
+            console.error(`Failed to delete file from storage: ${file.fileKey}`, error);
+          }
+        }
+        
+        await this.fileService.delete(file.id, workspaceId);
+      }
+    }
 
     comment.isDeleted = true;
 
@@ -136,8 +161,8 @@ export class CommentService {
     limit: number = 20,
   ): Promise<{ comments: Comment[]; total: number; page: number; limit: number }> {
     const [comments, total] = await this.commentRepository.findAndCount({
-      where: { taskId, workspaceId, isDeleted: false, parentCommentId: null },
-      relations: ['createdBy', 'files'],
+      where: { taskId, workspaceId, parentCommentId: null },
+      relations: ['createdBy', 'files', 'quotedComment', 'quotedComment.createdBy'],
       order: { createdAt: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,

@@ -78,8 +78,6 @@ export class CommentsController {
       throw new NotFoundException('You can only delete your own comments');
     }
 
-    await this.fileService.deleteByCommentId(commentId, req.workspace.id);
-
     const deletedComment = await this.commentService.delete(
       commentId,
       req.workspace.id,

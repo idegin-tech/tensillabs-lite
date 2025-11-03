@@ -64,6 +64,14 @@ export class Comment {
   mentionedMemberIds: string[];
 
   @Column({ type: 'uuid', nullable: true })
+  @Index()
+  quotedCommentId: string;
+
+  @ManyToOne(() => Comment, { nullable: true })
+  @JoinColumn({ name: 'quotedCommentId' })
+  quotedComment: Comment;
+
+  @Column({ type: 'uuid', nullable: true })
   listId: string;
 
   @Column({ type: 'uuid', nullable: true })

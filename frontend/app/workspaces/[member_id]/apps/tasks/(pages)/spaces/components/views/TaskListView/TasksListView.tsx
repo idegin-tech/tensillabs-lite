@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import EachTaskGroup from './EachTaskGroup'
 import TasksListOptions from './TasksListOptions'
 import { useTaskList } from '../../../../../contexts/task-list.context'
@@ -9,22 +9,90 @@ import TaskDetailsPanel from '../../../../../components/TaskDetailsPanel/TaskDet
 import { useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import { useGetTaskDetails } from '../../../../../hooks/use-tasks'
-import { invalidateTaskGroups } from '../../../../../utils/cache-invalidation'
+import { useSpaceParticipants } from '@/hooks/use-space-participants'
+import { useWorkspaceMember } from '@/contexts/workspace-member.context'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { TaskGrouping } from '@/types/tasks.types'
+import { Loader2 } from 'lucide-react'
 
 export default function TasksListView() {
     const { state, updateState } = useTaskList();
     const { state: tasksAppState, updateState: updateTasksAppState } = useTasksApp();
-    const queryClient = useQueryClient()
+    const { state: memberState } = useWorkspaceMember();
     const params = useParams()
     const listId = params.list_id as string
+    const spaceId = params.space_id as string
 
-    const { data: taskDetailsData } = useGetTaskDetails(
-        listId, 
-        tasksAppState.activeTaskID || '', 
-        !!tasksAppState.activeTaskID
+    const { participants, isLoading: participantsLoading } = useSpaceParticipants(
+        { spaceId, limit: 100 },
+        { enabled: state.groupBy === 'assignee' && !!spaceId }
     )
 
-    const currentGroupConfig = state.groupBy === 'none' ? [] : (taskGroupConfig[state.groupBy] || [])
+    const assigneeGroupConfig = useMemo(() => {
+        if (state.groupBy !== 'assignee' || !participants.length) return []
+        
+        let filteredParticipants = participants
+        
+        if (state.meMode && memberState.member) {
+            filteredParticipants = participants.filter(
+                p => p.member._id === memberState.member?._id
+            )
+        }
+        
+        const groups: TaskGrouping[] = filteredParticipants.map((participant) => {
+            const member = participant.member
+            const initials = member.firstName && member.lastName
+                ? `${member.firstName[0]}${member.lastName[0]}`
+                : member.primaryEmail?.[0]?.toUpperCase() || 'U'
+            
+            const fullName = member.firstName && member.lastName
+                ? `${member.firstName} ${member.lastName}`
+                : member.primaryEmail
+            
+            const displayName = fullName.length > 20 
+                ? `${fullName.substring(0, 20)}...` 
+                : fullName
+            
+            return {
+                label: displayName,
+                groupKey: 'assignee',
+                icon: () => (
+                    <Avatar className="h-4 w-4">
+                        <AvatarImage src={member.avatarURL?.sm} alt={fullName} />
+                        <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                    </Avatar>
+                ),
+                color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400',
+                query: { assignee_id: member._id },
+                defaultOpen: false
+            }
+        })
+        
+        const unassignedGroup: TaskGrouping = {
+            label: 'Unassigned',
+            groupKey: 'assignee',
+            icon: () => (
+                <Avatar className="h-4 w-4">
+                    <AvatarFallback className="text-[10px]">?</AvatarFallback>
+                </Avatar>
+            ),
+            color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+            query: { assignee_id: 'unassigned' },
+            defaultOpen: false
+        }
+        
+        if (!state.meMode) {
+            groups.push(unassignedGroup)
+        }
+        
+        return groups
+    }, [participants, state.groupBy, state.meMode, memberState.member])
+
+    const currentGroupConfig = state.groupBy === 'none' 
+        ? [] 
+        : state.groupBy === 'assignee'
+            ? assigneeGroupConfig
+            : (taskGroupConfig[state.groupBy] || [])
 
     useEffect(() => {
         if (state.groupBy !== 'none' && !state.expandedGroup) {
@@ -54,7 +122,14 @@ export default function TasksListView() {
                     </div>
                     <br />
                     <div className='flex flex-col'>
-                        {state.groupBy === 'none' ? (
+                        {state.groupBy === 'assignee' && participantsLoading ? (
+                            <div className="flex items-center justify-center py-12">
+                                <div className="flex flex-col items-center gap-3">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                    <p className="text-sm text-muted-foreground">Loading participants...</p>
+                                </div>
+                            </div>
+                        ) : state.groupBy === 'none' ? (
                             <EachTaskGroup
                                 key="no-group"
                                 title="All Tasks"
@@ -73,7 +148,8 @@ export default function TasksListView() {
                                     />
                                 </div>
                             ))
-                        )}                    </div>
+                        )}
+                    </div>
                 </div>
             </div>
             {tasksAppState.activeTaskID && (

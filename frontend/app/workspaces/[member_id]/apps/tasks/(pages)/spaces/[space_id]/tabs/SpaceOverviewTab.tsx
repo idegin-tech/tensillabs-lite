@@ -9,8 +9,18 @@ import {
     TbDots,
     TbAlertCircle,
     TbRefresh,
-    TbCalendar
+    TbCalendar,
+    TbEdit,
+    TbTrash,
+    TbEye
 } from 'react-icons/tb'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useRouter } from 'next13-progressbar'
 import { useTasksSpace } from '../../../../contexts/tasks-space.context'
 import { useTasksApp } from '../../../../contexts/tasks-app.context'
@@ -29,14 +39,31 @@ function TaskListCard({ list }: { list: TaskList }) {
         }
     }
 
+    const handleEdit = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        // TODO: Implement edit functionality
+        console.log('Edit list:', list._id)
+    }
+
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        // TODO: Implement delete functionality
+        console.log('Delete list:', list._id)
+    }
+
+    const handleView = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        handleClick()
+    }
+
     return (
         <Card 
-            className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-border/50 hover:border-primary/20 py-0"
+            className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-border/50 hover:border-primary/20"
             onClick={handleClick}
         >
             <CardContent className='space-y-3 p-6'>
                 <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
                         <div className="p-2.5 rounded-lg bg-muted text-muted-foreground group-hover:scale-110 transition-transform duration-300">
                             <TbList className="h-6 w-6" />
                         </div>
@@ -49,16 +76,33 @@ function TaskListCard({ list }: { list: TaskList }) {
                             </p>
                         </div>
                     </div>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                        }}
-                    >
-                        <TbDots className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <TbDots className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={handleView}>
+                                <TbEye className="mr-2 h-4 w-4" />
+                                View List
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleEdit}>
+                                <TbEdit className="mr-2 h-4 w-4" />
+                                Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+                                <TbTrash className="mr-2 h-4 w-4" />
+                                Delete
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </CardContent>
         </Card>
