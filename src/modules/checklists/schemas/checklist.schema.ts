@@ -70,6 +70,9 @@ export class Checklist {
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
+  @Column({ type: 'timestamp', nullable: true })
+  completedAt: Date;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 

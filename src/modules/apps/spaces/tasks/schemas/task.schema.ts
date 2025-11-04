@@ -107,6 +107,9 @@ export class Task {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  completedAt: Date;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 

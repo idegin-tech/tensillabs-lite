@@ -124,6 +124,12 @@ export class ChecklistService {
     }
     if (updateChecklistDto.isDone !== undefined) {
       updateData.isDone = updateChecklistDto.isDone;
+      
+      if (updateChecklistDto.isDone === true) {
+        updateData.completedAt = new Date();
+      } else {
+        updateData.completedAt = null;
+      }
     }
 
     await this.checklistRepository.update(checklistId, updateData);

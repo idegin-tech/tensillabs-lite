@@ -140,6 +140,12 @@ export class TaskService {
 
     if (updateTaskDto.status !== undefined) {
       task.status = updateTaskDto.status;
+      
+      if (updateTaskDto.status === TaskStatus.COMPLETED) {
+        task.completedAt = new Date();
+      } else {
+        task.completedAt = null;
+      }
     }
 
     if (updateTaskDto.priority !== undefined) {

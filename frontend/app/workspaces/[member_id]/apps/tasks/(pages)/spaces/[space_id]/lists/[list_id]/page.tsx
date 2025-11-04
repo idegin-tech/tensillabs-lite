@@ -8,6 +8,7 @@ import { TaskListProvider, useTaskList } from '../../../../../contexts/task-list
 import ListDetailsPageLoading from './ListDetailsPageLoading'
 import TaskTimelineGantt from '../../../../../components/TaskTimelineGantt'
 import ListFilesTab from '../../../../../components/ListFilesTab'
+import ReportsView from '../../../components/views/ReportsView/ReportsView'
 
 function ListDetailsContent() {
   const { state } = useTaskList()
@@ -58,7 +59,7 @@ function ListDetailsContent() {
             value="report"
             className={contentClassName}
           >
-            Here you can generate reports based on the tasks and activities within this space. Analyze performance, track progress, and gain insights.
+            <ReportsView />
           </TabsContent>
         </Tabs>
       </div>
