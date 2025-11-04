@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { Task, TaskPriority } from '../schemas/task.schema';
+import { Task, TaskPriority, TaskStatus } from '../schemas/task.schema';
 import { Comment } from '../../../../comments/schemas/comment.schema';
 import { WorkspaceMember } from '../../../../workspace-members/schemas/workspace-member.schema';
 import {
