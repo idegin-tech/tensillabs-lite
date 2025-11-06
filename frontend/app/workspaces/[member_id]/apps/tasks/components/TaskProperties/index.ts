@@ -6,6 +6,7 @@ export { default as TaskEstimatedHoursProperty } from './TaskEstimatedHoursPrope
 export { default as TaskProgressProperty } from './TaskProgressProperty'
 export { default as TaskDueDateProperty } from './TaskDueDateProperty'
 export { default as TaskTagsProperty } from './TaskTagsProperty'
+export { default as TaskBlockedProperty } from './TaskBlockedProperty'
 
 export type TaskPropertyProps = {
     value?: any;

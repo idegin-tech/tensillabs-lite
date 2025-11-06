@@ -49,7 +49,7 @@ const TAG_COLORS = [
 
 const getTextColor = (backgroundColor: string): string => {
     const color = colord(backgroundColor)
-    return color.brightness() > 0.6 ? '#000000' : '#FFFFFF'
+    return color.brightness() > 0.4 ? '#000000' : '#FFFFFF'
 }
 
 interface TagSelectorProps {

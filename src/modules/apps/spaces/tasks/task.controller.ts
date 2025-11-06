@@ -108,6 +108,7 @@ export class TaskController {
       taskId,
       updateTaskDto,
       req.workspace.id,
+      req.workspaceMember.id,
     );
 
     return createSuccessResponse('Task updated successfully', task);

@@ -18,6 +18,14 @@ export interface TaskTimeframe {
   end?: string
 }
 
+export interface BlockedReason {
+  reason?: string
+  description?: string
+  blockedAt?: string
+  blockedBy?: string
+  blockedByMember?: TaskAssignee
+}
+
 export interface TaskAssignee {
   _id: string
   firstName: string
@@ -53,6 +61,8 @@ export interface Task {
   dueDate?: string
   completedAt?: string
   tags?: string[]
+  blockedReason?: BlockedReason
+  blockedByTaskIds?: string[]
 }
 
 export interface TaskGrouping {

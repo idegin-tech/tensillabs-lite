@@ -96,6 +96,7 @@ export class Task {
     reason?: string;
     description?: string;
     blockedAt?: Date;
+    blockedBy?: string;
   };
 
   @Column({ type: 'text', array: true, nullable: true, default: '{}' })

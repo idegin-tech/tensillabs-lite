@@ -40,17 +40,34 @@ export class TaskService {
   ) {}
 
   private async populateTaskAssignees(task: Task): Promise<any> {
-    if (!task.assigneeIds || task.assigneeIds.length === 0) {
-      return { ...task, assignee: [] };
+    const result: any = { ...task };
+
+    if (task.assigneeIds && task.assigneeIds.length > 0) {
+      const assignees = await this.workspaceMemberRepository.find({
+        where: {
+          id: In(task.assigneeIds),
+        },
+      });
+      result.assignee = assignees;
+    } else {
+      result.assignee = [];
     }
 
-    const assignees = await this.workspaceMemberRepository.find({
-      where: {
-        id: In(task.assigneeIds),
-      },
-    });
+    if (task.blockedReason?.blockedBy) {
+      const blockedByMember = await this.workspaceMemberRepository.findOne({
+        where: {
+          id: task.blockedReason.blockedBy,
+        },
+      });
+      if (blockedByMember) {
+        result.blockedReason = {
+          ...task.blockedReason,
+          blockedByMember,
+        };
+      }
+    }
 
-    return { ...task, assignee: assignees };
+    return result;
   }
 
   private async populateTasksAssignees(tasks: Task[]): Promise<any[]> {
@@ -60,24 +77,42 @@ export class TaskService {
       .flatMap(task => task.assigneeIds || [])
       .filter((id, index, self) => id && self.indexOf(id) === index);
 
-    if (allAssigneeIds.length === 0) {
-      return tasks.map(task => ({ ...task, assignee: [] }));
+    const blockedByIds = tasks
+      .map(task => task.blockedReason?.blockedBy)
+      .filter((id, index, self) => id && self.indexOf(id) === index) as string[];
+
+    const allMemberIds = [...new Set([...allAssigneeIds, ...blockedByIds])];
+
+    let memberMap = new Map();
+    if (allMemberIds.length > 0) {
+      const members = await this.workspaceMemberRepository.find({
+        where: {
+          id: In(allMemberIds),
+        },
+      });
+      memberMap = new Map(members.map(m => [m.id, m]));
     }
 
-    const assignees = await this.workspaceMemberRepository.find({
-      where: {
-        id: In(allAssigneeIds),
-      },
+    return tasks.map(task => {
+      const result: any = {
+        ...task,
+        assignee: (task.assigneeIds || [])
+          .map(id => memberMap.get(id))
+          .filter(Boolean),
+      };
+
+      if (task.blockedReason?.blockedBy) {
+        const blockedByMember = memberMap.get(task.blockedReason.blockedBy);
+        if (blockedByMember) {
+          result.blockedReason = {
+            ...task.blockedReason,
+            blockedByMember,
+          };
+        }
+      }
+
+      return result;
     });
-
-    const assigneeMap = new Map(assignees.map(a => [a.id, a]));
-
-    return tasks.map(task => ({
-      ...task,
-      assignee: (task.assigneeIds || [])
-        .map(id => assigneeMap.get(id))
-        .filter(Boolean),
-    }));
   }
 
   async createTasks(
@@ -127,6 +162,7 @@ export class TaskService {
     taskId: string,
     updateTaskDto: UpdateTaskDto,
     workspaceId: string,
+    currentMemberId?: string,
   ): Promise<Task> {
     const task = await this.taskRepository.findOne({
       where: {
@@ -203,6 +239,7 @@ export class TaskService {
         task.blockedReason = {
           ...updateTaskDto.blockedReason,
           blockedAt: new Date(),
+          blockedBy: currentMemberId,
         };
       }
     }

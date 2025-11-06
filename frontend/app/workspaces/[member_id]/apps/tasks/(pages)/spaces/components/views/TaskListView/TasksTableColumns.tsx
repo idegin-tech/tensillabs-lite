@@ -1,5 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table"
-import { TbPlus, TbListCheck, TbCircleCheck, TbFlag, TbCalendar, TbUser, TbProgress, TbClock, TbTag, TbLock, TbBlockquote } from 'react-icons/tb'
+import { TbPlus, TbListCheck, TbCircleCheck, TbFlag, TbCalendar, TbUser, TbProgress, TbClock, TbTag, TbLock, TbBlockquote, TbAlertTriangle } from 'react-icons/tb'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Task, TaskStatus, TaskPriority } from '@/types/tasks.types'
@@ -141,7 +141,8 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
     ),
     minSize: 200,
     maxSize: 480,
-    enableResizing: true,    cell: ({ row }) => {
+    enableResizing: true,    
+    cell: ({ row }) => {
         const assignee = row.original.assignee
         return (
             <TaskColumnRenderer
@@ -215,25 +216,24 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
     },
 },
 {
-    accessorKey: "blocked",
+    accessorKey: "blockers",
     header: () => (
         <div className="flex items-center gap-2">
-            <TbLock className="h-4 w-4" />
-            <span>Blocked</span>
+            <TbAlertTriangle className="h-4 w-4" />
+            <span>Blockers</span>
         </div>
     ),
-    minSize: 100,
+    minSize: 120,
     maxSize: 150,
     enableResizing: true,
     cell: ({ row }) => {
         return (
-            <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 px-2 text-xs"
-            >
-                No
-            </Button>
+            <TaskColumnRenderer
+                accessorKey="blocked"
+                value={row.original.blockedReason}
+                task={row.original}
+                onLocalUpdate={onLocalUpdate}
+            />
         )
     },
 },

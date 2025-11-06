@@ -121,7 +121,7 @@ export default function EmployeesPage() {
 									</Avatar>
 								</TableCell>
 								<TableCell>
-									<Link href={`/workspaces/[member_id]/apps/people/employees/66255`} className="hover:underline">
+									<Link href={`/workspaces/545665gf/apps/people/employees/66255`} className="hover:underline">
 										{employee.firstName} {employee.lastName}
 									</Link>
 								</TableCell>

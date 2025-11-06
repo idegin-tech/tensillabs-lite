@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Task, TaskStatus, TaskPriority } from '@/types/tasks.types'
-import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskTagsProperty } from './TaskProperties'
+import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskTagsProperty, TaskBlockedProperty } from './TaskProperties'
 import { useUpdateTask } from '../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
@@ -35,7 +35,10 @@ export default function TaskColumnRenderer({
     try {
       const updateData: Record<string, any> = { [field]: newValue }
 
-      
+      if (field === 'assignee' && Array.isArray(newValue)) {
+        updateData.assignee = newValue.map((assignee: any) => assignee._id)
+      }
+
       const response = await updateTask.mutateAsync({
         taskId: task._id,
         data: updateData
@@ -112,6 +115,14 @@ export default function TaskColumnRenderer({
             onChange={(newValue) => handleUpdate('tags', newValue)}
             availableTags={state.activeList?.tags || []}
             listId={listId}
+          />
+        )
+
+      case 'blocked':
+        return (
+          <TaskBlockedProperty
+            value={task.blockedReason}
+            onChange={(newValue) => handleUpdate('blockedReason', newValue)}
           />
         )
 

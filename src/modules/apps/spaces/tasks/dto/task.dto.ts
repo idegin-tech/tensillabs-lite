@@ -60,6 +60,7 @@ export const updateTaskSchema = z.object({
     .object({
       reason: z.string().optional(),
       description: z.string().optional(),
+      blockedBy: z.string().optional(),
     })
     .nullable()
     .optional(),
