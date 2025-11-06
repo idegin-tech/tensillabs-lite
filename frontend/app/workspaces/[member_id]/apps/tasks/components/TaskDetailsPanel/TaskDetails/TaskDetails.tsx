@@ -1,6 +1,6 @@
 import React from 'react'
 import EachTaskDetailsProperty from '../EachTaskDetailsProperty'
-import { TaskPriorityProperty, TaskStatusProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskProgressProperty, TaskDueDateProperty, TaskTagsProperty, TaskBlockedProperty, TaskBlockingProperty } from '../../TaskProperties'
+import { TaskPriorityProperty, TaskStatusProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskProgressProperty, TaskTagsProperty, TaskBlockedProperty, TaskBlockingProperty } from '../../TaskProperties'
 import { TaskPriority, TaskStatus, Task } from '@/types/tasks.types'
 import { ChecklistItem } from '@/types/checklist.types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -144,14 +144,7 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
                                 onChange={(value) => handleTaskUpdate('timeframe', value)}
                             />
                         </EachTaskDetailsProperty>
-                        <EachTaskDetailsProperty
-                            label='Due Date'
-                        >
-                            <TaskDueDateProperty
-                                value={taskDueDate}
-                                onChange={(value) => handleTaskUpdate('dueDate', value)}
-                            />
-                        </EachTaskDetailsProperty>
+
                         <EachTaskDetailsProperty
                             label='Assignees'
                         >
@@ -204,6 +197,11 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
                                 currentTaskId={task?._id}
                                 allTasks={allTasks}
                             />
+                        </EachTaskDetailsProperty>
+                        <EachTaskDetailsProperty
+                            label='Track Time'
+                        >
+                            <span>Add time Tracker here</span>
                         </EachTaskDetailsProperty>
                     </div>
                 </div>
