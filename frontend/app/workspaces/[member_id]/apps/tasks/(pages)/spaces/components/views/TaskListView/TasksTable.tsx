@@ -5,7 +5,6 @@ import {
     getCoreRowModel,
     useReactTable,
     Column,
-    getPaginationRowModel,
     getSortedRowModel,
     getFilteredRowModel,
     SortingState,
@@ -42,19 +41,19 @@ const getCommonPinningStyles = (column: Column<Task>): CSSProperties => {
 
     return {
         boxShadow: isLastLeftPinnedColumn
-            ? '-4px 0 4px -4px hsl(var(--border)) inset'
+            ? '-4px 0 4px -4px var(--border) inset'
             : isFirstRightPinnedColumn
-                ? '4px 0 4px -4px hsl(var(--border)) inset'
+                ? '4px 0 4px -4px var(--border) inset'
                 : undefined,
         left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
         right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
         position: isPinned ? 'sticky' : 'relative',
         width: column.getSize(),
         zIndex: isPinned ? 1 : 0,
-        backgroundColor: isPinned ? 'hsl(var(--muted))' : undefined,
+        backgroundColor: isPinned ? '' : undefined,
         backdropFilter: isPinned ? 'blur(8px)' : undefined,
-        borderRight: isLastLeftPinnedColumn ? '1px solid hsl(var(--border))' : undefined,
-        borderLeft: isFirstRightPinnedColumn ? '1px solid hsl(var(--border))' : undefined,
+        borderRight: isLastLeftPinnedColumn ? '1px solid var(--border)' : undefined,
+        borderLeft: isFirstRightPinnedColumn ? '1px solid var(--border)' : undefined,
     }
 }
 
@@ -77,7 +76,6 @@ export default function TasksTable({ tasks, onTaskUpdate, onTaskClick }: TasksTa
         data: tasks,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onSortingChange: setSorting,

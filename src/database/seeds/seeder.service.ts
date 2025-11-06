@@ -10,8 +10,12 @@ import { Role } from '../../modules/options/roles/schemas/role.schema';
 import { Team } from '../../modules/options/teams/schemas/team.schema';
 import { Office } from '../../modules/options/offices/schemas/office.schema';
 import { Client } from '../../modules/options/clients/schemas/client.schema';
+import { Space } from '../../modules/apps/spaces/schemas/space.schema';
+import { List } from '../../modules/apps/spaces/lists/schemas/list.schema';
+import { SpaceParticipant } from '../../modules/apps/spaces/space-participants/schemas/space-participant.schema';
+import { Task } from '../../modules/apps/spaces/tasks/schemas/task.schema';
 import { SeedData } from './seed.interface';
-import { developmentSeedData } from './data/development.seed';
+import { getDevelopmentSeedData } from './data/development.seed';
 import { productionSeedData } from './data/production.seed';
 
 @Injectable()
@@ -35,13 +39,21 @@ export class SeederService {
     private readonly officeRepository: Repository<Office>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
+    @InjectRepository(Space)
+    private readonly spaceRepository: Repository<Space>,
+    @InjectRepository(List)
+    private readonly listRepository: Repository<List>,
+    @InjectRepository(SpaceParticipant)
+    private readonly spaceParticipantRepository: Repository<SpaceParticipant>,
+    @InjectRepository(Task)
+    private readonly taskRepository: Repository<Task>,
   ) {}
 
   async seed(environment: 'development' | 'production' = 'development') {
     this.logger.log(`Starting ${environment} database seeding...`);
 
     const seedData =
-      environment === 'production' ? productionSeedData : developmentSeedData;
+      environment === 'production' ? productionSeedData : await getDevelopmentSeedData();
 
     try {
       await this.clearDatabase();
@@ -53,6 +65,13 @@ export class SeederService {
       await this.seedTeams(seedData);
       await this.seedOffices(seedData);
       await this.seedClients(seedData);
+      
+      if (environment === 'development') {
+        await this.seedSpaces(seedData);
+        await this.seedLists(seedData);
+        await this.seedSpaceParticipants(seedData);
+        await this.seedTasks(seedData);
+      }
 
       this.logger.log(`${environment} database seeding completed successfully!`);
       return { success: true, environment };
@@ -65,6 +84,10 @@ export class SeederService {
   private async clearDatabase() {
     this.logger.log('Clearing existing data...');
 
+    await this.taskRepository.createQueryBuilder().delete().execute();
+    await this.spaceParticipantRepository.createQueryBuilder().delete().execute();
+    await this.listRepository.createQueryBuilder().delete().execute();
+    await this.spaceRepository.createQueryBuilder().delete().execute();
     await this.clientRepository.createQueryBuilder().delete().execute();
     await this.officeRepository.createQueryBuilder().delete().execute();
     await this.teamRepository.createQueryBuilder().delete().execute();
@@ -429,6 +452,305 @@ export class SeederService {
 
       await this.clientRepository.save(client);
       this.logger.log(`Created client: ${clientData.name}`);
+    }
+  }
+
+  private async seedSpaces(seedData: SeedData) {
+    if (!seedData.spaces || seedData.spaces.length === 0) {
+      return;
+    }
+
+    this.logger.log(`Seeding ${seedData.spaces.length} spaces...`);
+
+    for (const spaceData of seedData.spaces) {
+      const workspace = await this.workspaceRepository.findOne({
+        where: { slug: spaceData.workspaceSlug },
+      });
+
+      if (!workspace) {
+        this.logger.warn(
+          `Workspace ${spaceData.workspaceSlug} not found for space ${spaceData.name}`,
+        );
+        continue;
+      }
+
+      const creator = await this.userRepository.findOne({
+        where: { email: spaceData.createdByEmail },
+      });
+
+      if (!creator) {
+        this.logger.warn(
+          `Creator ${spaceData.createdByEmail} not found for space ${spaceData.name}`,
+        );
+        continue;
+      }
+
+      const creatorMember = await this.workspaceMemberRepository.findOne({
+        where: {
+          userId: creator.id,
+          workspaceId: workspace.id,
+        },
+      });
+
+      if (!creatorMember) {
+        this.logger.warn(
+          `Creator member not found for space ${spaceData.name}`,
+        );
+        continue;
+      }
+
+      const space = this.spaceRepository.create({
+        name: spaceData.name,
+        description: spaceData.description,
+        color: spaceData.color,
+        icon: spaceData.icon,
+        workspaceId: workspace.id,
+        createdById: creatorMember.id,
+        isPublic: spaceData.isPublic ?? false,
+        isDeleted: false,
+      });
+
+      await this.spaceRepository.save(space);
+      this.logger.log(`Created space: ${spaceData.name}`);
+    }
+  }
+
+  private async seedLists(seedData: SeedData) {
+    if (!seedData.lists || seedData.lists.length === 0) {
+      return;
+    }
+
+    this.logger.log(`Seeding ${seedData.lists.length} lists...`);
+
+    for (const listData of seedData.lists) {
+      const workspace = await this.workspaceRepository.findOne({
+        where: { slug: listData.workspaceSlug },
+      });
+
+      if (!workspace) {
+        this.logger.warn(
+          `Workspace ${listData.workspaceSlug} not found for list ${listData.name}`,
+        );
+        continue;
+      }
+
+      const space = await this.spaceRepository.findOne({
+        where: {
+          name: listData.spaceName,
+          workspaceId: workspace.id,
+        },
+      });
+
+      if (!space) {
+        this.logger.warn(
+          `Space ${listData.spaceName} not found for list ${listData.name}`,
+        );
+        continue;
+      }
+
+      const list = this.listRepository.create({
+        name: listData.name,
+        description: listData.description,
+        workspaceId: workspace.id,
+        spaceId: space.id,
+        isPrivate: listData.isPrivate ?? false,
+        isDeleted: false,
+      });
+
+      await this.listRepository.save(list);
+      this.logger.log(`Created list: ${listData.name}`);
+    }
+  }
+
+  private async seedSpaceParticipants(seedData: SeedData) {
+    if (!seedData.spaceParticipants || seedData.spaceParticipants.length === 0) {
+      return;
+    }
+
+    this.logger.log(`Seeding ${seedData.spaceParticipants.length} space participants...`);
+
+    for (const participantData of seedData.spaceParticipants) {
+      const workspace = await this.workspaceRepository.findOne({
+        where: { slug: participantData.workspaceSlug },
+      });
+
+      if (!workspace) {
+        this.logger.warn(
+          `Workspace ${participantData.workspaceSlug} not found for participant`,
+        );
+        continue;
+      }
+
+      const space = await this.spaceRepository.findOne({
+        where: {
+          name: participantData.spaceName,
+          workspaceId: workspace.id,
+        },
+      });
+
+      if (!space) {
+        this.logger.warn(
+          `Space ${participantData.spaceName} not found for participant`,
+        );
+        continue;
+      }
+
+      const user = await this.userRepository.findOne({
+        where: { email: participantData.memberEmail },
+      });
+
+      if (!user) {
+        this.logger.warn(
+          `User ${participantData.memberEmail} not found for participant`,
+        );
+        continue;
+      }
+
+      const member = await this.workspaceMemberRepository.findOne({
+        where: {
+          userId: user.id,
+          workspaceId: workspace.id,
+        },
+      });
+
+      if (!member) {
+        this.logger.warn(
+          `Member ${participantData.memberEmail} not found in workspace`,
+        );
+        continue;
+      }
+
+      const participant = this.spaceParticipantRepository.create({
+        memberId: member.id,
+        workspaceId: workspace.id,
+        spaceId: space.id,
+        permissions: participantData.permissions as any,
+        status: (participantData.status || 'active') as any,
+      });
+
+      await this.spaceParticipantRepository.save(participant);
+      this.logger.log(`Created space participant: ${participantData.memberEmail} in ${participantData.spaceName}`);
+    }
+  }
+
+  private async seedTasks(seedData: SeedData) {
+    if (!seedData.tasks || seedData.tasks.length === 0) {
+      return;
+    }
+
+    this.logger.log(`Seeding ${seedData.tasks.length} tasks...`);
+
+    for (const taskData of seedData.tasks) {
+      const workspace = await this.workspaceRepository.findOne({
+        where: { slug: taskData.workspaceSlug },
+      });
+
+      if (!workspace) {
+        this.logger.warn(
+          `Workspace ${taskData.workspaceSlug} not found for task ${taskData.name}`,
+        );
+        continue;
+      }
+
+      const space = await this.spaceRepository.findOne({
+        where: {
+          name: taskData.spaceName,
+          workspaceId: workspace.id,
+        },
+      });
+
+      if (!space) {
+        this.logger.warn(
+          `Space ${taskData.spaceName} not found for task ${taskData.name}`,
+        );
+        continue;
+      }
+
+      const list = await this.listRepository.findOne({
+        where: {
+          name: taskData.listName,
+          spaceId: space.id,
+        },
+      });
+
+      if (!list) {
+        this.logger.warn(
+          `List ${taskData.listName} not found for task ${taskData.name}`,
+        );
+        continue;
+      }
+
+      const creator = await this.userRepository.findOne({
+        where: { email: taskData.createdByEmail },
+      });
+
+      if (!creator) {
+        this.logger.warn(
+          `Creator ${taskData.createdByEmail} not found for task ${taskData.name}`,
+        );
+        continue;
+      }
+
+      const creatorMember = await this.workspaceMemberRepository.findOne({
+        where: {
+          userId: creator.id,
+          workspaceId: workspace.id,
+        },
+      });
+
+      if (!creatorMember) {
+        this.logger.warn(
+          `Creator member not found for task ${taskData.name}`,
+        );
+        continue;
+      }
+
+      const assigneeIds: string[] = [];
+      if (taskData.assigneeEmails && taskData.assigneeEmails.length > 0) {
+        for (const email of taskData.assigneeEmails) {
+          const assigneeUser = await this.userRepository.findOne({
+            where: { email },
+          });
+
+          if (assigneeUser) {
+            const assigneeMember = await this.workspaceMemberRepository.findOne({
+              where: {
+                userId: assigneeUser.id,
+                workspaceId: workspace.id,
+              },
+            });
+
+            if (assigneeMember) {
+              assigneeIds.push(assigneeMember.id);
+            }
+          }
+        }
+      }
+
+      const taskCount = await this.taskRepository.count({
+        where: { workspaceId: workspace.id },
+      });
+
+      const task = this.taskRepository.create({
+        name: taskData.name,
+        description: taskData.description,
+        task_id: `TSK-${taskCount + 1}`,
+        listId: list.id,
+        spaceId: space.id,
+        workspaceId: workspace.id,
+        createdById: creatorMember.id,
+        priority: taskData.priority as any,
+        status: taskData.status as any,
+        timeframe: taskData.timeframe ? {
+          start: taskData.timeframe.start ? new Date(taskData.timeframe.start) : undefined,
+          end: taskData.timeframe.end ? new Date(taskData.timeframe.end) : undefined,
+        } : undefined,
+        assigneeIds: assigneeIds,
+        isDeleted: false,
+      });
+
+      await this.taskRepository.save(task);
+      this.logger.log(`Created task: ${task.task_id} - ${taskData.name}`);
     }
   }
 }

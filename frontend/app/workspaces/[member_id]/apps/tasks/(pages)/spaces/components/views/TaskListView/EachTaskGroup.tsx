@@ -38,7 +38,7 @@ export default function EachTaskGroup({
 
     const groupParams = {
         page,
-        limit: 20,
+        limit: 50,
         meMode: state.meMode,
         ...groupConfig?.query
     }

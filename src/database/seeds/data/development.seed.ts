@@ -1,6 +1,10 @@
 import { SeedData } from '../seed.interface';
+import { getSpacesSeedData } from './spaces.seed';
 
-export const developmentSeedData: SeedData = {
+export async function getDevelopmentSeedData(): Promise<SeedData> {
+    const spacesSeedData = await getSpacesSeedData();
+    
+    return {
     users: [
         {
             email: 'admin@tensillabs.com',
@@ -33,7 +37,7 @@ export const developmentSeedData: SeedData = {
             name: 'Hawksworth Inc.',
             description: 'Best management consulting firm in Nigeria',
             slug: 'hawksworth-inc',
-            createdByEmail: 'admin@hawksworth.com',
+            createdByEmail: 'admin@tensillabs.com',
         },
         {
             name: 'Development Team',
@@ -46,7 +50,7 @@ export const developmentSeedData: SeedData = {
     workspaceMembers: [
         {
             userEmail: 'admin@tensillabs.com',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             firstName: 'Admin',
             lastName: 'User',
             primaryEmail: 'admin@tensillabs.com',
@@ -58,7 +62,7 @@ export const developmentSeedData: SeedData = {
         },
         {
             userEmail: 'john.doe@tensillabs.com',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             firstName: 'John',
             middleName: 'Michael',
             lastName: 'Doe',
@@ -72,7 +76,7 @@ export const developmentSeedData: SeedData = {
         },
         {
             userEmail: 'jane.smith@tensillabs.com',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             firstName: 'Jane',
             lastName: 'Smith',
             primaryEmail: 'jane.smith@tensillabs.com',
@@ -83,7 +87,7 @@ export const developmentSeedData: SeedData = {
         },
         {
             userEmail: 'bob.wilson@tensillabs.com',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             firstName: 'Bob',
             lastName: 'Wilson',
             primaryEmail: 'bob.wilson@tensillabs.com',
@@ -119,35 +123,35 @@ export const developmentSeedData: SeedData = {
         {
             name: 'Software Engineer',
             description: 'Develops and maintains software applications',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'Senior Software Engineer',
             description: 'Senior developer with leadership responsibilities',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'Project Manager',
             description: 'Manages projects and coordinates teams',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'Product Designer',
             description: 'Designs user interfaces and user experiences',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'QA Engineer',
             description: 'Tests and ensures software quality',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
@@ -164,21 +168,21 @@ export const developmentSeedData: SeedData = {
         {
             name: 'Engineering',
             description: 'Software development and engineering team',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'Product',
             description: 'Product management and design team',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'Quality Assurance',
             description: 'Testing and quality assurance team',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
@@ -202,28 +206,28 @@ export const developmentSeedData: SeedData = {
         {
             name: 'Lagos Office',
             description: 'Main office in Lagos, Nigeria',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'New York Office',
             description: 'US headquarters in New York',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'London Office',
             description: 'European office in London',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'Remote',
             description: 'Remote workers worldwide',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
@@ -233,30 +237,36 @@ export const developmentSeedData: SeedData = {
         {
             name: 'Acme Corporation',
             description: 'Enterprise software solutions client',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'TechStart Inc',
             description: 'Startup technology company',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'Global Finance Group',
             description: 'Financial services corporation',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
         {
             name: 'HealthCare Plus',
             description: 'Healthcare technology provider',
-            workspaceSlug: 'tensillabs-hq',
+            workspaceSlug: 'hawksworth-inc',
             createdByEmail: 'admin@tensillabs.com',
             isActive: true,
         },
     ],
-};
+
+    spaces: spacesSeedData.spaces,
+    lists: spacesSeedData.lists,
+    spaceParticipants: spacesSeedData.spaceParticipants,
+    tasks: spacesSeedData.tasks,
+    };
+}

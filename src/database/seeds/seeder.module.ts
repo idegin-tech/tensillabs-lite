@@ -8,6 +8,10 @@ import { Role } from '../../modules/options/roles/schemas/role.schema';
 import { Team } from '../../modules/options/teams/schemas/team.schema';
 import { Office } from '../../modules/options/offices/schemas/office.schema';
 import { Client } from '../../modules/options/clients/schemas/client.schema';
+import { Space } from '../../modules/apps/spaces/schemas/space.schema';
+import { List } from '../../modules/apps/spaces/lists/schemas/list.schema';
+import { SpaceParticipant } from '../../modules/apps/spaces/space-participants/schemas/space-participant.schema';
+import { Task } from '../../modules/apps/spaces/tasks/schemas/task.schema';
 import { SeederService } from './seeder.service';
 
 @Module({
@@ -21,6 +25,10 @@ import { SeederService } from './seeder.service';
             Team,
             Office,
             Client,
+            Space,
+            List,
+            SpaceParticipant,
+            Task,
         ]),
     ],
     providers: [SeederService],
