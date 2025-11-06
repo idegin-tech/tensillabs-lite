@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, MoreThanOrEqual } from 'typeorm';
 import { Task, TaskPriority, TaskStatus } from '../schemas/task.schema';
 import { Comment } from '../../../../comments/schemas/comment.schema';
 import { WorkspaceMember } from '../../../../workspace-members/schemas/workspace-member.schema';
@@ -9,6 +9,7 @@ import {
   CreateTasksDto,
   GetTasksByGroupQueryDto,
   GetTasksByListQueryDto,
+  GetTaskReportsQueryDto,
 } from '../dto/task.dto';
 import { ChecklistService } from 'src/modules/checklists/services/checklist.service';
 import { FileService } from 'src/modules/files/services/file.service';
@@ -605,5 +606,157 @@ export class TaskService {
       { id: taskId, workspaceId },
       { progress: Math.round(progress) }
     );
+  }
+
+  async getTaskReports(
+    listId: string,
+    workspaceId: string,
+    queryParams: GetTaskReportsQueryDto,
+  ): Promise<any> {
+    const { timeRange } = queryParams;
+
+    let dateFilter: Date | undefined;
+    if (timeRange !== 'all') {
+      const days = parseInt(timeRange);
+      dateFilter = new Date();
+      dateFilter.setDate(dateFilter.getDate() - days);
+    }
+
+    const whereClause: any = {
+      listId,
+      workspaceId,
+      isDeleted: false,
+    };
+
+    if (dateFilter) {
+      whereClause.createdAt = MoreThanOrEqual(dateFilter);
+    }
+
+    const tasks = await this.taskRepository.find({
+      where: whereClause,
+    });
+
+    const now = new Date();
+    const overdueTasks = tasks.filter(
+      task => task.dueDate && new Date(task.dueDate) < now && task.status !== TaskStatus.COMPLETED
+    );
+
+    const statusDistribution = {
+      todo: tasks.filter(t => t.status === TaskStatus.TODO).length,
+      in_progress: tasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
+      in_review: tasks.filter(t => t.status === TaskStatus.IN_REVIEW).length,
+      completed: tasks.filter(t => t.status === TaskStatus.COMPLETED).length,
+      canceled: tasks.filter(t => t.status === TaskStatus.CANCELED).length,
+    };
+
+    const priorityBreakdown = {
+      urgent: tasks.filter(t => t.priority === TaskPriority.URGENT).length,
+      high: tasks.filter(t => t.priority === TaskPriority.HIGH).length,
+      normal: tasks.filter(t => t.priority === TaskPriority.NORMAL).length,
+      low: tasks.filter(t => t.priority === TaskPriority.LOW).length,
+      none: tasks.filter(t => !t.priority).length,
+    };
+
+    const assigneeIds = [...new Set(tasks.flatMap(t => t.assigneeIds || []))];
+    const workloadMap = new Map<string, number>();
+    
+    tasks.forEach(task => {
+      if (task.assigneeIds && task.assigneeIds.length > 0) {
+        task.assigneeIds.forEach(assigneeId => {
+          workloadMap.set(assigneeId, (workloadMap.get(assigneeId) || 0) + 1);
+        });
+      }
+    });
+
+    const unassignedCount = tasks.filter(t => !t.assigneeIds || t.assigneeIds.length === 0).length;
+
+    let members = [];
+    if (assigneeIds.length > 0) {
+      members = await this.workspaceMemberRepository.find({
+        where: {
+          id: In(assigneeIds),
+        },
+      });
+    }
+
+    const workloadDistribution = members.map(member => ({
+      memberId: member.id,
+      name: `${member.firstName} ${member.lastName}`,
+      avatar: member.avatar,
+      taskCount: workloadMap.get(member.id) || 0,
+    }));
+
+    if (unassignedCount > 0) {
+      workloadDistribution.push({
+        memberId: 'unassigned',
+        name: 'Unassigned',
+        avatar: null,
+        taskCount: unassignedCount,
+      });
+    }
+
+    const tasksWithEstimates = tasks.filter(t => t.estimatedHours && t.estimatedHours > 0);
+    const tasksWithActual = tasksWithEstimates.filter(t => t.actualHours && t.actualHours > 0);
+    
+    const totalEstimated = tasksWithEstimates.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
+    const totalActual = tasksWithActual.reduce((sum, t) => sum + (t.actualHours || 0), 0);
+    
+    const accuracy = totalEstimated > 0 ? Math.round((1 - Math.abs(totalEstimated - totalActual) / totalEstimated) * 100) : 0;
+
+    const timeEstimateAccuracy = {
+      accuracy,
+      totalEstimated: Math.round(totalEstimated * 10) / 10,
+      totalActual: Math.round(totalActual * 10) / 10,
+      tasksWithEstimates: tasksWithEstimates.length,
+    };
+
+    const sortedTasks = [...tasks].sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    const completionTrend = [];
+    const daysToShow = timeRange === 'all' ? 30 : Math.min(parseInt(timeRange), 30);
+    
+    for (let i = daysToShow - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const createdByDate = sortedTasks.filter(t => new Date(t.createdAt) <= endOfDay).length;
+      const completedByDate = sortedTasks.filter(t => 
+        t.status === TaskStatus.COMPLETED && 
+        t.statusChangedAt && 
+        new Date(t.statusChangedAt) <= endOfDay
+      ).length;
+
+      completionTrend.push({
+        date: date.toISOString().split('T')[0],
+        created: createdByDate,
+        completed: completedByDate,
+      });
+    }
+
+    const totalTasks = tasks.length;
+    const completedTasks = statusDistribution.completed;
+    const inProgressTasks = statusDistribution.in_progress;
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    return {
+      overview: {
+        total: totalTasks,
+        completed: completedTasks,
+        completionRate,
+        inProgress: inProgressTasks,
+        overdue: overdueTasks.length,
+      },
+      statusDistribution,
+      priorityBreakdown,
+      workloadDistribution,
+      timeEstimateAccuracy,
+      completionTrend,
+    };
   }
 }

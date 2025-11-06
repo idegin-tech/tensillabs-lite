@@ -14,7 +14,9 @@ export default function TaskAssigneeProperty({ onChange, value }: TaskPropertyPr
 
     const handleAssigneeChange = (assignees: TaskAssignee[]) => {
         setInternalValue(assignees)
-        onChange?.(assignees)
+        setTimeout(() => {
+            onChange?.(assignees)
+        }, 100)
     }
 
     return (

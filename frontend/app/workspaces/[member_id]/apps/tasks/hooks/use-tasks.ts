@@ -95,6 +95,55 @@ interface SearchTasksResponse {
   payload: Task[]
 }
 
+interface TaskReportsParams {
+  timeRange?: '7' | '30' | '90' | '365' | 'all'
+}
+
+interface TaskReportsResponse {
+  success: boolean
+  message: string
+  payload: {
+    overview: {
+      total: number
+      completed: number
+      completionRate: number
+      inProgress: number
+      overdue: number
+    }
+    statusDistribution: {
+      todo: number
+      in_progress: number
+      in_review: number
+      completed: number
+      canceled: number
+    }
+    priorityBreakdown: {
+      urgent: number
+      high: number
+      normal: number
+      low: number
+      none: number
+    }
+    workloadDistribution: Array<{
+      memberId: string
+      name: string
+      avatar: string | null
+      taskCount: number
+    }>
+    timeEstimateAccuracy: {
+      accuracy: number
+      totalEstimated: number
+      totalActual: number
+      tasksWithEstimates: number
+    }
+    completionTrend: Array<{
+      date: string
+      created: number
+      completed: number
+    }>
+  }
+}
+
 export function useCreateTasks(listId: string) {
   const { member_id } = useCommon()
 
@@ -199,4 +248,26 @@ export function useSearchTasks(params: SearchTasksParams, options: { enabled?: b
     error: query.error,
     refetch: query.refetch
   }
+}
+
+export function useTaskReports(listId: string, params: TaskReportsParams, options: { enabled?: boolean } = {}) {
+  const { member_id } = useCommon()
+  
+  const queryParams = new URLSearchParams()
+  if (params.timeRange) queryParams.append('timeRange', params.timeRange)
+
+  const endpoint = `/lists/${listId}/tasks/reports?${queryParams}`
+
+  return useQuery<TaskReportsResponse, ApiError>({
+    queryKey: ['task-reports', listId, JSON.stringify(params)],
+    queryFn: () => api.get<TaskReportsResponse>(endpoint, {
+      headers: {
+        'x-member-id': member_id,
+      },
+    }),
+    enabled: options.enabled ?? true,
+    staleTime: 1000 * 60,
+    gcTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+  })
 }

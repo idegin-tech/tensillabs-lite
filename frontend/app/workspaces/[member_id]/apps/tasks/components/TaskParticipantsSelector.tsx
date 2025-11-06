@@ -166,22 +166,24 @@ export default function TaskParticipantsSelector({
         <div className="flex items-center gap-1">
           <div className={cn("flex", getAvatarSpacing())}>          
             {visibleAssignees.map((assignee) => (
-              <Tooltip key={assignee._id}>
-                <TooltipTrigger asChild>
-                  <Avatar className={cn(getAvatarSizeClasses(), "border-2 border-background")}>
-                    <AvatarImage
-                      src={assignee.avatarURL?.sm || undefined}
-                      alt={`${assignee.firstName} ${assignee.lastName}`}
-                    />            
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-medium">
-                      {getAssigneeInitials(assignee)}
-                    </AvatarFallback>
-                  </Avatar>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{getAssigneeDisplayName(assignee)}</p>
-                </TooltipContent>
-              </Tooltip>
+              <React.Fragment key={assignee._id}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Avatar className={cn(getAvatarSizeClasses(), "border-2 border-background")}>
+                      <AvatarImage
+                        src={assignee.avatarURL?.sm || undefined}
+                        alt={`${assignee.firstName} ${assignee.lastName}`}
+                      />            
+                      <AvatarFallback className="text-xs bg-primary/10 text-primary font-medium">
+                        {getAssigneeInitials(assignee)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{getAssigneeDisplayName(assignee)}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </React.Fragment>
             ))}
           </div>
           {remainingCount > 0 && (

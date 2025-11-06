@@ -40,7 +40,9 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/frontend/dist ./frontend/dist
+COPY --from=build /app/frontend/.next ./frontend/.next
+COPY --from=build /app/frontend/public ./frontend/public
+COPY --from=build /app/frontend/package.json ./frontend/package.json
 
 RUN mkdir -p /data/db
 

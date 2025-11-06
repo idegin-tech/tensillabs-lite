@@ -35,12 +35,20 @@ import { SeederModule } from './database/seeds/seeder.module';
     FilesModule,
     CommentsModule,
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'frontend', 'dist'),
+      rootPath: join(__dirname, '..', 'frontend', '.next', 'static'),
+      exclude: ['/api/v1*'],
+      serveRoot: '/_next/static',
+      serveStaticOptions: {
+        maxAge: 31536000,
+        immutable: true,
+      },
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'frontend', 'public'),
       exclude: ['/api/v1*'],
       serveRoot: '/',
       serveStaticOptions: {
-        fallthrough: false,
-        index: 'index.html',
+        fallthrough: true,
       },
     }),
   ],

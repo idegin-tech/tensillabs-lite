@@ -165,6 +165,13 @@ export const searchTasksQuerySchema = z.object({
     }),
 });
 
+export const getTaskReportsQuerySchema = z.object({
+  timeRange: z
+    .enum(['7', '30', '90', '365', 'all'])
+    .optional()
+    .default('30'),
+});
+
 export type SyncTaskDto = z.infer<typeof syncTaskSchema>;
 export type SyncTasksDto = z.infer<typeof syncTasksSchema>;
 export type UpdateTaskDto = z.infer<typeof updateTaskSchema>;
@@ -175,3 +182,4 @@ export type GetTasksByGroupQueryDto = z.infer<
   typeof getTasksByGroupQuerySchema
 >;
 export type SearchTasksQueryDto = z.infer<typeof searchTasksQuerySchema>;
+export type GetTaskReportsQueryDto = z.infer<typeof getTaskReportsQuerySchema>;

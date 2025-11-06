@@ -37,6 +37,8 @@ import {
   GetTasksByGroupQueryDto,
   searchTasksQuerySchema,
   SearchTasksQueryDto,
+  getTaskReportsQuerySchema,
+  GetTaskReportsQueryDto,
 } from './dto/task.dto';
 import {
   createCommentSchema,
@@ -114,6 +116,28 @@ export class TaskController {
     );
 
     return createSuccessResponse('Task updated successfully', task);
+  }
+
+  @Get('reports')
+  async getTaskReports(
+    @Param('listId') listId: string,
+    @Query(new ZodValidationPipe(getTaskReportsQuerySchema))
+    queryParams: GetTaskReportsQueryDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
+  ) {
+    const result = await this.taskService.getTaskReports(
+      listId,
+      req.workspace.id,
+      queryParams,
+    );
+
+    return createSuccessResponse('Task reports retrieved successfully', result);
   }
 
   @Get('group')
