@@ -151,6 +151,20 @@ export const getTasksByGroupQuerySchema = z.object({
   assignee_id: z.string().optional(),
 });
 
+export const searchTasksQuerySchema = z.object({
+  search: z.string().optional(),
+  listId: z.string().optional(),
+  spaceId: z.string().optional(),
+  limit: z
+    .string()
+    .optional()
+    .default('50')
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => val > 0 && val <= 100, {
+      message: 'Limit must be between 1 and 100',
+    }),
+});
+
 export type SyncTaskDto = z.infer<typeof syncTaskSchema>;
 export type SyncTasksDto = z.infer<typeof syncTasksSchema>;
 export type UpdateTaskDto = z.infer<typeof updateTaskSchema>;
@@ -160,3 +174,4 @@ export type CreateTasksDto = z.infer<typeof createTasksSchema>;
 export type GetTasksByGroupQueryDto = z.infer<
   typeof getTasksByGroupQuerySchema
 >;
+export type SearchTasksQueryDto = z.infer<typeof searchTasksQuerySchema>;

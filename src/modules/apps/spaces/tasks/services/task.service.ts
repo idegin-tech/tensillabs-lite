@@ -401,6 +401,47 @@ export class TaskService {
     return grouped;
   }
 
+  async searchTasks(
+    workspaceId: string,
+    queryParams: {
+      search?: string;
+      listId?: string;
+      spaceId?: string;
+      limit: number;
+    },
+  ): Promise<Task[]> {
+    const queryBuilder = this.taskRepository
+      .createQueryBuilder('task')
+      .where('task.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('task.isDeleted = :isDeleted', { isDeleted: false });
+
+    if (queryParams.search) {
+      queryBuilder.andWhere(
+        '(LOWER(task.name) LIKE LOWER(:search) OR LOWER(task.description) LIKE LOWER(:search))',
+        { search: `%${queryParams.search}%` },
+      );
+    }
+
+    if (queryParams.listId) {
+      queryBuilder.andWhere('task.listId = :listId', {
+        listId: queryParams.listId,
+      });
+    }
+
+    if (queryParams.spaceId) {
+      queryBuilder.andWhere('task.spaceId = :spaceId', {
+        spaceId: queryParams.spaceId,
+      });
+    }
+
+    const tasks = await queryBuilder
+      .orderBy('task.createdAt', 'DESC')
+      .limit(queryParams.limit)
+      .getMany();
+
+    return this.populateTasksAssignees(tasks);
+  }
+
   async getTasksGroupedByDueDate(
     listId: string,
     workspaceId: string,

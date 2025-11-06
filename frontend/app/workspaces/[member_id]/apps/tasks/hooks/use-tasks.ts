@@ -82,6 +82,19 @@ interface GetTaskDetailsResponse {
   }
 }
 
+interface SearchTasksParams {
+  search?: string
+  listId?: string
+  spaceId?: string
+  limit?: number
+}
+
+interface SearchTasksResponse {
+  success: boolean
+  message: string
+  payload: Task[]
+}
+
 export function useCreateTasks(listId: string) {
   const { member_id } = useCommon()
 
@@ -156,4 +169,34 @@ export function useGetTaskDetails(listId: string, taskId: string, enabled = true
     gcTime: 1000 * 60 * 2,
     refetchOnWindowFocus: false,
   })
+}
+
+export function useSearchTasks(params: SearchTasksParams, options: { enabled?: boolean } = {}) {
+  const { member_id } = useCommon()
+  
+  const queryParams = new URLSearchParams()
+  if (params.search) queryParams.append('search', params.search)
+  if (params.listId) queryParams.append('listId', params.listId)
+  if (params.spaceId) queryParams.append('spaceId', params.spaceId)
+  if (params.limit) queryParams.append('limit', params.limit.toString())
+
+  const endpoint = `/lists/${params.listId || 'all'}/tasks/search?${queryParams}`
+
+  const query = useQuery<SearchTasksResponse, ApiError>({
+    queryKey: ['search-tasks', JSON.stringify(params)],
+    queryFn: () => api.get<SearchTasksResponse>(endpoint, {
+      headers: {
+        'x-member-id': member_id,
+      },
+    }),
+    enabled: options.enabled ?? true,
+    staleTime: 1000 * 30,
+  })
+
+  return {
+    tasks: query.data?.payload || [],
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch
+  }
 }

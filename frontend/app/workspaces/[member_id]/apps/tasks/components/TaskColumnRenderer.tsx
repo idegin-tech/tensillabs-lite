@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Task, TaskStatus, TaskPriority } from '@/types/tasks.types'
-import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskTagsProperty, TaskBlockedProperty } from './TaskProperties'
+import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskTagsProperty, TaskBlockedProperty, TaskBlockingProperty } from './TaskProperties'
 import { useUpdateTask } from '../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
@@ -15,13 +15,15 @@ interface TaskColumnRendererProps {
   value: any
   task: Task
   onLocalUpdate?: (taskId: string, updates: Partial<Task>) => void
+  allTasks?: Task[]
 }
 
 export default function TaskColumnRenderer({
   accessorKey,
   value,
   task,
-  onLocalUpdate
+  onLocalUpdate,
+  allTasks = []
 }: TaskColumnRendererProps) {
   const params = useParams()
   const listId = params.list_id as string
@@ -32,13 +34,15 @@ export default function TaskColumnRenderer({
   const handleUpdate = async (field: string, newValue: any) => {
     const previousTask = { ...task }
 
+    const updateData: Record<string, any> = { [field]: newValue }
+
+    if (field === 'assignee' && Array.isArray(newValue)) {
+      updateData.assignee = newValue.map((assignee: any) => assignee._id)
+    }
+
+    onLocalUpdate?.(task._id, updateData)
+
     try {
-      const updateData: Record<string, any> = { [field]: newValue }
-
-      if (field === 'assignee' && Array.isArray(newValue)) {
-        updateData.assignee = newValue.map((assignee: any) => assignee._id)
-      }
-
       const response = await updateTask.mutateAsync({
         taskId: task._id,
         data: updateData
@@ -123,6 +127,17 @@ export default function TaskColumnRenderer({
           <TaskBlockedProperty
             value={task.blockedReason}
             onChange={(newValue) => handleUpdate('blockedReason', newValue)}
+          />
+        )
+
+      case 'blockingTasks':
+        return (
+          <TaskBlockingProperty
+            value={task.blockedByTaskIds || []}
+            onChange={(newValue) => handleUpdate('blockedByTaskIds', newValue)}
+            currentTaskId={task._id}
+            allTasks={allTasks}
+            displayMode='compact'
           />
         )
 

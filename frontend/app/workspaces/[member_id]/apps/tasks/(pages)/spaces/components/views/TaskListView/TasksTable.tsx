@@ -70,8 +70,9 @@ export default function TasksTable({ tasks, onTaskUpdate, onTaskClick }: TasksTa
 
     const { state, updateState } = useTaskList();    const columns = useMemo(() => createColumns({ 
         onLocalUpdate: onTaskUpdate,
-        onTaskClick: onTaskClick
-    }), [onTaskUpdate, onTaskClick])
+        onTaskClick: onTaskClick,
+        allTasks: tasks
+    }), [onTaskUpdate, onTaskClick, tasks])
     const table = useReactTable({
         data: tasks,
         columns,

@@ -1,6 +1,6 @@
 import React from 'react'
 import EachTaskDetailsProperty from '../EachTaskDetailsProperty'
-import { TaskPriorityProperty, TaskStatusProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskProgressProperty, TaskDueDateProperty, TaskTagsProperty } from '../../TaskProperties'
+import { TaskPriorityProperty, TaskStatusProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskProgressProperty, TaskDueDateProperty, TaskTagsProperty, TaskBlockedProperty, TaskBlockingProperty } from '../../TaskProperties'
 import { TaskPriority, TaskStatus, Task } from '@/types/tasks.types'
 import { ChecklistItem } from '@/types/checklist.types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,7 +9,7 @@ import { TbCircleCheck, TbPaperclip } from 'react-icons/tb'
 import TaskDescription from './TaskDescription'
 import TaskActionItems from './TaskActionItems'
 import TaskDetailsAttachments from './TaskDetailsAttachments'
-import { useUpdateTask } from '../../../hooks/use-tasks'
+import { useUpdateTask, useSearchTasks } from '../../../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -40,6 +40,7 @@ interface TaskDetailsProps {
 export default function TaskDetails({ task, checklist, files }: TaskDetailsProps) {
     const params = useParams()
     const listId = params.list_id as string
+    const spaceId = params.space_id as string
     const { member_id } = useCommon()
     const { state } = useTaskList()
     const updateTaskMutation = useUpdateTask(listId)
@@ -56,6 +57,17 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
     const taskProgress = task?.progress
     const taskDueDate = task?.dueDate
     const taskTags = task?.tags || []
+    const taskBlockedReason = task?.blockedReason
+    const taskBlockedByTaskIds = task?.blockedByTaskIds || []
+
+    const { tasks: allTasks } = useSearchTasks(
+        {
+            listId,
+            spaceId,
+            limit: 100
+        },
+        { enabled: true }
+    )
 
     React.useEffect(() => {
         setTaskName(task?.name || '')
@@ -173,6 +185,24 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
                                 onChange={(value) => handleTaskUpdate('tags', value)}
                                 availableTags={state.activeList?.tags || []}
                                 listId={listId}
+                            />
+                        </EachTaskDetailsProperty>
+                        <EachTaskDetailsProperty
+                            label='Blocked'
+                        >
+                            <TaskBlockedProperty
+                                value={taskBlockedReason}
+                                onChange={(value) => handleTaskUpdate('blockedReason', value)}
+                            />
+                        </EachTaskDetailsProperty>
+                        <EachTaskDetailsProperty
+                            label='Blocking Tasks'
+                        >
+                            <TaskBlockingProperty
+                                value={taskBlockedByTaskIds}
+                                onChange={(value) => handleTaskUpdate('blockedByTaskIds', value)}
+                                currentTaskId={task?._id}
+                                allTasks={allTasks}
                             />
                         </EachTaskDetailsProperty>
                     </div>

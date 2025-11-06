@@ -35,6 +35,8 @@ import {
   CreateTasksDto,
   getTasksByGroupQuerySchema,
   GetTasksByGroupQueryDto,
+  searchTasksQuerySchema,
+  SearchTasksQueryDto,
 } from './dto/task.dto';
 import {
   createCommentSchema,
@@ -133,6 +135,26 @@ export class TaskController {
       queryParams,
       queryParams.meMode ? req.workspaceMember.id : undefined,
     );
+
+    return createSuccessResponse('Tasks retrieved successfully', tasks);
+  }
+
+  @Get('search')
+  async searchTasks(
+    @Query(new ZodValidationPipe(searchTasksQuerySchema))
+    queryParams: SearchTasksQueryDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const tasks = await this.taskService.searchTasks(req.workspace.id, {
+      search: queryParams.search,
+      listId: queryParams.listId,
+      spaceId: queryParams.spaceId,
+      limit: queryParams.limit,
+    });
 
     return createSuccessResponse('Tasks retrieved successfully', tasks);
   }

@@ -9,10 +9,11 @@ import TaskProgressProperty from '../../../../../components/TaskProperties/TaskP
 interface CreateColumnsProps {
   onLocalUpdate?: (taskId: string, updates: Partial<Task>) => void
   onTaskClick?: (taskId: string) => void
+  allTasks?: Task[]
 }
 
 
-export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps = {}): ColumnDef<Task>[] => [{
+export const createColumns = ({ onLocalUpdate, onTaskClick, allTasks = [] }: CreateColumnsProps = {}): ColumnDef<Task>[] => [{
     id: "select",
     header: ({ table }) => (
         <Checkbox
@@ -83,6 +84,7 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
                 value={status}
                 task={row.original}
                 onLocalUpdate={onLocalUpdate}
+                allTasks={allTasks}
             />
         )
     },
@@ -105,6 +107,7 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
                 value={priority}
                 task={row.original}
                 onLocalUpdate={onLocalUpdate}
+                allTasks={allTasks}
             />
         )
     },
@@ -127,6 +130,7 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
                 value={timeframe}
                 task={row.original}
                 onLocalUpdate={onLocalUpdate}
+                allTasks={allTasks}
             />
         )
     },
@@ -150,6 +154,7 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
                 value={assignee}
                 task={row.original}
                 onLocalUpdate={onLocalUpdate}
+                allTasks={allTasks}
             />
         )
     },
@@ -188,6 +193,7 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
                 value={estimatedHours}
                 task={row.original}
                 onLocalUpdate={onLocalUpdate}
+                allTasks={allTasks}
             />
         )
     },
@@ -211,6 +217,7 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
                 value={tags}
                 task={row.original}
                 onLocalUpdate={onLocalUpdate}
+                allTasks={allTasks}
             />
         )
     },
@@ -233,6 +240,7 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
                 value={row.original.blockedReason}
                 task={row.original}
                 onLocalUpdate={onLocalUpdate}
+                allTasks={allTasks}
             />
         )
     },
@@ -250,9 +258,13 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
     enableResizing: true,
     cell: ({ row }) => {
         return (
-            <div className="text-sm text-muted-foreground">
-                None
-            </div>
+            <TaskColumnRenderer
+                accessorKey="blockingTasks"
+                value={row.original.blockedByTaskIds}
+                task={row.original}
+                onLocalUpdate={onLocalUpdate}
+                allTasks={allTasks}
+            />
         )
     },
 },
