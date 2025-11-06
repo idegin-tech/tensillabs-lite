@@ -82,6 +82,25 @@ export class ListController {
 
   @Put(':listId/tags')
   @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
+  async updateListTags(
+    @Param('listId') listId: string,
+    @Body() body: { tags: any[] },
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const list = await this.listService.updateTags(
+      listId,
+      req.workspace.id,
+      body.tags,
+    );
+    return createSuccessResponse('Tags updated successfully', list);
+  }
+
+  @Put(':listId/tags/manage')
+  @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
   async manageListTags(
     @Param('listId') listId: string,
     @Body(new ZodValidationPipe(manageTagsSchema))

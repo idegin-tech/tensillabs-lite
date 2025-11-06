@@ -32,21 +32,32 @@ export const tagSchema = z.object({
   index: z.number().int().min(0),
 });
 
+export const tagUpdateSchema = z.object({
+  oldValue: z.string().min(1, 'Old value is required'),
+  newTag: tagSchema,
+});
+
 export const manageTagsSchema = z.object({
-  tagsToCreate: z.array(tagSchema).optional().default([]),
-  tagsToUpdate: z
-    .array(
-      z.object({
-        oldValue: z.string().min(1, 'Old value is required'),
-        newTag: tagSchema,
-      }),
-    )
-    .optional()
-    .default([]),
-  tagsToDelete: z.array(z.string()).optional().default([]),
+  tagsToCreate: z.array(tagSchema).default([]),
+  tagsToUpdate: z.array(tagUpdateSchema).default([]),
+  tagsToDelete: z.array(z.string()).default([]),
 });
 
 export type CreateListDto = z.infer<typeof createListSchema>;
 export type UpdateListDto = z.infer<typeof updateListSchema>;
-export type TagDto = z.infer<typeof tagSchema>;
-export type ManageTagsDto = z.infer<typeof manageTagsSchema>;
+
+export interface TagDto {
+  value: string;
+  label: string;
+  color: string;
+  index: number;
+}
+
+export interface ManageTagsDto {
+  tagsToCreate: TagDto[];
+  tagsToUpdate: Array<{
+    oldValue: string;
+    newTag: TagDto;
+  }>;
+  tagsToDelete: string[];
+}

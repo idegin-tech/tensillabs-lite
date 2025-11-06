@@ -52,6 +52,7 @@ export interface Task {
   statusChangedAt?: string
   dueDate?: string
   completedAt?: string
+  tags?: string[]
 }
 
 export interface TaskGrouping {
@@ -77,12 +78,20 @@ export interface GroupedTasks {
   }
 }
 
+export interface TaskTag {
+  value: string
+  label: string
+  color: string
+  index: number
+}
+
 export interface TaskList {
   _id: string
   name: string
   description?: string
   isPrivate: boolean
   taskCount: number
+  tags?: TaskTag[]
   createdAt: string
   updatedAt: string
 }

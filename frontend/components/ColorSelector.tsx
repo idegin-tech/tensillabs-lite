@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 interface ColorSelectorProps {
   value: string
   onChange: (value: string) => void
+  children?: React.ReactNode
 }
 
 const colorOptions = [
@@ -24,7 +25,7 @@ const colorOptions = [
   { value: '#7C2D12', name: 'Brown' }
 ]
 
-export default function ColorSelector({ value, onChange }: ColorSelectorProps) {
+export default function ColorSelector({ value, onChange, children }: ColorSelectorProps) {
   const [open, setOpen] = useState(false)
   
   const selectedColor = colorOptions.find(color => color.value === value) || colorOptions[0]
@@ -32,13 +33,15 @@ export default function ColorSelector({ value, onChange }: ColorSelectorProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-start gap-3">
-          <div 
-            className="w-4 h-4 rounded-full border border-border" 
-            style={{ backgroundColor: selectedColor.value }}
-          />
-          {selectedColor.name}
-        </Button>
+        {children || (
+          <Button variant="outline" className="w-full justify-start gap-3">
+            <div 
+              className="w-4 h-4 rounded-full border border-border" 
+              style={{ backgroundColor: selectedColor.value }}
+            />
+            {selectedColor.name}
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-full min-w-20 p-4">
         <div className="grid grid-cols-8 gap-2">

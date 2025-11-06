@@ -1,5 +1,5 @@
 'use client'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import useCommon from '@/hooks/use-common'
 
@@ -70,5 +70,32 @@ export function useListFiles(listId: string, params?: UseListFilesParams) {
       return response.payload
     },
     enabled: !!listId && !!member_id,
+  })
+}
+
+interface UpdateListData {
+  tags?: any[]
+}
+
+interface ApiError {
+  message: string
+  statusCode: number
+}
+
+export function useUpdateList() {
+  const { member_id } = useCommon()
+  const queryClient = useQueryClient()
+
+  return useMutation<any, ApiError, { listId: string; data: UpdateListData }>({
+    mutationFn: ({ listId, data }) =>
+      api.put(`/lists/${listId}/tags`, data, {
+        headers: {
+          'x-member-id': member_id
+        }
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['list-details', variables.listId] })
+      queryClient.invalidateQueries({ queryKey: ['list-files'] })
+    },
   })
 }

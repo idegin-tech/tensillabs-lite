@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Task, TaskStatus, TaskPriority } from '@/types/tasks.types'
-import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty } from './TaskProperties'
+import { TaskStatusProperty, TaskPriorityProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskTagsProperty } from './TaskProperties'
 import { useUpdateTask } from '../hooks/use-tasks'
 import { useParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
@@ -108,6 +108,16 @@ export default function TaskColumnRenderer({
           <TaskEstimatedHoursProperty
             value={value}
             onChange={(newValue) => handleUpdate('estimatedHours', newValue)}
+          />
+        )
+
+      case 'tags':
+        return (
+          <TaskTagsProperty
+            value={value || []}
+            onChange={(newValue) => handleUpdate('tags', newValue)}
+            availableTags={state.activeList?.tags || []}
+            listId={listId}
           />
         )
 

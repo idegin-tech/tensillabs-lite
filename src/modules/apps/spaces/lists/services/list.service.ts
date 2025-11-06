@@ -163,6 +163,59 @@ export class ListService {
     };
   }
 
+  async updateTags(
+    listId: string,
+    workspaceId: string,
+    tags: any[],
+  ): Promise<List> {
+    const list = await this.listRepository.findOne({
+      where: {
+        id: listId,
+        workspaceId: workspaceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!list) {
+      throw new NotFoundException('List not found');
+    }
+
+    const oldTags = list.tags || [];
+    const newTags = tags;
+
+    const oldTagValues = new Set(oldTags.map(tag => tag.value));
+    const newTagValues = new Set(newTags.map(tag => tag.value));
+    const deletedTagValues = Array.from(oldTagValues).filter(
+      value => !newTagValues.has(value)
+    );
+
+    if (deletedTagValues.length > 0) {
+      const tasksWithDeletedTags = await this.taskRepository.find({
+        where: {
+          listId: listId,
+          workspaceId: workspaceId,
+          isDeleted: false,
+        },
+      });
+
+      for (const task of tasksWithDeletedTags) {
+        if (task.tags && task.tags.length > 0) {
+          const updatedTaskTags = task.tags.filter(
+            tagValue => !deletedTagValues.includes(tagValue)
+          );
+          
+          if (updatedTaskTags.length !== task.tags.length) {
+            task.tags = updatedTaskTags;
+            await this.taskRepository.save(task);
+          }
+        }
+      }
+    }
+
+    list.tags = newTags;
+    return await this.listRepository.save(list);
+  }
+
   async manageTags(
     listId: string,
     workspaceId: string,

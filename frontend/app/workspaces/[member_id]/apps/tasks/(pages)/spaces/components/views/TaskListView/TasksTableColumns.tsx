@@ -203,10 +203,14 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
     maxSize: 300,
     enableResizing: true,
     cell: ({ row }) => {
+        const tags = row.getValue("tags") as string[] | undefined
         return (
-            <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-xs text-muted-foreground">No tags</span>
-            </div>
+            <TaskColumnRenderer
+                accessorKey="tags"
+                value={tags}
+                task={row.original}
+                onLocalUpdate={onLocalUpdate}
+            />
         )
     },
 },

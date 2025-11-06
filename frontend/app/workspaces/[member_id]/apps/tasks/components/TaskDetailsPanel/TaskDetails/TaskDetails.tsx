@@ -1,6 +1,6 @@
 import React from 'react'
 import EachTaskDetailsProperty from '../EachTaskDetailsProperty'
-import { TaskPriorityProperty, TaskStatusProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskProgressProperty, TaskDueDateProperty } from '../../TaskProperties'
+import { TaskPriorityProperty, TaskStatusProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskProgressProperty, TaskDueDateProperty, TaskTagsProperty } from '../../TaskProperties'
 import { TaskPriority, TaskStatus, Task } from '@/types/tasks.types'
 import { ChecklistItem } from '@/types/checklist.types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -14,6 +14,7 @@ import { useParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import useCommon from '@/hooks/use-common'
+import { useTaskList } from '../../../contexts/task-list.context'
 
 interface FileItem {
     _id: string
@@ -40,6 +41,7 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
     const params = useParams()
     const listId = params.list_id as string
     const { member_id } = useCommon()
+    const { state } = useTaskList()
     const updateTaskMutation = useUpdateTask(listId)
     const queryClient = useQueryClient()
 
@@ -53,6 +55,7 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
     const taskActualHours = task?.actualHours
     const taskProgress = task?.progress
     const taskDueDate = task?.dueDate
+    const taskTags = task?.tags || []
 
     React.useEffect(() => {
         setTaskName(task?.name || '')
@@ -161,6 +164,16 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
                                     value={taskProgress}
                                 />
                             </div>
+                        </EachTaskDetailsProperty>
+                        <EachTaskDetailsProperty
+                            label='Tags'
+                        >
+                            <TaskTagsProperty
+                                value={taskTags}
+                                onChange={(value) => handleTaskUpdate('tags', value)}
+                                availableTags={state.activeList?.tags || []}
+                                listId={listId}
+                            />
                         </EachTaskDetailsProperty>
                     </div>
                 </div>
