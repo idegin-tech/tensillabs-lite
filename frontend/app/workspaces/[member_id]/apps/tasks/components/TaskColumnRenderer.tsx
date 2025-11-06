@@ -17,31 +17,25 @@ interface TaskColumnRendererProps {
   onLocalUpdate?: (taskId: string, updates: Partial<Task>) => void
 }
 
-export default function TaskColumnRenderer({ 
-  accessorKey, 
-  value, 
+export default function TaskColumnRenderer({
+  accessorKey,
+  value,
   task,
-  onLocalUpdate 
+  onLocalUpdate
 }: TaskColumnRendererProps) {
   const params = useParams()
   const listId = params.list_id as string
   const updateTask = useUpdateTask(listId)
   const queryClient = useQueryClient()
   const { state } = useTaskList()
-  
+
   const handleUpdate = async (field: string, newValue: any) => {
     const previousTask = { ...task }
-    
+
     try {
       const updateData: Record<string, any> = { [field]: newValue }
-      
-      if (field === 'assignee' && Array.isArray(newValue)) {
-        updateData.assignee = newValue.map((assignee: any) => assignee._id)
-        onLocalUpdate?.(task._id, { [field]: newValue })
-      } else {
-        onLocalUpdate?.(task._id, updateData)
-      }
 
+      
       const response = await updateTask.mutateAsync({
         taskId: task._id,
         data: updateData
@@ -68,7 +62,7 @@ export default function TaskColumnRenderer({
       onLocalUpdate?.(task._id, { [field]: value })
     }
   }
-  
+
   const renderProperty = () => {
     switch (accessorKey) {
       case 'status':
