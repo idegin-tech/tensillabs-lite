@@ -1,6 +1,6 @@
 import React from 'react'
 import EachTaskDetailsProperty from '../EachTaskDetailsProperty'
-import { TaskPriorityProperty, TaskStatusProperty, TaskTimeframeProperty, TaskAssigneeProperty } from '../../TaskProperties'
+import { TaskPriorityProperty, TaskStatusProperty, TaskTimeframeProperty, TaskAssigneeProperty, TaskEstimatedHoursProperty, TaskProgressProperty, TaskDueDateProperty } from '../../TaskProperties'
 import { TaskPriority, TaskStatus, Task } from '@/types/tasks.types'
 import { ChecklistItem } from '@/types/checklist.types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -49,6 +49,10 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
     const taskTimeframe = task?.timeframe;
     const taskAssignees = task?.assignee || []
     const taskDescription = task?.description
+    const taskEstimatedHours = task?.estimatedHours
+    const taskActualHours = task?.actualHours
+    const taskProgress = task?.progress
+    const taskDueDate = task?.dueDate
 
     React.useEffect(() => {
         setTaskName(task?.name || '')
@@ -126,12 +130,37 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
                             />
                         </EachTaskDetailsProperty>
                         <EachTaskDetailsProperty
+                            label='Due Date'
+                        >
+                            <TaskDueDateProperty
+                                value={taskDueDate}
+                                onChange={(value) => handleTaskUpdate('dueDate', value)}
+                            />
+                        </EachTaskDetailsProperty>
+                        <EachTaskDetailsProperty
                             label='Assignees'
                         >
                             <TaskAssigneeProperty
                                 value={taskAssignees}
                                 onChange={(value) => handleTaskUpdate('assignee', value)}
                             />
+                        </EachTaskDetailsProperty>
+                        <EachTaskDetailsProperty
+                            label='Estimated Hours'
+                        >
+                            <TaskEstimatedHoursProperty
+                                value={taskEstimatedHours}
+                                onChange={(value) => handleTaskUpdate('estimatedHours', value)}
+                            />
+                        </EachTaskDetailsProperty>
+                        <EachTaskDetailsProperty
+                            label='Progress'
+                        >
+                            <div className='w-[60%]'>
+                                <TaskProgressProperty
+                                    value={taskProgress}
+                                />
+                            </div>
                         </EachTaskDetailsProperty>
                     </div>
                 </div>
@@ -156,7 +185,9 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
                         </TabsList>
                         <TabsContent value="checklist" className="mt-4">
                             <TaskActionItems
+                                listId={listId}
                                 taskId={task?._id}
+                                taskStatus={task?.status}
                                 checklist={checklist || []}
                             />
                         </TabsContent>
@@ -170,6 +201,6 @@ export default function TaskDetails({ task, checklist, files }: TaskDetailsProps
                 </div>
                 <div className='h-20' />
             </div>
-        </div>
+        </div >
     )
 }

@@ -32,6 +32,9 @@ export class Checklist {
   @Column({ type: 'boolean', default: false })
   isDone: boolean;
 
+  @Column({ type: 'int', default: 0 })
+  index: number;
+
   @Column({ type: 'uuid', nullable: true })
   taskId: string;
 

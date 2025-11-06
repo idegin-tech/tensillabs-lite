@@ -10,13 +10,16 @@ import { cn } from '@/lib/utils'
 import { useCreateChecklist, useUpdateChecklist, useDeleteChecklist } from '../../../hooks/use-checklists'
 import { toast } from 'sonner'
 import { ChecklistItem } from '@/types/checklist.types'
+import { TaskStatus } from '@/types/tasks.types'
 
 interface TaskActionItemsProps {
+  listId: string
   taskId?: string
+  taskStatus?: TaskStatus
   checklist: ChecklistItem[]
 }
 
-export default function TaskActionItems({ taskId, checklist }: TaskActionItemsProps) {
+export default function TaskActionItems({ listId, taskId, taskStatus, checklist }: TaskActionItemsProps) {
   const [localChecklist, setLocalChecklist] = useState<ChecklistItem[]>([])
   const [editingItem, setEditingItem] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
@@ -24,20 +27,25 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
   const [isAddingNew, setIsAddingNew] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const createMutation = useCreateChecklist()
-  const updateMutation = useUpdateChecklist()
-  const deleteMutation = useDeleteChecklist()
+  const createMutation = useCreateChecklist(listId, taskId!)
+  const updateMutation = useUpdateChecklist(listId, taskId!)
+  const deleteMutation = useDeleteChecklist(listId, taskId!)
+
+  const isTaskCompleted = taskStatus === TaskStatus.COMPLETED
 
   useEffect(() => {
-    const sortedChecklist = [...checklist].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
+    const sortedChecklist = [...checklist].sort((a, b) => {
+      if (a.index !== undefined && b.index !== undefined) {
+        return a.index - b.index
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
     setLocalChecklist(sortedChecklist)
     
-    if (taskId && sortedChecklist.length === 0) {
+    if (taskId && sortedChecklist.length === 0 && !isTaskCompleted) {
       setIsAddingNew(true)
     }
-  }, [checklist, taskId])
+  }, [checklist, taskId, isTaskCompleted])
 
   const handleToggleComplete = async (item: ChecklistItem) => {
     const optimisticUpdate = localChecklist.map(checklistItem =>
@@ -104,11 +112,11 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
       try {
         const response = await createMutation.mutateAsync({
           name: newItemText.trim(),
-          task: taskId
+          index: localChecklist.length
         })
         
         const newItem = response.payload
-        setLocalChecklist([newItem, ...localChecklist])
+        setLocalChecklist([...localChecklist, newItem])
         setNewItemText('')
         
         setTimeout(() => {
@@ -149,7 +157,7 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
         <h3 className="font-medium text-lg">
           Checklist ({localChecklist.filter(item => item.isDone).length}/{localChecklist.length})
         </h3>
-        {taskId && !isAddingNew && (
+        {taskId && !isAddingNew && !isTaskCompleted && (
           <Button
             variant="outline"
             size="sm"
@@ -303,7 +311,7 @@ export default function TaskActionItems({ taskId, checklist }: TaskActionItemsPr
                   <div className="text-muted-foreground">
                     <TbCheck className="h-12 w-12 mx-auto mb-3 opacity-30" />
                     <p className="text-sm mb-2">No checklist items yet</p>
-                    {taskId && (
+                    {taskId && !isTaskCompleted && (
                       <Button
                         variant="ghost"
                         size="sm"

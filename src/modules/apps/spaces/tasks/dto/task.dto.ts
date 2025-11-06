@@ -54,6 +54,17 @@ export const updateTaskSchema = z.object({
     .nullable()
     .optional(),
   assignee: z.array(z.string()).optional(),
+  estimatedHours: z.number().min(0).nullable().optional(),
+  actualHours: z.number().min(0).nullable().optional(),
+  blockedReason: z
+    .object({
+      reason: z.string().optional(),
+      description: z.string().optional(),
+    })
+    .nullable()
+    .optional(),
+  blockedByTaskIds: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 export const getTasksByListQuerySchema = z.object({
@@ -100,6 +111,9 @@ export const createTaskSchema = z.object({
       end: z.string().optional(),
     })
     .optional(),
+  estimatedHours: z.number().min(0).optional(),
+  tags: z.array(z.string()).optional(),
+  blockedByTaskIds: z.array(z.string()).optional(),
 });
 
 export const createTasksSchema = z.object({

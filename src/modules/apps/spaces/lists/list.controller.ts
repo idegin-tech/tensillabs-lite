@@ -5,6 +5,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Param,
   Body,
   UseGuards,
@@ -22,7 +23,12 @@ import { MemberPermissions } from '../../../workspace-members/enums/member-permi
 import { SpaceParticipationGuard } from '../guards/space-participation.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
-import { createListSchema, CreateListDto } from './dto/list.dto';
+import { 
+  createListSchema, 
+  CreateListDto,
+  manageTagsSchema,
+  ManageTagsDto,
+} from './dto/list.dto';
 import {
   getListFilesQuerySchema,
   GetListFilesQueryDto,
@@ -72,6 +78,26 @@ export class ListController {
       'List files retrieved successfully',
       result,
     );
+  }
+
+  @Put(':listId/tags')
+  @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
+  async manageListTags(
+    @Param('listId') listId: string,
+    @Body(new ZodValidationPipe(manageTagsSchema))
+    manageTagsDto: ManageTagsDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const list = await this.listService.manageTags(
+      listId,
+      req.workspace.id,
+      manageTagsDto,
+    );
+    return createSuccessResponse('Tags managed successfully', list);
   }
 }
 

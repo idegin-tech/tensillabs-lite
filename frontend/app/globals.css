@@ -43,16 +43,26 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
+  /* Custom values */
   --height-app-body: var(--app-body);
   --height-app-header: var(--app-header);
   --height-app-header-sm: var(--app-header-sm);
+  --color-success: var(--success);
+  --color-info: var(--info);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
 }
 
 :root {
 
+  /* Custom Values */
   --app-body: calc(100dvh - 3rem - 16px);
   --app-header: 3rem;
   --app-header-sm: 2.5rem;
+  --success: oklch(0.5722 0.1143 158.36);
+  --info: oklch(0.5746 0.1846 255.55);
+  --warning: oklch(0.8537 0.1572 84.13);
+  --error: oklch(0.554 0.2108 26.56);
 
 
   --radius: 0.625rem;

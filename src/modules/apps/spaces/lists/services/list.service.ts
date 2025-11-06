@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { List } from '../schemas/list.schema';
-import { CreateListDto } from '../dto/list.dto';
+import { CreateListDto, ManageTagsDto } from '../dto/list.dto';
 import { Task } from '../../tasks/schemas/task.schema';
 import { File } from '../../../../files/schemas/file.schema';
 import { GetListFilesQueryDto } from '../dto/list-files.dto';
@@ -162,5 +162,49 @@ export class ListService {
       totalPages,
     };
   }
-}
 
+  async manageTags(
+    listId: string,
+    workspaceId: string,
+    manageTagsDto: ManageTagsDto,
+  ): Promise<List> {
+    const list = await this.listRepository.findOne({
+      where: {
+        id: listId,
+        workspaceId: workspaceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!list) {
+      throw new NotFoundException('List not found');
+    }
+
+    let tags = list.tags || [];
+
+    if (manageTagsDto.tagsToDelete && manageTagsDto.tagsToDelete.length > 0) {
+      tags = tags.filter(tag => !manageTagsDto.tagsToDelete.includes(tag.value));
+    }
+
+    if (manageTagsDto.tagsToUpdate && manageTagsDto.tagsToUpdate.length > 0) {
+      for (const update of manageTagsDto.tagsToUpdate) {
+        const index = tags.findIndex(tag => tag.value === update.oldValue);
+        if (index !== -1) {
+          tags[index] = update.newTag;
+        }
+      }
+    }
+
+    if (manageTagsDto.tagsToCreate && manageTagsDto.tagsToCreate.length > 0) {
+      const existingValues = new Set(tags.map(tag => tag.value));
+      for (const newTag of manageTagsDto.tagsToCreate) {
+        if (!existingValues.has(newTag.value)) {
+          tags.push(newTag);
+        }
+      }
+    }
+
+    list.tags = tags;
+    return await this.listRepository.save(list);
+  }
+}

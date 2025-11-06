@@ -42,6 +42,13 @@ import {
   addReactionSchema,
   AddReactionDto,
 } from '../../../comments/dto/comment.dto';
+import {
+  createChecklistSchema,
+  updateChecklistSchema,
+  CreateChecklistDto,
+  UpdateChecklistDto,
+} from '../../../checklists/dto/checklist.dto';
+import { ChecklistService } from '../../../checklists/services/checklist.service';
 import { CommentService } from '../../../comments/services/comment.service';
 import { UploadService, UploadedFile } from '../../../../lib/upload.lib';
 import { FileService } from '../../../files/services/file.service';
@@ -55,6 +62,7 @@ export class TaskController {
     private readonly uploadService: UploadService,
     private readonly fileService: FileService,
     private readonly commentService: CommentService,
+    private readonly checklistService: ChecklistService,
   ) {}
 
   @Post()
@@ -318,5 +326,103 @@ export class TaskController {
       comment,
       files: uploadedFiles,
     });
+  }
+
+  @Get(':taskId/checklists')
+  async getTaskChecklists(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const checklists = await this.checklistService.getChecklistsByTask(
+      taskId,
+      req.workspace.id,
+    );
+
+    return createSuccessResponse(
+      'Checklists retrieved successfully',
+      checklists,
+    );
+  }
+
+  @Post(':taskId/checklists')
+  async createTaskChecklist(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @Body(new ZodValidationPipe(createChecklistSchema))
+    createChecklistDto: CreateChecklistDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+      space: any;
+      list: any;
+    },
+  ) {
+    const checklistData = {
+      ...createChecklistDto,
+      task: taskId,
+      space: req.space.id,
+      list: listId,
+    };
+
+    const checklist = await this.checklistService.createChecklist(
+      checklistData,
+      req.workspace.id,
+      req.workspaceMember.id,
+    );
+
+    await this.taskService.updateTaskProgress(taskId, req.workspace.id);
+
+    return createSuccessResponse('Checklist created successfully', checklist);
+  }
+
+  @Put(':taskId/checklists/:checklistId')
+  async updateTaskChecklist(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @Param('checklistId') checklistId: string,
+    @Body(new ZodValidationPipe(updateChecklistSchema))
+    updateChecklistDto: UpdateChecklistDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const checklist = await this.checklistService.updateChecklist(
+      checklistId,
+      updateChecklistDto,
+      req.workspace.id,
+    );
+
+    await this.taskService.updateTaskProgress(taskId, req.workspace.id);
+
+    return createSuccessResponse('Checklist updated successfully', checklist);
+  }
+
+  @Delete(':taskId/checklists/:checklistId')
+  async deleteTaskChecklist(
+    @Param('listId') listId: string,
+    @Param('taskId') taskId: string,
+    @Param('checklistId') checklistId: string,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const checklist = await this.checklistService.deleteChecklist(
+      checklistId,
+      req.workspace.id,
+    );
+
+    await this.taskService.updateTaskProgress(taskId, req.workspace.id);
+
+    return createSuccessResponse('Checklist deleted successfully', checklist);
   }
 }

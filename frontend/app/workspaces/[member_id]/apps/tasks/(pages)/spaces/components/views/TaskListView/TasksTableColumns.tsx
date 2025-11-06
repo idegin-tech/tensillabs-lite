@@ -1,9 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table"
-import { TbPlus } from 'react-icons/tb'
+import { TbPlus, TbListCheck, TbCircleCheck, TbFlag, TbCalendar, TbUser, TbProgress, TbClock, TbTag, TbLock, TbBlockquote } from 'react-icons/tb'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Task, TaskStatus, TaskPriority } from '@/types/tasks.types'
 import TaskColumnRenderer from '../../../../../components/TaskColumnRenderer'
+import TaskProgressProperty from '../../../../../components/TaskProperties/TaskProgressProperty'
 
 interface CreateColumnsProps {
   onLocalUpdate?: (taskId: string, updates: Partial<Task>) => void
@@ -39,7 +40,12 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
 },
 {
     accessorKey: "name",
-    header: "Name",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbListCheck className="h-4 w-4" />
+            <span>Name</span>
+        </div>
+    ),
     minSize: 400,
     maxSize: 500,
     enablePinning: true,
@@ -61,7 +67,12 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
 },
 {
     accessorKey: "status",
-    header: "Status",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbCircleCheck className="h-4 w-4" />
+            <span>Status</span>
+        </div>
+    ),
     minSize: 150,
     maxSize: 400,
     enableResizing: true,    cell: ({ row }) => {
@@ -78,7 +89,12 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
 },
 {
     accessorKey: "priority",
-    header: "Priority",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbFlag className="h-4 w-4" />
+            <span>Priority</span>
+        </div>
+    ),
     minSize: 150,
     maxSize: 400,
     enableResizing: true,    cell: ({ row }) => {
@@ -95,7 +111,12 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
 },
 {
     accessorKey: "timeframe",
-    header: "Timeframe",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbCalendar className="h-4 w-4" />
+            <span>Timeframe</span>
+        </div>
+    ),
     minSize: 200,
     maxSize: 400,
     enableResizing: true,    cell: ({ row }) => {
@@ -112,7 +133,12 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
 },
 {
     accessorKey: "assignee",
-    header: "Assignee",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbUser className="h-4 w-4" />
+            <span>Assignee</span>
+        </div>
+    ),
     minSize: 200,
     maxSize: 480,
     enableResizing: true,    cell: ({ row }) => {
@@ -124,6 +150,105 @@ export const createColumns = ({ onLocalUpdate, onTaskClick }: CreateColumnsProps
                 task={row.original}
                 onLocalUpdate={onLocalUpdate}
             />
+        )
+    },
+},
+{
+    accessorKey: "progress",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbProgress className="h-4 w-4" />
+            <span>Progress</span>
+        </div>
+    ),
+    minSize: 120,
+    maxSize: 200,
+    enableResizing: true,
+    cell: ({ row }) => (
+        <TaskProgressProperty value={row.original.progress} />
+    ),
+},
+{
+    accessorKey: "estimatedHours",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbClock className="h-4 w-4" />
+            <span>Est. Hours</span>
+        </div>
+    ),
+    minSize: 100,
+    maxSize: 150,
+    enableResizing: true,
+    cell: ({ row }) => {
+        const estimatedHours = row.getValue("estimatedHours") as number | undefined
+        return (
+            <TaskColumnRenderer
+                accessorKey="estimatedHours"
+                value={estimatedHours}
+                task={row.original}
+                onLocalUpdate={onLocalUpdate}
+            />
+        )
+    },
+},
+{
+    accessorKey: "tags",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbTag className="h-4 w-4" />
+            <span>Tags</span>
+        </div>
+    ),
+    minSize: 150,
+    maxSize: 300,
+    enableResizing: true,
+    cell: ({ row }) => {
+        return (
+            <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-xs text-muted-foreground">No tags</span>
+            </div>
+        )
+    },
+},
+{
+    accessorKey: "blocked",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbLock className="h-4 w-4" />
+            <span>Blocked</span>
+        </div>
+    ),
+    minSize: 100,
+    maxSize: 150,
+    enableResizing: true,
+    cell: ({ row }) => {
+        return (
+            <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 px-2 text-xs"
+            >
+                No
+            </Button>
+        )
+    },
+},
+{
+    accessorKey: "blockingTasks",
+    header: () => (
+        <div className="flex items-center gap-2">
+            <TbBlockquote className="h-4 w-4" />
+            <span>Blocking</span>
+        </div>
+    ),
+    minSize: 120,
+    maxSize: 200,
+    enableResizing: true,
+    cell: ({ row }) => {
+        return (
+            <div className="text-sm text-muted-foreground">
+                None
+            </div>
         )
     },
 },

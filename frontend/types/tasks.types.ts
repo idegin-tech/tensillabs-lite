@@ -45,6 +45,13 @@ export interface Task {
   isDeleted: boolean
   createdAt: string
   updatedAt: string
+  progress?: number
+  estimatedHours?: number
+  actualHours?: number
+  startedAt?: string
+  statusChangedAt?: string
+  dueDate?: string
+  completedAt?: string
 }
 
 export interface TaskGrouping {

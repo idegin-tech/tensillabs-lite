@@ -12,6 +12,11 @@ export default function TasksListOptions() {
         { id: 'status', label: 'Status' },
         { id: 'priority', label: 'Priority' },
         { id: 'timeframe', label: 'Timeframe' },
+        { id: 'progress', label: 'Progress' },
+        { id: 'estimatedHours', label: 'Est. Hours' },
+        { id: 'tags', label: 'Tags' },
+        { id: 'blocked', label: 'Blocked' },
+        { id: 'blockingTasks', label: 'Blocking' },
         { id: 'all', label: 'All' }
     ]
 
@@ -33,7 +38,12 @@ export default function TasksListOptions() {
                         ...state.visibleColumns,
                         status: true,
                         priority: true,
-                        timeframe: true
+                        timeframe: true,
+                        progress: true,
+                        estimatedHours: true,
+                        tags: true,
+                        blocked: true,
+                        blockingTasks: true
                     }
                 })
             } else {
@@ -42,7 +52,12 @@ export default function TasksListOptions() {
                         ...state.visibleColumns,
                         status: false,
                         priority: false,
-                        timeframe: false
+                        timeframe: false,
+                        progress: false,
+                        estimatedHours: false,
+                        tags: false,
+                        blocked: false,
+                        blockingTasks: false
                     }
                 })
             }        } else {
@@ -69,7 +84,7 @@ export default function TasksListOptions() {
                         <DropdownMenuCheckboxItem
                             key={column.id}
                             checked={column.id === 'all' 
-                                ? state.visibleColumns.status && state.visibleColumns.priority && state.visibleColumns.timeframe
+                                ? state.visibleColumns.status && state.visibleColumns.priority && state.visibleColumns.timeframe && state.visibleColumns.progress && state.visibleColumns.estimatedHours && state.visibleColumns.tags && state.visibleColumns.blocked && state.visibleColumns.blockingTasks
                                 : state.visibleColumns[column.id] !== false
                             }
                             onCheckedChange={(checked) => handleColumnVisibilityChange(column.id, checked)}

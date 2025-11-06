@@ -9,18 +9,24 @@ export interface ChecklistItem {
   createdBy: string
   createdAt: string
   updatedAt: string
+  index?: number
 }
 
 export interface CreateChecklistRequest {
   name: string
-  task?: string
-  space?: string
-  list?: string
+  index?: number
 }
 
 export interface UpdateChecklistRequest {
   name?: string
   isDone?: boolean
+  index?: number
+}
+
+export interface GetChecklistsResponse {
+  success: boolean
+  message: string
+  payload: ChecklistItem[]
 }
 
 export interface CreateChecklistResponse {

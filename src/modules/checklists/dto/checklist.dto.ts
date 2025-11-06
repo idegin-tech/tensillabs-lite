@@ -7,6 +7,7 @@ export const createChecklistSchema = z.object({
     .min(1, 'Checklist name is required')
     .max(200, 'Checklist name must not exceed 200 characters')
     .trim(),
+  index: z.number().int().min(0).optional().default(0),
   task: z.string().optional(),
   space: z.string().optional(),
   list: z.string().optional(),
@@ -20,6 +21,7 @@ export const updateChecklistSchema = z.object({
     .trim()
     .optional(),
   isDone: z.boolean().optional(),
+  index: z.number().int().min(0).optional(),
 });
 
 export const getChecklistsQuerySchema = z.object({

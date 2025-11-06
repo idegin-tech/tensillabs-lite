@@ -46,6 +46,18 @@ export class List {
   @JoinColumn({ name: 'spaceId' })
   space: Space;
 
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    default: '[]',
+  })
+  tags: {
+    value: string;
+    label: string;
+    color: string;
+    index: number;
+  }[];
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 

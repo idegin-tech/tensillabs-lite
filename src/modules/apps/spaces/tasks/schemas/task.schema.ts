@@ -73,6 +73,40 @@ export class Task {
   @Column({ type: 'text', array: true, nullable: true, default: '{}' })
   assigneeIds: string[];
 
+  @Column({ type: 'float', nullable: true })
+  estimatedHours: number;
+
+  @Column({ type: 'float', nullable: true })
+  actualHours: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  startedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  statusChangedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  dueDate: Date;
+
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+  })
+  blockedReason: {
+    reason?: string;
+    description?: string;
+    blockedAt?: Date;
+  };
+
+  @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+  blockedByTaskIds: string[];
+
+  @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+  tags: string[];
+
+  @Column({ type: 'float', default: 0 })
+  progress: number;
+
   @Column({ type: 'uuid' })
   createdById: string;
 

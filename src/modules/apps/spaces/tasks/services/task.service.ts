@@ -90,6 +90,8 @@ export class TaskService {
     const createdTasks: Task[] = [];
 
     for (const taskData of createTasksDto.tasks) {
+      const dueDate = taskData.timeframe?.end ? new Date(taskData.timeframe.end) : null;
+      
       const newTask = this.taskRepository.create({
         task_id: `TASK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: taskData.name,
@@ -102,6 +104,15 @@ export class TaskService {
         spaceId: space,
         workspaceId,
         createdById: currentMemberId,
+        dueDate,
+        estimatedHours: taskData.estimatedHours || null,
+        actualHours: null,
+        startedAt: taskData.status === TaskStatus.IN_PROGRESS ? new Date() : null,
+        statusChangedAt: new Date(),
+        tags: taskData.tags || [],
+        blockedByTaskIds: taskData.blockedByTaskIds || [],
+        blockedReason: null,
+        progress: 0,
       });
 
       const savedTask = await this.taskRepository.save(newTask);
@@ -130,6 +141,8 @@ export class TaskService {
       throw new NotFoundException('Task not found');
     }
 
+    const oldStatus = task.status;
+
     if (updateTaskDto.name !== undefined) {
       task.name = updateTaskDto.name;
     }
@@ -140,9 +153,23 @@ export class TaskService {
 
     if (updateTaskDto.status !== undefined) {
       task.status = updateTaskDto.status;
+      task.statusChangedAt = new Date();
+      
+      if (updateTaskDto.status === TaskStatus.IN_PROGRESS && oldStatus !== TaskStatus.IN_PROGRESS) {
+        task.startedAt = new Date();
+      }
       
       if (updateTaskDto.status === TaskStatus.COMPLETED) {
         task.completedAt = new Date();
+        
+        const checklists = await this.checklistService.getChecklistsByTask(
+          taskId,
+          workspaceId,
+        );
+        
+        if (checklists.length === 0) {
+          task.progress = 100;
+        }
       } else {
         task.completedAt = null;
       }
@@ -154,10 +181,38 @@ export class TaskService {
 
     if (updateTaskDto.timeframe !== undefined) {
       task.timeframe = updateTaskDto.timeframe;
+      task.dueDate = updateTaskDto.timeframe?.end || null;
     }
 
     if (updateTaskDto.assignee !== undefined) {
       task.assigneeIds = updateTaskDto.assignee;
+    }
+
+    if (updateTaskDto.estimatedHours !== undefined) {
+      task.estimatedHours = updateTaskDto.estimatedHours;
+    }
+
+    if (updateTaskDto.actualHours !== undefined) {
+      task.actualHours = updateTaskDto.actualHours;
+    }
+
+    if (updateTaskDto.blockedReason !== undefined) {
+      if (updateTaskDto.blockedReason === null) {
+        task.blockedReason = null;
+      } else {
+        task.blockedReason = {
+          ...updateTaskDto.blockedReason,
+          blockedAt: new Date(),
+        };
+      }
+    }
+
+    if (updateTaskDto.blockedByTaskIds !== undefined) {
+      task.blockedByTaskIds = updateTaskDto.blockedByTaskIds;
+    }
+
+    if (updateTaskDto.tags !== undefined) {
+      task.tags = updateTaskDto.tags;
     }
 
     const savedTask = await this.taskRepository.save(task);
@@ -449,5 +504,28 @@ export class TaskService {
       totalCount,
       hasMore,
     };
+  }
+
+  async updateTaskProgress(taskId: string, workspaceId: string): Promise<void> {
+    const checklists = await this.checklistService.getChecklistsByTask(
+      taskId,
+      workspaceId,
+    );
+
+    if (checklists.length === 0) {
+      await this.taskRepository.update(
+        { id: taskId, workspaceId },
+        { progress: 0 }
+      );
+      return;
+    }
+
+    const completedCount = checklists.filter(item => item.isDone).length;
+    const progress = (completedCount / checklists.length) * 100;
+
+    await this.taskRepository.update(
+      { id: taskId, workspaceId },
+      { progress: Math.round(progress) }
+    );
   }
 }

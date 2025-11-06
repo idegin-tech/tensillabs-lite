@@ -138,7 +138,7 @@ export default function TasksTable({ tasks, onTaskUpdate, onTaskClick }: TasksTa
                                                             header.getContext()
                                                         )}
                                                 </div>
-                                                {!header.isPlaceholder && header.column.getCanPin() && (
+                                                {!header.isPlaceholder && header.column.getCanPin() && header.column.id !== 'select' && header.column.id !== 'name' && (
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
@@ -147,23 +147,38 @@ export default function TasksTable({ tasks, onTaskUpdate, onTaskClick }: TasksTa
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
                                                             {header.column.getIsPinned() !== 'left' && (
-                                                                <DropdownMenuItem onClick={() => header.column.pin('left')}>
+                                                                <DropdownMenuItem onClick={() => {
+                                                                    setTimeout(() => {
+                                                                        header.column.pin('left')
+                                                                    }, 10)
+                                                                }}>
                                                                     <TbArrowLeft className="h-3 w-3 mr-2" />
                                                                     Pin Left
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {header.column.getIsPinned() && (
-                                                                <DropdownMenuItem onClick={() => header.column.pin(false)}>
+                                                                <DropdownMenuItem onClick={() => {
+                                                                    setTimeout(() => {
+                                                                        header.column.pin(false)
+                                                                    }, 10)
+                                                                }}>
                                                                     <TbX className="h-3 w-3 mr-2" />
                                                                     Unpin
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {header.column.getIsPinned() !== 'right' && (
-                                                                <DropdownMenuItem onClick={() => header.column.pin('right')}>
+                                                                <DropdownMenuItem onClick={() => {
+                                                                    setTimeout(() => {
+                                                                        header.column.pin('right')
+                                                                    }, 10)
+                                                                }}>
                                                                     <TbArrowRight className="h-3 w-3 mr-2" />
                                                                     Pin Right
                                                                 </DropdownMenuItem>
                                                             )}
+                                                            <DropdownMenuItem>
+                                                                Hide
+                                                            </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 )}

@@ -32,6 +32,7 @@ export class ChecklistService {
   ): Promise<Checklist> {
     const newChecklist = this.checklistRepository.create({
       name: createChecklistDto.name,
+      index: createChecklistDto.index || 0,
       taskId: createChecklistDto.task || null,
       spaceId: createChecklistDto.space || null,
       listId: createChecklistDto.list || null,
@@ -122,6 +123,9 @@ export class ChecklistService {
     if (updateChecklistDto.name !== undefined) {
       updateData.name = updateChecklistDto.name;
     }
+    if (updateChecklistDto.index !== undefined) {
+      updateData.index = updateChecklistDto.index;
+    }
     if (updateChecklistDto.isDone !== undefined) {
       updateData.isDone = updateChecklistDto.isDone;
       
@@ -178,6 +182,7 @@ export class ChecklistService {
         isDeleted: false,
       },
       order: {
+        index: 'ASC',
         createdAt: 'ASC',
       },
       relations: ['createdBy'],
