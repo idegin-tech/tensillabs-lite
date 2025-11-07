@@ -16,7 +16,7 @@ export default function TasksListOptions() {
         { id: 'estimatedHours', label: 'Est. Hours' },
         { id: 'tags', label: 'Tags' },
         { id: 'blocked', label: 'Blocked' },
-        { id: 'blockingTasks', label: 'Blocking' },
+        { id: 'blockedByTaskIds', label: 'Blocking' },
         { id: 'all', label: 'All' }
     ]
 
@@ -43,7 +43,7 @@ export default function TasksListOptions() {
                         estimatedHours: true,
                         tags: true,
                         blocked: true,
-                        blockingTasks: true
+                        blockedByTaskIds: true
                     }
                 })
             } else {
@@ -57,7 +57,7 @@ export default function TasksListOptions() {
                         estimatedHours: false,
                         tags: false,
                         blocked: false,
-                        blockingTasks: false
+                        blockedByTaskIds: false
                     }
                 })
             }        } else {
@@ -84,7 +84,7 @@ export default function TasksListOptions() {
                         <DropdownMenuCheckboxItem
                             key={column.id}
                             checked={column.id === 'all' 
-                                ? state.visibleColumns.status && state.visibleColumns.priority && state.visibleColumns.timeframe && state.visibleColumns.progress && state.visibleColumns.estimatedHours && state.visibleColumns.tags && state.visibleColumns.blocked && state.visibleColumns.blockingTasks
+                                ? state.visibleColumns.status && state.visibleColumns.priority && state.visibleColumns.timeframe && state.visibleColumns.progress && state.visibleColumns.estimatedHours && state.visibleColumns.tags && state.visibleColumns.blocked && state.visibleColumns.blockedByTaskIds
                                 : state.visibleColumns[column.id] !== false
                             }
                             onCheckedChange={(checked) => handleColumnVisibilityChange(column.id, checked)}

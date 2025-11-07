@@ -24,7 +24,7 @@ import { useTaskReports } from '../../../../../hooks/use-tasks'
 export default function ReportsView() {
     const params = useParams()
     const listId = params.list_id as string
-    const [timeRange, setTimeRange] = useState<'7' | '30' | '90' | '365' | 'all'>('30')
+    const [timeRange, setTimeRange] = useState<'7' | '30' | '90' | '365' | 'all'>('7')
 
     const { data: reportsData, isLoading, error, refetch } = useTaskReports(
         listId,

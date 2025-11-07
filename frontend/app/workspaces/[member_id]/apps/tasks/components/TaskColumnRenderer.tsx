@@ -52,13 +52,13 @@ export default function TaskColumnRenderer({
         const updatedTask = response.payload
 
         if (field === 'status' || field === 'priority' || field === 'timeframe') {
-          invalidateTaskGroups({
-            listId,
-            groupBy: state.groupBy,
-            task: updatedTask,
-            previousTask,
-            queryClient
-          })
+          // invalidateTaskGroups({
+          //   listId,
+          //   groupBy: state.groupBy,
+          //   task: updatedTask,
+          //   previousTask,
+          //   queryClient
+          // })
         }
       }
     } catch (error: any) {

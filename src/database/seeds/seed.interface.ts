@@ -113,4 +113,9 @@ export interface TaskSeedData {
     end?: string;
   };
   assigneeEmails?: string[];
+  estimatedHours?: number;
+  progress?: number;
+  tags?: string[];
+  completedAt?: string;
+  startedAt?: string;
 }

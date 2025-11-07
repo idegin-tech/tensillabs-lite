@@ -246,7 +246,7 @@ export const createColumns = ({ onLocalUpdate, onTaskClick, allTasks = [] }: Cre
     },
 },
 {
-    accessorKey: "blockingTasks",
+    accessorKey: "blockedByTaskIds",
     header: () => (
         <div className="flex items-center gap-2">
             <TbBlockquote className="h-4 w-4" />

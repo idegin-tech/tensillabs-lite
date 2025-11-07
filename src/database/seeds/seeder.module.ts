@@ -12,6 +12,7 @@ import { Space } from '../../modules/apps/spaces/schemas/space.schema';
 import { List } from '../../modules/apps/spaces/lists/schemas/list.schema';
 import { SpaceParticipant } from '../../modules/apps/spaces/space-participants/schemas/space-participant.schema';
 import { Task } from '../../modules/apps/spaces/tasks/schemas/task.schema';
+import { Checklist } from '../../modules/checklists/schemas/checklist.schema';
 import { SeederService } from './seeder.service';
 
 @Module({
@@ -29,6 +30,7 @@ import { SeederService } from './seeder.service';
             List,
             SpaceParticipant,
             Task,
+            Checklist,
         ]),
     ],
     providers: [SeederService],

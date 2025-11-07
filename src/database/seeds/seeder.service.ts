@@ -14,6 +14,7 @@ import { Space } from '../../modules/apps/spaces/schemas/space.schema';
 import { List } from '../../modules/apps/spaces/lists/schemas/list.schema';
 import { SpaceParticipant } from '../../modules/apps/spaces/space-participants/schemas/space-participant.schema';
 import { Task } from '../../modules/apps/spaces/tasks/schemas/task.schema';
+import { Checklist } from '../../modules/checklists/schemas/checklist.schema';
 import { SeedData } from './seed.interface';
 import { getDevelopmentSeedData } from './data/development.seed';
 import { productionSeedData } from './data/production.seed';
@@ -47,6 +48,8 @@ export class SeederService {
     private readonly spaceParticipantRepository: Repository<SpaceParticipant>,
     @InjectRepository(Task)
     private readonly taskRepository: Repository<Task>,
+    @InjectRepository(Checklist)
+    private readonly checklistRepository: Repository<Checklist>,
   ) {}
 
   async seed(environment: 'development' | 'production' = 'development') {
@@ -84,6 +87,7 @@ export class SeederService {
   private async clearDatabase() {
     this.logger.log('Clearing existing data...');
 
+    await this.checklistRepository.createQueryBuilder().delete().execute();
     await this.taskRepository.createQueryBuilder().delete().execute();
     await this.spaceParticipantRepository.createQueryBuilder().delete().execute();
     await this.listRepository.createQueryBuilder().delete().execute();
@@ -746,6 +750,16 @@ export class SeederService {
           end: taskData.timeframe.end ? new Date(taskData.timeframe.end) : undefined,
         } : undefined,
         assigneeIds: assigneeIds,
+        estimatedHours: taskData.estimatedHours,
+        progress: taskData.progress || 0,
+        tags: taskData.tags || [],
+        completedAt: taskData.completedAt ? new Date(taskData.completedAt) : undefined,
+        startedAt: taskData.startedAt ? new Date(taskData.startedAt) : undefined,
+        statusChangedAt: taskData.status === 'completed' && taskData.completedAt 
+          ? new Date(taskData.completedAt) 
+          : taskData.status === 'in_progress' && taskData.startedAt
+          ? new Date(taskData.startedAt)
+          : undefined,
         isDeleted: false,
       });
 
