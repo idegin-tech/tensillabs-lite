@@ -25,7 +25,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3001',
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
       'http://localhost:3001',
       'http://localhost:3037',
       'http://127.0.0.1:3001',

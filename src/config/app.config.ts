@@ -4,5 +4,5 @@ export const APP_CONFIG = {
   description: 'TensilLabs is an all-in-one work management application',
   adminEmail: 'admin@tensillabs.com',
   notificationEmail: 'notification@tensillabs.com',
-  app_url: process.env.FRONTEND_URL
+  app_url: process.env.NEXT_PUBLIC_APP_URL
 };
