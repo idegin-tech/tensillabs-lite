@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import useCommon from '@/hooks/use-common'
-import { HrmsUser, Employee, Attendance, LeaveRequest, HrmsSettings } from '../types/hrms.types'
+import { HrmsUser, Employee, Attendance, LeaveRequest, HrmsSettings, TimeOffRequest } from '../types/hrms.types'
 
 interface GetDependenciesResponse {
     success: boolean
@@ -16,6 +16,7 @@ interface GetDependenciesResponse {
         totalAttendanceHours: number
         leaveBalance: number
         pendingLeaveRequest: LeaveRequest | null
+        pendingTimeOffRequest: TimeOffRequest | null
     }
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
-import { HrmsUser, Employee, Attendance, LeaveRequest, HrmsSettings } from '../types/hrms.types'
+import { HrmsUser, Employee, Attendance, LeaveRequest, HrmsSettings, TimeOffRequest } from '../types/hrms.types'
 import { useHrmsDependencies } from '../hooks/use-hrms'
 
 interface PeopleState {
@@ -16,6 +16,7 @@ interface PeopleState {
     totalAttendanceHours: number
     leaveBalance: number
     pendingLeaveRequest: LeaveRequest | null
+    pendingTimeOffRequest: TimeOffRequest | null
 }
 
 interface PeopleContextType {
@@ -38,7 +39,8 @@ export function PeopleProvider({ children }: { children: ReactNode }) {
         hrmsSettings: null,
         totalAttendanceHours: 0,
         leaveBalance: 0,
-        pendingLeaveRequest: null
+        pendingLeaveRequest: null,
+        pendingTimeOffRequest: null
     })
 
     const dependenciesQuery = useHrmsDependencies()
@@ -56,7 +58,8 @@ export function PeopleProvider({ children }: { children: ReactNode }) {
             hrmsSettings: dependenciesQuery.data?.payload?.hrmsSettings || null,
             totalAttendanceHours: dependenciesQuery.data?.payload?.totalAttendanceHours || 0,
             leaveBalance: dependenciesQuery.data?.payload?.leaveBalance || 0,
-            pendingLeaveRequest: dependenciesQuery.data?.payload?.pendingLeaveRequest || null
+            pendingLeaveRequest: dependenciesQuery.data?.payload?.pendingLeaveRequest || null,
+            pendingTimeOffRequest: dependenciesQuery.data?.payload?.pendingTimeOffRequest || null
         }))
     }, [dependenciesQuery.data, dependenciesQuery.isLoading, dependenciesQuery.error])
 

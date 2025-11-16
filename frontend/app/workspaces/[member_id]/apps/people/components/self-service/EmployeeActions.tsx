@@ -12,20 +12,32 @@ import {
 import { TbBeach, TbCalendarOff, TbUserEdit, TbAlertCircle } from 'react-icons/tb';
 import React, { useState } from 'react';
 import CreateLeaveRequestDialog from '../CreateLeaveRequestDialog';
+import CreateTimeOffRequestDialog from '../CreateTimeOffRequestDialog';
 import { usePeople } from '../../contexts/people-app.context';
 
 export default function EmployeeActions() {
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-  const [showPendingAlert, setShowPendingAlert] = useState(false);
+  const [showTimeOffDialog, setShowTimeOffDialog] = useState(false);
+  const [showPendingLeaveAlert, setShowPendingLeaveAlert] = useState(false);
+  const [showPendingTimeOffAlert, setShowPendingTimeOffAlert] = useState(false);
   const { state } = usePeople();
 
-  const hasPendingRequest = !!state.pendingLeaveRequest;
+  const hasPendingLeaveRequest = !!state.pendingLeaveRequest;
+  const hasPendingTimeOffRequest = !!state.pendingTimeOffRequest;
 
   const handleLeaveRequestClick = () => {
-    if (hasPendingRequest) {
-      setShowPendingAlert(true);
+    if (hasPendingLeaveRequest) {
+      setShowPendingLeaveAlert(true);
     } else {
       setShowLeaveDialog(true);
+    }
+  };
+
+  const handleTimeOffRequestClick = () => {
+    if (hasPendingTimeOffRequest) {
+      setShowPendingTimeOffAlert(true);
+    } else {
+      setShowTimeOffDialog(true);
     }
   };
 
@@ -47,6 +59,7 @@ export default function EmployeeActions() {
           <Button
             variant="outline"
             size="lg"
+            onClick={handleTimeOffRequestClick}
           >
             <TbBeach className="h-5 w-5 mr-3" />
             Request Time Off
@@ -66,10 +79,16 @@ export default function EmployeeActions() {
     <CreateLeaveRequestDialog
       isOpen={showLeaveDialog}
       onClose={() => setShowLeaveDialog(false)}
-      hasPendingRequest={hasPendingRequest}
+      hasPendingRequest={hasPendingLeaveRequest}
     />
 
-    <AlertDialog open={showPendingAlert} onOpenChange={setShowPendingAlert}>
+    <CreateTimeOffRequestDialog
+      isOpen={showTimeOffDialog}
+      onClose={() => setShowTimeOffDialog(false)}
+      hasPendingRequest={hasPendingTimeOffRequest}
+    />
+
+    <AlertDialog open={showPendingLeaveAlert} onOpenChange={setShowPendingLeaveAlert}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
@@ -80,6 +99,25 @@ export default function EmployeeActions() {
           </AlertDialogTitle>
           <AlertDialogDescription className="text-base pt-2">
             You already have a pending leave request. Please wait for it to be processed before submitting another request.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogAction>Understood</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <AlertDialog open={showPendingTimeOffAlert} onOpenChange={setShowPendingTimeOffAlert}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <TbAlertCircle className="h-5 w-5 text-orange-600" />
+            </div>
+            Pending Time Off Request
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-base pt-2">
+            You already have a pending time off request. Please wait for it to be processed before submitting another request.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

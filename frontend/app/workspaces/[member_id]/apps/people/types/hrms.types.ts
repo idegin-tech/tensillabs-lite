@@ -39,6 +39,15 @@ export interface LeaveRequest {
     status: string
 }
 
+export interface TimeOffRequest {
+    _id: string
+    memberId: string
+    type: string
+    startDate: string
+    endDate: string
+    status: string
+}
+
 export interface HrmsSettings {
     _id: string
     workspaceId: string
