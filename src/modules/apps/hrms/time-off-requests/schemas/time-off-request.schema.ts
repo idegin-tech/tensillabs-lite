@@ -12,26 +12,27 @@ import { WorkspaceMember } from '../../../../workspace-members/schemas/workspace
 import { Workspace } from '../../../../workspaces/schemas/workspace.schema';
 import { Employee } from '../../employees/employee.schema';
 
-export enum LeaveType {
-  ANNUAL = 'annual',
-  SICK = 'sick',
-  CASUAL = 'casual',
-  MATERNITY = 'maternity',
-  PATERNITY = 'paternity',
-  UNPAID = 'unpaid',
+export enum TimeOffType {
+  PERSONAL = 'personal',
+  FAMILY_EMERGENCY = 'family_emergency',
+  MEDICAL_APPOINTMENT = 'medical_appointment',
+  BEREAVEMENT = 'bereavement',
+  RELIGIOUS_OBSERVANCE = 'religious_observance',
+  JURY_DUTY = 'jury_duty',
+  MILITARY_LEAVE = 'military_leave',
   OTHER = 'other',
 }
 
-export enum LeaveStatus {
+export enum TimeOffStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
 }
 
-@Entity('leave_requests')
+@Entity('time_off_requests')
 @Index(['employeeId', 'workspaceId', 'startDate'])
 @Index(['memberId', 'workspaceId'])
-export class LeaveRequest {
+export class TimeOffRequest {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -58,9 +59,9 @@ export class LeaveRequest {
 
   @Column({
     type: 'enum',
-    enum: LeaveType,
+    enum: TimeOffType,
   })
-  type: LeaveType;
+  type: TimeOffType;
 
   @Column({ type: 'date' })
   startDate: Date;
@@ -71,12 +72,19 @@ export class LeaveRequest {
   @Column({ type: 'varchar', length: 1000, nullable: true })
   reason?: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  coverById?: string;
+
+  @ManyToOne(() => WorkspaceMember, { nullable: true })
+  @JoinColumn({ name: 'coverById' })
+  coverBy?: WorkspaceMember;
+
   @Column({
     type: 'enum',
-    enum: LeaveStatus,
-    default: LeaveStatus.PENDING,
+    enum: TimeOffStatus,
+    default: TimeOffStatus.PENDING,
   })
-  status: LeaveStatus;
+  status: TimeOffStatus;
 
   @Column({ type: 'uuid', nullable: true })
   approvedById?: string;
@@ -104,4 +112,3 @@ export class LeaveRequest {
   @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }
-

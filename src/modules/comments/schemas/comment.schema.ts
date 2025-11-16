@@ -81,6 +81,10 @@ export class Comment {
   @Index()
   leaveRequestId: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  @Index()
+  timeOffRequestId: string;
+
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 

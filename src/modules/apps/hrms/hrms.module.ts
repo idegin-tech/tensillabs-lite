@@ -10,6 +10,9 @@ import { Employee } from './employees/employee.schema';
 import { LeaveRequest } from './leave-requests/schemas/leave-request.schema';
 import { LeaveRequestController } from './leave-requests/leave-request.controller';
 import { LeaveRequestService } from './leave-requests/services/leave-request.service';
+import { TimeOffRequest } from './time-off-requests/schemas/time-off-request.schema';
+import { TimeOffRequestController } from './time-off-requests/time-off-request.controller';
+import { TimeOffRequestService } from './time-off-requests/services/time-off-request.service';
 import { AuthModule } from '../../auth/auth.module';
 import { WorkspaceMembersModule } from '../../workspace-members/workspace-members.module';
 import { WorkspacesModule } from '../../workspaces/workspaces.module';
@@ -29,10 +32,11 @@ import { FilesModule } from '../../files/files.module';
       HrmsUser,
       Employee,
       LeaveRequest,
+      TimeOffRequest,
     ]),
   ],
-  controllers: [HrmsController, AttendanceController, LeaveRequestController],
-  providers: [HrmsSettingsService, LeaveRequestService],
-  exports: [HrmsSettingsService, LeaveRequestService],
+  controllers: [HrmsController, AttendanceController, LeaveRequestController, TimeOffRequestController],
+  providers: [HrmsSettingsService, LeaveRequestService, TimeOffRequestService],
+  exports: [HrmsSettingsService, LeaveRequestService, TimeOffRequestService],
 })
 export class HrmsModule {}

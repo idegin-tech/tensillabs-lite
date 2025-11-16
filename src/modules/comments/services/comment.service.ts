@@ -26,6 +26,7 @@ export class CommentService {
     listId: string,
     spaceId: string,
     leaveRequestId?: string,
+    timeOffRequestId?: string,
   ): Promise<Comment> {
     const comment = this.commentRepository.create({
       ...createCommentDto,
@@ -35,6 +36,7 @@ export class CommentService {
       listId,
       spaceId,
       leaveRequestId,
+      timeOffRequestId,
       reactions: [],
     });
 
@@ -215,6 +217,57 @@ export class CommentService {
   ): Promise<{ comments: Comment[]; total: number; page: number; limit: number }> {
     const [comments, total] = await this.commentRepository.findAndCount({
       where: { leaveRequestId, workspaceId, parentCommentId: null },
+      relations: ['createdBy', 'files', 'quotedComment', 'quotedComment.createdBy'],
+      order: { createdAt: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const allMentionedMemberIds = new Set<string>();
+    comments.forEach(comment => {
+      if (comment.mentionedMemberIds && comment.mentionedMemberIds.length > 0) {
+        comment.mentionedMemberIds.forEach(id => allMentionedMemberIds.add(id));
+      }
+    });
+
+    let mentionedMembersMap = new Map<string, WorkspaceMember>();
+    if (allMentionedMemberIds.size > 0) {
+      const mentionedMembers = await this.workspaceMemberRepository.find({
+        where: {
+          id: In(Array.from(allMentionedMemberIds)),
+          workspaceId,
+        },
+      });
+      mentionedMembers.forEach(member => {
+        mentionedMembersMap.set(member.id, member);
+      });
+    }
+
+    const commentsWithMembers = comments.map(comment => {
+      if (comment.mentionedMemberIds && comment.mentionedMemberIds.length > 0) {
+        (comment as any).mentionedMembers = comment.mentionedMemberIds
+          .map(id => mentionedMembersMap.get(id))
+          .filter(member => member !== undefined);
+      }
+      return comment;
+    });
+
+    return {
+      comments: commentsWithMembers,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getTimeOffRequestComments(
+    timeOffRequestId: string,
+    workspaceId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ comments: Comment[]; total: number; page: number; limit: number }> {
+    const [comments, total] = await this.commentRepository.findAndCount({
+      where: { timeOffRequestId, workspaceId, parentCommentId: null },
       relations: ['createdBy', 'files', 'quotedComment', 'quotedComment.createdBy'],
       order: { createdAt: 'ASC' },
       skip: (page - 1) * limit,

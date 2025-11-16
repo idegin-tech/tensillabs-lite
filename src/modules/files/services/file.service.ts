@@ -24,6 +24,7 @@ export class FileService {
       commentId?: string;
       listId?: string;
       leaveRequestId?: string;
+      timeOffRequestId?: string;
     },
     workspaceId: string,
     createdById: string,

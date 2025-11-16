@@ -21,20 +21,20 @@ import { WorkspaceMemberGuard } from '../../../workspace-members/guards/workspac
 import { validateHRMSUser } from '../hrms-user/guards/hrms-user.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
-import { LeaveRequestService } from './services/leave-request.service';
+import { TimeOffRequestService } from './services/time-off-request.service';
 import { CommentService } from '../../../comments/services/comment.service';
 import { FileService } from '../../../files/services/file.service';
 import { UploadService } from '../../../../lib/upload.lib';
 import {
-    createLeaveRequestSchema,
-    CreateLeaveRequestDto,
-    updateLeaveRequestSchema,
-    UpdateLeaveRequestDto,
-    approveLeaveRequestSchema,
-    ApproveLeaveRequestDto,
-    rejectLeaveRequestSchema,
-    RejectLeaveRequestDto,
-} from './dto/leave-request.dto';
+    createTimeOffRequestSchema,
+    CreateTimeOffRequestDto,
+    updateTimeOffRequestSchema,
+    UpdateTimeOffRequestDto,
+    approveTimeOffRequestSchema,
+    ApproveTimeOffRequestDto,
+    rejectTimeOffRequestSchema,
+    RejectTimeOffRequestDto,
+} from './dto/time-off-request.dto';
 import {
     createCommentSchema,
     CreateCommentDto,
@@ -42,7 +42,6 @@ import {
     UpdateCommentDto,
 } from '../../../comments/dto/comment.dto';
 import { HrmsUserPermission } from '../hrms-user/hrms-user.schema';
-import { LeaveStatus } from './schemas/leave-request.schema';
 
 interface UploadedFile {
     fieldname: string;
@@ -53,11 +52,11 @@ interface UploadedFile {
     size: number;
 }
 
-@Controller('leave-requests')
+@Controller('time-off-requests')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
-export class LeaveRequestController {
+export class TimeOffRequestController {
     constructor(
-        private readonly leaveRequestService: LeaveRequestService,
+        private readonly timeOffRequestService: TimeOffRequestService,
         private readonly commentService: CommentService,
         private readonly fileService: FileService,
         private readonly uploadService: UploadService,
@@ -71,21 +70,21 @@ export class LeaveRequestController {
             },
         }),
     )
-    async createLeaveRequest(
-        @Body(new ZodValidationPipe(createLeaveRequestSchema))
-        createLeaveRequestDto: CreateLeaveRequestDto,
+    async createTimeOffRequest(
+        @Body(new ZodValidationPipe(createTimeOffRequestSchema))
+        createTimeOffRequestDto: CreateTimeOffRequestDto,
         @UploadedFiles() files: UploadedFile[],
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        const leaveRequest = await this.leaveRequestService.create(
-            createLeaveRequestDto,
+        const timeOffRequest = await this.timeOffRequestService.create(
+            createTimeOffRequestDto,
             req.workspaceMember.id,
             req.workspace.id,
         );
 
         let uploadedFiles = [];
         if (files && files.length > 0) {
-            const uploadPath = `/workspace/apps/hrms/leave-requests/${leaveRequest.id}`;
+            const uploadPath = `/workspace/apps/hrms/time-off-requests/${timeOffRequest.id}`;
 
             const uploadResults = await this.uploadService.uploadFiles(
                 files,
@@ -101,7 +100,7 @@ export class LeaveRequestController {
                         mimeType: uploadResult.mimeType,
                         fileURL: uploadResult.secureUrl,
                         fileKey: uploadResult.publicId,
-                        leaveRequestId: leaveRequest.id,
+                        timeOffRequestId: timeOffRequest.id,
                     },
                     req.workspace.id,
                     req.workspaceMember.id,
@@ -111,9 +110,9 @@ export class LeaveRequestController {
         }
 
         return createSuccessResponse(
-            'Leave request created successfully',
+            'Time off request created successfully',
             {
-                leaveRequest,
+                timeOffRequest,
                 files: uploadedFiles,
             },
         );
@@ -121,113 +120,105 @@ export class LeaveRequestController {
 
     @Get()
     @UseGuards(validateHRMSUser([HrmsUserPermission.ADMIN, HrmsUserPermission.MANAGER]))
-    async getAllLeaveRequests(
+    async getAllTimeOffRequests(
         @Query('page') page: string,
         @Query('limit') limit: string,
-        @Query('status') status: string,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
         const pageNumber = page ? parseInt(page, 10) : 1;
         const limitNumber = limit ? parseInt(limit, 10) : 20;
-        const leaveStatus = status as LeaveStatus | undefined;
 
-        const result = await this.leaveRequestService.findAll(
+        const result = await this.timeOffRequestService.findAll(
             req.workspace.id,
             pageNumber,
             limitNumber,
-            leaveStatus,
         );
 
         return createSuccessResponse(
-            'Leave requests retrieved successfully',
+            'Time off requests retrieved successfully',
             result,
         );
     }
 
     @Get('me')
-    async getMyLeaveRequests(
+    async getMyTimeOffRequests(
         @Query('page') page: string,
         @Query('limit') limit: string,
-        @Query('status') status: string,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
         const pageNumber = page ? parseInt(page, 10) : 1;
         const limitNumber = limit ? parseInt(limit, 10) : 20;
-        const leaveStatus = status as LeaveStatus | undefined;
 
-        const result = await this.leaveRequestService.findByMember(
+        const result = await this.timeOffRequestService.findByMember(
             req.workspaceMember.id,
             req.workspace.id,
             pageNumber,
             limitNumber,
-            leaveStatus,
         );
 
         return createSuccessResponse(
-            'Your leave requests retrieved successfully',
+            'Your time off requests retrieved successfully',
             result,
         );
     }
 
     @Get(':id')
-    async getLeaveRequestById(
+    async getTimeOffRequestById(
         @Param('id') id: string,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        const leaveRequest = await this.leaveRequestService.findOne(
+        const timeOffRequest = await this.timeOffRequestService.findOne(
             id,
             req.workspace.id,
         );
 
         return createSuccessResponse(
-            'Leave request retrieved successfully',
-            leaveRequest,
+            'Time off request retrieved successfully',
+            timeOffRequest,
         );
     }
 
     @Put(':id')
-    async updateLeaveRequest(
+    async updateTimeOffRequest(
         @Param('id') id: string,
-        @Body(new ZodValidationPipe(updateLeaveRequestSchema))
-        updateLeaveRequestDto: UpdateLeaveRequestDto,
+        @Body(new ZodValidationPipe(updateTimeOffRequestSchema))
+        updateTimeOffRequestDto: UpdateTimeOffRequestDto,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        const leaveRequest = await this.leaveRequestService.update(
+        const timeOffRequest = await this.timeOffRequestService.update(
             id,
-            updateLeaveRequestDto,
-            req.workspaceMember.id,
+            updateTimeOffRequestDto,
             req.workspace.id,
         );
 
         return createSuccessResponse(
-            'Leave request updated successfully',
-            leaveRequest,
+            'Time off request updated successfully',
+            timeOffRequest,
         );
     }
 
     @Delete(':id')
-    async deleteLeaveRequest(
+    async deleteTimeOffRequest(
         @Param('id') id: string,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        await this.leaveRequestService.delete(
+        await this.timeOffRequestService.delete(
             id,
-            req.workspaceMember.id,
             req.workspace.id,
         );
 
-        return createSuccessResponse('Leave request deleted successfully', null);
+        return createSuccessResponse('Time off request deleted successfully', null);
     }
 
     @Patch(':id/approve')
     @UseGuards(validateHRMSUser([HrmsUserPermission.ADMIN, HrmsUserPermission.MANAGER]))
-    async approveLeaveRequest(
+    async approveTimeOffRequest(
         @Param('id') id: string,
-        @Body(new ZodValidationPipe(approveLeaveRequestSchema))
-        approveDto: ApproveLeaveRequestDto,
+        @Body(new ZodValidationPipe(approveTimeOffRequestSchema))
+        approveDto: ApproveTimeOffRequestDto,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        const leaveRequest = await this.leaveRequestService.approve(
+        const timeOffRequest = await this.timeOffRequestService.approve(
             id,
             req.workspaceMember.id,
             req.workspace.id,
@@ -241,25 +232,26 @@ export class LeaveRequestController {
                 null,
                 null,
                 null,
-                leaveRequest.id,
+                null,
+                timeOffRequest.id,
             );
         }
 
         return createSuccessResponse(
-            'Leave request approved successfully',
-            leaveRequest,
+            'Time off request approved successfully',
+            timeOffRequest,
         );
     }
 
     @Patch(':id/reject')
     @UseGuards(validateHRMSUser([HrmsUserPermission.ADMIN, HrmsUserPermission.MANAGER]))
-    async rejectLeaveRequest(
+    async rejectTimeOffRequest(
         @Param('id') id: string,
-        @Body(new ZodValidationPipe(rejectLeaveRequestSchema))
-        rejectDto: RejectLeaveRequestDto,
+        @Body(new ZodValidationPipe(rejectTimeOffRequestSchema))
+        rejectDto: RejectTimeOffRequestDto,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        const leaveRequest = await this.leaveRequestService.reject(
+        const timeOffRequest = await this.timeOffRequestService.reject(
             id,
             req.workspaceMember.id,
             req.workspace.id,
@@ -272,28 +264,29 @@ export class LeaveRequestController {
             null,
             null,
             null,
-            leaveRequest.id,
+            null,
+            timeOffRequest.id,
         );
 
         return createSuccessResponse(
-            'Leave request rejected successfully',
-            leaveRequest,
+            'Time off request rejected successfully',
+            timeOffRequest,
         );
     }
 
     @Get(':id/comments')
-    async getLeaveRequestComments(
+    async getTimeOffRequestComments(
         @Param('id') id: string,
         @Query('page') page: string,
         @Query('limit') limit: string,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        await this.leaveRequestService.findOne(id, req.workspace.id);
+        await this.timeOffRequestService.findOne(id, req.workspace.id);
 
         const pageNumber = page ? parseInt(page, 10) : 1;
         const limitNumber = limit ? parseInt(limit, 10) : 20;
 
-        const result = await this.commentService.getLeaveRequestComments(
+        const result = await this.commentService.getTimeOffRequestComments(
             id,
             req.workspace.id,
             pageNumber,
@@ -318,7 +311,7 @@ export class LeaveRequestController {
         @UploadedFiles() files: UploadedFile[],
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        await this.leaveRequestService.findOne(id, req.workspace.id);
+        await this.timeOffRequestService.findOne(id, req.workspace.id);
 
         const comment = await this.commentService.create(
             createCommentDto,
@@ -327,12 +320,13 @@ export class LeaveRequestController {
             null,
             null,
             null,
+            null,
             id,
         );
 
         let uploadedFiles = [];
         if (files && files.length > 0) {
-            const uploadPath = `/leave-requests/${id}/comments/${comment.id}`;
+            const uploadPath = `/time-off-requests/${id}/comments/${comment.id}`;
 
             const uploadResults = await this.uploadService.uploadFiles(
                 files,
@@ -371,7 +365,7 @@ export class LeaveRequestController {
         updateCommentDto: UpdateCommentDto,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        await this.leaveRequestService.findOne(id, req.workspace.id);
+        await this.timeOffRequestService.findOne(id, req.workspace.id);
 
         const comment = await this.commentService.update(
             commentId,
@@ -388,7 +382,7 @@ export class LeaveRequestController {
         @Param('commentId') commentId: string,
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        await this.leaveRequestService.findOne(id, req.workspace.id);
+        await this.timeOffRequestService.findOne(id, req.workspace.id);
 
         const comment = await this.commentService.delete(
             commentId,
@@ -406,19 +400,19 @@ export class LeaveRequestController {
             },
         }),
     )
-    async uploadLeaveRequestFiles(
+    async uploadTimeOffRequestFiles(
         @Param('id') id: string,
         @UploadedFiles() files: UploadedFile[],
         @Req() req: Request & { workspaceMember: any; workspace: any },
     ) {
-        const leaveRequest = await this.leaveRequestService.findOne(
+        const timeOffRequest = await this.timeOffRequestService.findOne(
             id,
             req.workspace.id,
         );
 
-        if (leaveRequest.memberId !== req.workspaceMember.id) {
+        if (timeOffRequest.memberId !== req.workspaceMember.id) {
             throw new ForbiddenException(
-                'You can only upload files to your own leave requests',
+                'You can only upload files to your own time off requests',
             );
         }
 
@@ -426,7 +420,7 @@ export class LeaveRequestController {
             throw new ForbiddenException('No files provided');
         }
 
-        const uploadPath = `/workspaces/${req.workspace.id}/leave-requests/${id}`;
+        const uploadPath = `/workspaces/${req.workspace.id}/time-off-requests/${id}`;
 
         const uploadResults = await this.uploadService.uploadFiles(
             files,
@@ -443,7 +437,7 @@ export class LeaveRequestController {
                     mimeType: uploadResult.mimeType,
                     fileURL: uploadResult.secureUrl,
                     fileKey: uploadResult.publicId,
-                    leaveRequestId: id,
+                    timeOffRequestId: id,
                 },
                 req.workspace.id,
                 req.workspaceMember.id,

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LeaveRequest, LeaveStatus } from '../schemas/leave-request.schema';
+import { Employee } from '../../employees/employee.schema';
 import {
   CreateLeaveRequestDto,
   UpdateLeaveRequestDto,
@@ -12,6 +13,8 @@ export class LeaveRequestService {
   constructor(
     @InjectRepository(LeaveRequest)
     private readonly leaveRequestRepository: Repository<LeaveRequest>,
+    @InjectRepository(Employee)
+    private readonly employeeRepository: Repository<Employee>,
   ) {}
 
   async create(
@@ -19,9 +22,20 @@ export class LeaveRequestService {
     memberId: string,
     workspaceId: string,
   ): Promise<LeaveRequest> {
-    const existingPendingRequest = await this.leaveRequestRepository.findOne({
+    const employee = await this.employeeRepository.findOne({
       where: {
         memberId,
+        workspaceId,
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee record not found');
+    }
+
+    const existingPendingRequest = await this.leaveRequestRepository.findOne({
+      where: {
+        employeeId: employee.id,
         workspaceId,
         status: LeaveStatus.PENDING,
       },
@@ -37,6 +51,7 @@ export class LeaveRequestService {
       ...createLeaveRequestDto,
       startDate: new Date(createLeaveRequestDto.startDate),
       endDate: new Date(createLeaveRequestDto.endDate),
+      employeeId: employee.id,
       memberId,
       workspaceId,
       status: LeaveStatus.PENDING,
@@ -48,7 +63,7 @@ export class LeaveRequestService {
   async findOne(id: string, workspaceId: string): Promise<LeaveRequest> {
     const leaveRequest = await this.leaveRequestRepository.findOne({
       where: { id, workspaceId },
-      relations: ['member', 'acceptedBy', 'rejectedBy'],
+      relations: ['member', 'employee', 'approvedBy', 'rejectedBy'],
     });
 
     if (!leaveRequest) {
@@ -72,7 +87,8 @@ export class LeaveRequestService {
     const queryBuilder = this.leaveRequestRepository
       .createQueryBuilder('leaveRequest')
       .leftJoinAndSelect('leaveRequest.member', 'member')
-      .leftJoinAndSelect('leaveRequest.acceptedBy', 'acceptedBy')
+      .leftJoinAndSelect('leaveRequest.employee', 'employee')
+      .leftJoinAndSelect('leaveRequest.approvedBy', 'approvedBy')
       .leftJoinAndSelect('leaveRequest.rejectedBy', 'rejectedBy')
       .where('leaveRequest.workspaceId = :workspaceId', { workspaceId })
       .orderBy('leaveRequest.createdAt', 'DESC')
@@ -108,7 +124,8 @@ export class LeaveRequestService {
     const queryBuilder = this.leaveRequestRepository
       .createQueryBuilder('leaveRequest')
       .leftJoinAndSelect('leaveRequest.member', 'member')
-      .leftJoinAndSelect('leaveRequest.acceptedBy', 'acceptedBy')
+      .leftJoinAndSelect('leaveRequest.employee', 'employee')
+      .leftJoinAndSelect('leaveRequest.approvedBy', 'approvedBy')
       .leftJoinAndSelect('leaveRequest.rejectedBy', 'rejectedBy')
       .where('leaveRequest.workspaceId = :workspaceId', { workspaceId })
       .andWhere('leaveRequest.memberId = :memberId', { memberId })
@@ -190,7 +207,7 @@ export class LeaveRequestService {
 
   async approve(
     id: string,
-    acceptedById: string,
+    approvedById: string,
     workspaceId: string,
   ): Promise<LeaveRequest> {
     const leaveRequest = await this.findOne(id, workspaceId);
@@ -200,8 +217,8 @@ export class LeaveRequestService {
     }
 
     leaveRequest.status = LeaveStatus.APPROVED;
-    leaveRequest.acceptedById = acceptedById;
-    leaveRequest.acceptedAt = new Date();
+    leaveRequest.approvedById = approvedById;
+    leaveRequest.approvedAt = new Date();
 
     return await this.leaveRequestRepository.save(leaveRequest);
   }
