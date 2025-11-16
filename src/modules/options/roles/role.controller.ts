@@ -22,11 +22,7 @@ import {
   ToggleActiveDto,
 } from './dto/role.dto';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guard';
-import {
-  RequirePermission,
-  WorkspaceMemberGuard,
-} from 'src/modules/workspace-members/guards/workspace-member.guard';
-import { MemberPermissions } from 'src/modules/workspace-members/enums/member-permissions.enum';
+import { WorkspaceMemberGuard } from 'src/modules/workspace-members/guards/workspace-member.guard';
 import { RoleService } from './services/role.service';
 import {
   paginationSchema,
@@ -41,7 +37,6 @@ export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @Post()
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(createRoleSchema))
   async create(
     @Body() createRoleDto: CreateRoleDto,
@@ -57,7 +52,6 @@ export class RoleController {
   }
 
   @Get()
-  @RequirePermission(MemberPermissions.REGULAR)
   @UsePipes(new ZodValidationPipe(paginationSchema))
   async findAll(
     @Query() pagination: PaginationDto,
@@ -69,7 +63,6 @@ export class RoleController {
   }
 
   @Put(':id')
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(updateRoleSchema))
   async update(
     @Param('id') id: string,
@@ -86,7 +79,6 @@ export class RoleController {
   }
 
   @Patch(':id/trash')
-  @RequirePermission(MemberPermissions.MANAGER)
   async moveToTrash(
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },
@@ -100,7 +92,6 @@ export class RoleController {
   }
 
   @Patch(':id/toggle-active')
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(toggleActiveSchema))
   async toggleActive(
     @Param('id') id: string,

@@ -15,11 +15,7 @@ import {
 import { Request } from 'express';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { WorkspaceMemberService } from './services/workspace-member.service';
-import {
-  WorkspaceMemberGuard,
-  RequirePermission,
-} from './guards/workspace-member.guard';
-import { MemberPermissions } from './enums/member-permissions.enum';
+import { WorkspaceMemberGuard } from './guards/workspace-member.guard';
 import { createSuccessResponse } from '../../lib/response.interface';
 import { ZodValidationPipe } from '../../lib/validation.pipe';
 import {
@@ -40,7 +36,6 @@ export class WorkspaceMemberController {
 
   @Get('workspace/all')
   @UseGuards(WorkspaceMemberGuard)
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(paginationSchema))
   async getWorkspaceMembers(
     @Query() pagination: PaginationDto,
@@ -76,7 +71,6 @@ export class WorkspaceMemberController {
 
   @Post('invite')
   @UseGuards(WorkspaceMemberGuard)
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(inviteMemberSchema))
   async inviteMember(
     @Body() inviteMemberDto: InviteMemberDto,

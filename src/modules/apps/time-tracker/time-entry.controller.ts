@@ -24,17 +24,12 @@ import {
     getTimeEntriesQuerySchema,
 } from './dto/time-entry.dto';
 import { AuthGuard } from '../../auth/guards/auth.guard';
-import {
-    WorkspaceMemberGuard,
-    RequirePermission,
-} from '../../workspace-members/guards/workspace-member.guard';
-import { MemberPermissions } from '../../workspace-members/enums/member-permissions.enum';
+import { WorkspaceMemberGuard } from '../../workspace-members/guards/workspace-member.guard';
 import { ZodValidationPipe } from '../../../lib/validation.pipe';
 import { createSuccessResponse } from '../../../lib/response.interface';
 
 @Controller('time-entries')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
-@RequirePermission(MemberPermissions.REGULAR)
 export class TimeEntryController {
     constructor(private readonly timeEntryService: TimeEntryService) { }
 

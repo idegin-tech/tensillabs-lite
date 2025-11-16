@@ -36,10 +36,6 @@ export const paginationSchema = z.preprocess(
     search: z.string().optional(),
     status: z.enum(['pending', 'active', 'suspended', 'all']).optional(),
     isActive: z.enum(['true', 'false', 'all']).optional(),
-    permission: z
-      .enum(['super_admin', 'admin', 'manager', 'regular', 'all'])
-      .optional(),
-    // Additional pagination options for mongoose-paginate-v2
     populate: z.union([z.string(), z.array(z.string())]).optional(),
     select: z.string().optional(),
     lean: z.boolean().optional().default(false),
@@ -50,13 +46,12 @@ export type PaginationDto = z.infer<typeof paginationSchema>;
 
 // Helper function to extract pagination options for mongoose-paginate-v2
 export const extractPaginationOptions = (pagination: PaginationDto) => {
-  const { search, status, isActive, permission, ...paginationOptions } =
+  const { search, status, isActive, ...paginationOptions } =
     pagination;
   return {
     search,
     status,
     isActive,
-    permission,
     paginationOptions: {
       page: paginationOptions.page,
       limit: paginationOptions.limit,

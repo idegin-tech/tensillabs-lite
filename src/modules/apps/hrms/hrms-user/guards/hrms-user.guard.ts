@@ -8,7 +8,6 @@ import { Request } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HrmsUser, HrmsUserPermission } from '../hrms-user.schema';
 import { Repository } from 'typeorm';
-import { Permission } from '../../../../workspace-members/schemas/workspace-member.schema';
 
 export function validateHRMSUser(allowed: HrmsUserPermission[]) {
   @Injectable()
@@ -23,7 +22,6 @@ export function validateHRMSUser(allowed: HrmsUserPermission[]) {
         Request & {
           workspaceMember?: {
             id?: string;
-            permission?: string;
           };
           workspace?: {
             id?: string;
@@ -34,15 +32,6 @@ export function validateHRMSUser(allowed: HrmsUserPermission[]) {
       const workspace = req.workspace;
       if (!member || !workspace) {
         throw new ForbiddenException('Workspace member and workspace required');
-      }
-
-      const memberPermission =
-        typeof member.permission === 'string' ? member.permission : undefined;
-      if (
-        memberPermission === Permission.ADMIN.toString() ||
-        memberPermission === Permission.SUPER_ADMIN.toString()
-      ) {
-        return true;
       }
 
       const memberId = member.id;

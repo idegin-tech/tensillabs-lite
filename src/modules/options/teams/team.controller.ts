@@ -21,11 +21,7 @@ import {
   ToggleActiveDto,
 } from './dto/team.dto';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guard';
-import {
-  RequirePermission,
-  WorkspaceMemberGuard,
-} from 'src/modules/workspace-members/guards/workspace-member.guard';
-import { MemberPermissions } from 'src/modules/workspace-members/enums/member-permissions.enum';
+import { WorkspaceMemberGuard } from 'src/modules/workspace-members/guards/workspace-member.guard';
 import { TeamService } from './services/team.service';
 import { ZodValidationPipe } from 'src/lib/validation.pipe';
 import { createSuccessResponse } from 'src/lib/response.interface';
@@ -40,7 +36,6 @@ export class TeamController {
   constructor(private readonly teamService: TeamService) {}
 
   @Post()
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(createTeamSchema))
   async create(
     @Body() createTeamDto: CreateTeamDto,
@@ -56,7 +51,6 @@ export class TeamController {
   }
 
   @Get()
-  @RequirePermission(MemberPermissions.REGULAR)
   @UsePipes(new ZodValidationPipe(paginationSchema))
   async findAll(
     @Query() pagination: PaginationDto,
@@ -68,7 +62,6 @@ export class TeamController {
   }
 
   @Put(':id')
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(updateTeamSchema))
   async update(
     @Param('id') id: string,
@@ -85,7 +78,6 @@ export class TeamController {
   }
 
   @Patch(':id/trash')
-  @RequirePermission(MemberPermissions.MANAGER)
   async moveToTrash(
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },
@@ -99,7 +91,6 @@ export class TeamController {
   }
 
   @Patch(':id/toggle-active')
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(toggleActiveSchema))
   async toggleActive(
     @Param('id') id: string,

@@ -228,7 +228,6 @@ export class SeederService {
         lastName: memberData.lastName,
         primaryEmail: memberData.primaryEmail,
         secondaryEmail: memberData.secondaryEmail || null,
-        permission: memberData.permission as any,
         bio: memberData.bio || null,
         workPhone: memberData.workPhone || null,
         mobilePhone: memberData.mobilePhone || null,

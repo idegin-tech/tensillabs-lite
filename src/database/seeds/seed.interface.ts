@@ -34,7 +34,6 @@ export interface WorkspaceMemberSeedData {
   lastName: string;
   primaryEmail: string;
   secondaryEmail?: string;
-  permission: 'super_admin' | 'admin' | 'manager' | 'regular';
   bio?: string;
   workPhone?: string;
   mobilePhone?: string;

@@ -8,7 +8,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   WorkspaceMember,
-  Permission,
   MemberStatus,
 } from '../schemas/workspace-member.schema';
 import { InviteMemberDto } from '../dto/workspace-member.dto';
@@ -42,7 +41,6 @@ export class WorkspaceMemberService {
       middleName: middleName || null,
       lastName,
       primaryEmail: userEmail,
-      permission: Permission.SUPER_ADMIN,
       status: MemberStatus.ACTIVE,
       lastActiveAt: new Date(),
     });
@@ -67,7 +65,7 @@ export class WorkspaceMemberService {
       pagination = { page: 1, limit: 10, sortBy: '-createdAt' };
     }
 
-    const { search, status, permission, paginationOptions } =
+    const { search, status, paginationOptions } =
       extractPaginationOptions(pagination);
 
     const where: any = {
@@ -76,10 +74,6 @@ export class WorkspaceMemberService {
 
     if (status && status !== 'all') {
       where.status = status;
-    }
-
-    if (permission && permission !== 'all') {
-      where.permission = permission;
     }
 
     const queryBuilder =
@@ -393,22 +387,12 @@ export class WorkspaceMemberService {
       );
     }
 
-    if (
-      invitingMember.permission === Permission.MANAGER ||
-      invitingMember.permission === Permission.REGULAR
-    ) {
-      throw new BadRequestException(
-        'Insufficient permissions to invite members',
-      );
-    }
-
     const workspaceMember = this.workspaceMemberRepository.create({
       workspaceId,
       firstName: inviteMemberDto.firstName,
       lastName: inviteMemberDto.lastName,
       middleName: inviteMemberDto.middleName || null,
       primaryEmail: inviteMemberDto.primaryEmail,
-      permission: Permission.REGULAR,
       status: MemberStatus.PENDING,
       workPhone: inviteMemberDto.workPhone || null,
       primaryRoleId: inviteMemberDto.primaryRole || null,

@@ -13,11 +13,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthGuard } from '../../auth/guards/auth.guard';
-import {
-  WorkspaceMemberGuard,
-  RequirePermission,
-} from '../../workspace-members/guards/workspace-member.guard';
-import { MemberPermissions } from '../../workspace-members/enums/member-permissions.enum';
+import { WorkspaceMemberGuard } from '../../workspace-members/guards/workspace-member.guard';
 import { OfficeService } from './services/office.service';
 import { createSuccessResponse } from '../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../lib/validation.pipe';
@@ -40,7 +36,6 @@ export class OfficeController {
   constructor(private readonly officeService: OfficeService) {}
 
   @Post()
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(createOfficeSchema))
   async create(
     @Body() createOfficeDto: CreateOfficeDto,
@@ -56,7 +51,6 @@ export class OfficeController {
   }
 
   @Get()
-  @RequirePermission(MemberPermissions.REGULAR)
   @UsePipes(new ZodValidationPipe(paginationSchema))
   async findAll(
     @Query() pagination: PaginationDto,
@@ -70,7 +64,6 @@ export class OfficeController {
   }
 
   @Put(':id')
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(updateOfficeSchema))
   async update(
     @Param('id') id: string,
@@ -87,7 +80,6 @@ export class OfficeController {
   }
 
   @Patch(':id/toggle-active')
-  @RequirePermission(MemberPermissions.MANAGER)
   @UsePipes(new ZodValidationPipe(toggleActiveSchema))
   async toggleActive(
     @Param('id') id: string,
@@ -104,7 +96,6 @@ export class OfficeController {
   }
 
   @Patch(':id/trash')
-  @RequirePermission(MemberPermissions.MANAGER)
   async moveToTrash(
     @Param('id') id: string,
     @Req() req: Request & { workspace: any },

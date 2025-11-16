@@ -11,13 +11,6 @@ import {
 import { User } from '../../users/schemas/user.schema';
 import { Workspace } from '../../workspaces/schemas/workspace.schema';
 
-export enum Permission {
-  SUPER_ADMIN = 'super_admin',
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  REGULAR = 'regular',
-}
-
 export enum MemberStatus {
   PENDING = 'pending',
   ACTIVE = 'active',
@@ -28,7 +21,6 @@ export enum MemberStatus {
 @Index(['userId', 'workspaceId'], { unique: true })
 @Index(['workspaceId'])
 @Index(['userId'])
-@Index(['permission'])
 @Index(['status'])
 @Index(['primaryEmail'])
 export class WorkspaceMember {
@@ -72,13 +64,6 @@ export class WorkspaceMember {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   secondaryEmail: string;
-
-  @Column({
-    type: 'enum',
-    enum: Permission,
-    default: Permission.REGULAR,
-  })
-  permission: Permission;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
   bio: string;

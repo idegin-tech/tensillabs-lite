@@ -12,11 +12,7 @@ import {
 import { Request } from 'express';
 import { SpaceParticipantService } from './services/space-participant.service';
 import { AuthGuard } from '../../../auth/guards/auth.guard';
-import {
-  WorkspaceMemberGuard,
-  RequirePermission,
-} from '../../../workspace-members/guards/workspace-member.guard';
-import { MemberPermissions } from '../../../workspace-members/enums/member-permissions.enum';
+import { WorkspaceMemberGuard } from '../../../workspace-members/guards/workspace-member.guard';
 import { SpaceParticipationGuard } from '../guards/space-participation.guard';
 import { createSuccessResponse } from '../../../../lib/response.interface';
 import { ZodValidationPipe } from '../../../../lib/validation.pipe';
@@ -33,7 +29,6 @@ import {
 
 @Controller('spaces/:spaceId/participants')
 @UseGuards(AuthGuard, WorkspaceMemberGuard, SpaceParticipationGuard)
-@RequirePermission(MemberPermissions.REGULAR)
 export class SpaceParticipantController {
   constructor(
     private readonly spaceParticipantService: SpaceParticipantService,
@@ -64,7 +59,6 @@ export class SpaceParticipantController {
   }
 
   @Put(':participantId')
-  @RequirePermission(MemberPermissions.MANAGER)
   async updateParticipant(
     @Param('participantId') participantId: string,
     @Body(new ZodValidationPipe(updateParticipantSchema))

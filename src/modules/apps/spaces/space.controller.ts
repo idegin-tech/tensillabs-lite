@@ -16,11 +16,7 @@ import { Request } from 'express';
 import { SpaceService } from './services/space.service';
 import { SpaceParticipantService } from './space-participants/services/space-participant.service';
 import { AuthGuard } from '../../auth/guards/auth.guard';
-import {
-  WorkspaceMemberGuard,
-  RequirePermission,
-} from '../../workspace-members/guards/workspace-member.guard';
-import { MemberPermissions } from '../../workspace-members/enums/member-permissions.enum';
+import { WorkspaceMemberGuard } from '../../workspace-members/guards/workspace-member.guard';
 import { SpaceParticipationGuard } from './guards/space-participation.guard';
 import { SpaceAdminGuard } from './guards/space-admin.guard';
 import { createSuccessResponse } from '../../../lib/response.interface';
@@ -38,7 +34,6 @@ import {
 
 @Controller('spaces')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
-@RequirePermission(MemberPermissions.REGULAR)
 export class SpaceController {
   constructor(
     private readonly spaceService: SpaceService,

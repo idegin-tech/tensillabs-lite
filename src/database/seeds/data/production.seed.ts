@@ -26,7 +26,6 @@ export const productionSeedData: SeedData = {
             firstName: 'Admin',
             lastName: 'User',
             primaryEmail: 'admin@company.com',
-            permission: 'super_admin',
             status: 'active',
         },
     ],

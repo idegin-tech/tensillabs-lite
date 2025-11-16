@@ -21,14 +21,12 @@ import {
   GetChecklistsQueryDto,
 } from './dto/checklist.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
-import { RequirePermission, WorkspaceMemberGuard } from '../workspace-members/guards/workspace-member.guard';
-import { MemberPermissions } from '../workspace-members/enums/member-permissions.enum';
+import { WorkspaceMemberGuard } from '../workspace-members/guards/workspace-member.guard';
 import { ZodValidationPipe } from 'src/lib/validation.pipe';
 import { createSuccessResponse } from 'src/lib/response.interface';
 
 @Controller('checklists')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
-@RequirePermission(MemberPermissions.REGULAR)
 export class ChecklistController {
   constructor(private readonly checklistService: ChecklistService) {}
 
