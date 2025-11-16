@@ -72,8 +72,8 @@ export default function RecentAttendance({
                     <TableCell className="font-medium py-4">
                       {format(new Date(record.clockIn), 'MMM d, yyyy')}
                     </TableCell>
-                    <TableCell className="py-4">{format(new Date(record.clockIn), 'HH:mm')}</TableCell>
-                    <TableCell className="py-4">{record.clockOut ? format(new Date(record.clockOut), 'HH:mm') : '-'}</TableCell>
+                    <TableCell className="py-4">{format(new Date(record.clockIn), 'h:mm a')}</TableCell>
+                    <TableCell className="py-4">{record.clockOut ? format(new Date(record.clockOut), 'h:mm a') : '-'}</TableCell>
                     <TableCell className="py-4 font-medium">
                       {record.totalHours ? `${record.totalHours.toFixed(2)}h` : '-'}
                     </TableCell>

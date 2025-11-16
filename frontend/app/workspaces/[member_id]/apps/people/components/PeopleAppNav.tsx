@@ -20,6 +20,9 @@ import {
   TbCalendarCheck,
   TbCalendarOff,
   TbBell,
+  TbUsersGroup,
+  TbBeach,
+  TbBriefcase,
 } from "react-icons/tb"
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -68,9 +71,29 @@ export default function PeopleAppNav() {
           icon: TbUsers,
         },
         {
+          title: "Roles",
+          url: `${getPathToApp('people')}/roles`,
+          icon: TbBriefcase,
+        },
+        {
+          title: "Teams",
+          url: `${getPathToApp('people')}/teams`,
+          icon: TbUsersGroup,
+        },
+        {
           title: "Attendance",
           url: `${getPathToApp('people')}/attendance`,
           icon: TbCalendarEvent,
+        },
+        {
+          title: "Leave Requests",
+          url: `${getPathToApp('people')}/leave-requests-management`,
+          icon: TbCalendarOff,
+        },
+        {
+          title: "Time Off Requests",
+          url: `${getPathToApp('people')}/time-off-requests`,
+          icon: TbBeach,
         },
         {
           title: "Onboarding",

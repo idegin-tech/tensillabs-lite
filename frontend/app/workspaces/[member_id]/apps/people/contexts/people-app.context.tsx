@@ -15,6 +15,7 @@ interface PeopleState {
     hrmsSettings: HrmsSettings | null
     totalAttendanceHours: number
     leaveBalance: number
+    pendingLeaveRequest: LeaveRequest | null
 }
 
 interface PeopleContextType {
@@ -36,7 +37,8 @@ export function PeopleProvider({ children }: { children: ReactNode }) {
         recentAttendance: [],
         hrmsSettings: null,
         totalAttendanceHours: 0,
-        leaveBalance: 0
+        leaveBalance: 0,
+        pendingLeaveRequest: null
     })
 
     const dependenciesQuery = useHrmsDependencies()
@@ -53,7 +55,8 @@ export function PeopleProvider({ children }: { children: ReactNode }) {
             recentAttendance: dependenciesQuery.data?.payload?.recentAttendance || [],
             hrmsSettings: dependenciesQuery.data?.payload?.hrmsSettings || null,
             totalAttendanceHours: dependenciesQuery.data?.payload?.totalAttendanceHours || 0,
-            leaveBalance: dependenciesQuery.data?.payload?.leaveBalance || 0
+            leaveBalance: dependenciesQuery.data?.payload?.leaveBalance || 0,
+            pendingLeaveRequest: dependenciesQuery.data?.payload?.pendingLeaveRequest || null
         }))
     }, [dependenciesQuery.data, dependenciesQuery.isLoading, dependenciesQuery.error])
 

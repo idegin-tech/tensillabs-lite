@@ -77,6 +77,10 @@ export class Comment {
   @Column({ type: 'uuid', nullable: true })
   spaceId: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  @Index()
+  leaveRequestId: string;
+
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 

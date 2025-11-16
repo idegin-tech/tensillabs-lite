@@ -70,14 +70,24 @@ export class LeaveRequest {
   status: LeaveStatus;
 
   @Column({ type: 'uuid', nullable: true })
-  approvedById?: string;
+  acceptedById?: string;
 
   @ManyToOne(() => WorkspaceMember, { nullable: true })
-  @JoinColumn({ name: 'approvedById' })
-  approvedBy?: WorkspaceMember;
+  @JoinColumn({ name: 'acceptedById' })
+  acceptedBy?: WorkspaceMember;
 
   @Column({ type: 'timestamp', nullable: true })
-  approvedAt?: Date;
+  acceptedAt?: Date;
+
+  @Column({ type: 'uuid', nullable: true })
+  rejectedById?: string;
+
+  @ManyToOne(() => WorkspaceMember, { nullable: true })
+  @JoinColumn({ name: 'rejectedById' })
+  rejectedBy?: WorkspaceMember;
+
+  @Column({ type: 'timestamp', nullable: true })
+  rejectedAt?: Date;
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

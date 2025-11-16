@@ -17,7 +17,7 @@ import EmployeeActions from '@/app/workspaces/[member_id]/apps/people/components
 import RecentAttendance from '@/app/workspaces/[member_id]/apps/people/components/self-service/RecentAttendance';
 import RecentLeave from '@/app/workspaces/[member_id]/apps/people/components/self-service/RecentLeave';
 import { useWorkspaceMember } from '@/contexts/workspace-member.context'
-import { usePeople } from '../contexts/people.context'
+import { usePeople } from '../contexts/people-app.context'
 import PeoplePageLoading from './PeoplePageLoading'
 
 export default function PeoplesPage() {

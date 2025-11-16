@@ -17,8 +17,6 @@ import {
   WorkspaceMemberGuard,
 } from '../../../workspace-members/guards/workspace-member.guard';
 import {
-  toggleAttendanceSchema,
-  ToggleAttendanceDto,
   clockInSchema,
   ClockInDto,
   clockOutSchema,

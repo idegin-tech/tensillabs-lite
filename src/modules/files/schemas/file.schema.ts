@@ -19,6 +19,7 @@ import { Comment } from '../../comments/schemas/comment.schema';
 @Index(['spaceId'])
 @Index(['commentId'])
 @Index(['listId'])
+@Index(['leaveRequestId'])
 @Index(['isDeleted'])
 @Index(['isActive'])
 @Index(['createdAt'])
@@ -63,6 +64,9 @@ export class File {
 
   @Column({ type: 'uuid', nullable: true })
   listId: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  leaveRequestId: string;
 
   @Column({ type: 'bigint', default: 0 })
   size: number;

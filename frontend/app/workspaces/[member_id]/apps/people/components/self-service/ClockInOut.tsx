@@ -146,7 +146,7 @@ export default function ClockInOut({ openAttendance, hrmsSettings }: Props) {
                 {formatDuration(workDuration)}
               </div>
               <div className="text-sm text-muted-foreground mb-6">
-                Started at {format(new Date(openAttendance.clockIn), 'HH:mm')}
+                Started at {format(new Date(openAttendance.clockIn), 'h:mm a')}
               </div>
               <div className="max-w-sm mx-auto">
                 <div className="flex justify-between text-xs text-muted-foreground mb-2">

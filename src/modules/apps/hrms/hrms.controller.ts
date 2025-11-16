@@ -7,7 +7,7 @@ import { WorkspaceMemberGuard } from '../../workspace-members/guards/workspace-m
 import { createSuccessResponse } from '../../../lib/response.interface';
 import { HrmsUser } from './hrms-user/hrms-user.schema';
 import { Employee } from './employees/employee.schema';
-import { LeaveRequest } from './leave-requests/schemas/leave-request.schema';
+import { LeaveRequest, LeaveStatus } from './leave-requests/schemas/leave-request.schema';
 import { Attendance } from './attendance/schemas/attendance.schema';
 import { HrmsSettings } from './schemas/hrms-settings.schema';
 
@@ -61,6 +61,10 @@ export class HrmsController {
       take: 10,
     });
 
+    const pendingLeaveRequest = await this.leaveRequestRepository.findOne({
+      where: { memberId, status: LeaveStatus.PENDING },
+    });
+
     const recentAttendance = await this.attendanceRepository.find({
       where: { memberId },
       order: { clockIn: 'DESC' },
@@ -110,6 +114,7 @@ export class HrmsController {
       hrmsSettings,
       totalAttendanceHours,
       leaveBalance,
+      pendingLeaveRequest,
     });
   }
 }

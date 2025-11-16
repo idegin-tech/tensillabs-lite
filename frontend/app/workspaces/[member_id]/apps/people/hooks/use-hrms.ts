@@ -15,6 +15,7 @@ interface GetDependenciesResponse {
         hrmsSettings: HrmsSettings | null
         totalAttendanceHours: number
         leaveBalance: number
+        pendingLeaveRequest: LeaveRequest | null
     }
 }
 

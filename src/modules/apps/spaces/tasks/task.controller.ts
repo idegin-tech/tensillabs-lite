@@ -337,6 +337,7 @@ export class TaskController {
       taskId,
       listId,
       req.space.id,
+      null,
     );
 
     let uploadedFiles = [];

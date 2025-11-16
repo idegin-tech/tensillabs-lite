@@ -54,7 +54,7 @@ export default function RemarkDialog({
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                         <Label htmlFor="remark">
-                            Remark {isRequired && <span className="text-destructive">*</span>}
+                            Remark {isRequired ? <span className="text-destructive">*</span> : <span>{`(Optional)`}</span>}
                         </Label>
                         <Textarea
                             id="remark"

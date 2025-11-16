@@ -23,6 +23,7 @@ export class FileService {
       spaceId?: string;
       commentId?: string;
       listId?: string;
+      leaveRequestId?: string;
     },
     workspaceId: string,
     createdById: string,

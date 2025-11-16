@@ -14,6 +14,16 @@ import SectionPlaceholder from '@/components/placeholders/SectionPlaceholder';
 import Link from 'next/link';
 import useCommon from '@/hooks/use-common';
 
+const leaveTypeLabels: Record<string, string> = {
+  annual: 'Annual Leave',
+  sick: 'Sick Leave',
+  casual: 'Casual Leave',
+  maternity: 'Maternity Leave',
+  paternity: 'Paternity Leave',
+  unpaid: 'Unpaid Leave',
+  other: 'Other'
+}
+
 export default function RecentLeave({
   leaveRequests,
   getStatusBadge,
@@ -72,7 +82,7 @@ export default function RecentLeave({
                     className="border-b hover:bg-muted/50"
                   >
                     <TableCell className="font-medium py-4">
-                      {request.leaveType}
+                      {leaveTypeLabels[request.type] || request.type}
                     </TableCell>
                     <TableCell className="py-4">{request.startDate} - {request.endDate}</TableCell>
                     <TableCell className="py-4">
