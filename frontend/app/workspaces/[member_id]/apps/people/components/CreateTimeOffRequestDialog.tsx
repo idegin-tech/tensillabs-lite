@@ -118,7 +118,7 @@ export default function CreateTimeOffRequestDialog({
                 formData.append('files', file)
             })
 
-            const response = await api.post('/time-off-requests', formData, {
+            const response = await api.post('/hrms/time-off-requests', formData, {
                 headers: {
                     'x-member-id': member_id,
                     'Content-Type': 'multipart/form-data',

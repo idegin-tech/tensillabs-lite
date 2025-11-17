@@ -46,19 +46,24 @@ export default function PeopleAppNav() {
           icon: TbBell,
         },
         {
-          title: "My Attendance",
-          url: `${getPathToApp('people')}/my-attendance`,
+          title: "Attendance",
+          url: `${getPathToApp('people')}/attendance`,
           icon: TbCalendarCheck,
         },
         {
-          title: "My Timesheet",
+          title: "Timesheet",
           url: `${getPathToApp('people')}/my-timesheet`,
           icon: TbClock,
         },
         {
-          title: "Leave Requests",
+          title: "Leave",
           url: `${getPathToApp('people')}/leave-requests`,
           icon: TbCalendarOff,
+        },
+        {
+          title: "Time Off",
+          url: `${getPathToApp('people')}/time-off-requests`,
+          icon: TbBeach,
         },
       ]
     },

@@ -207,4 +207,57 @@ export class AttendanceController {
       hasMore: pageNum * limitNum < total,
     });
   }
+
+  @Get('my-attendance')
+  async getMyAttendance(
+    @Req() req: Request & { workspaceMember?: { id: string } },
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    const workspaceMemberId = req.workspaceMember?.id;
+    if (!workspaceMemberId) {
+      throw new BadRequestException('Workspace member ID is required');
+    }
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
+    const queryBuilder = this.attendanceRepository
+      .createQueryBuilder('attendance')
+      .where('attendance.memberId = :memberId', { memberId: workspaceMemberId });
+
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      queryBuilder.andWhere('attendance.clockIn >= :startDate', { startDate: start });
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      queryBuilder.andWhere('attendance.clockIn <= :endDate', { endDate: end });
+    }
+
+    if (status && status !== 'all') {
+      queryBuilder.andWhere('attendance.status = :status', { status });
+    }
+
+    queryBuilder
+      .orderBy('attendance.clockIn', 'DESC')
+      .skip((pageNum - 1) * limitNum)
+      .take(limitNum);
+
+    const [attendances, total] = await queryBuilder.getManyAndCount();
+
+    return createSuccessResponse('My attendance retrieved', {
+      data: attendances,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      hasMore: pageNum * limitNum < total,
+    });
+  }
 }

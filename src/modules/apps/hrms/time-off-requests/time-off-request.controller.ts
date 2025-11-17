@@ -52,7 +52,7 @@ interface UploadedFile {
     size: number;
 }
 
-@Controller('time-off-requests')
+@Controller('hrms/time-off-requests')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
 export class TimeOffRequestController {
     constructor(
@@ -270,6 +270,23 @@ export class TimeOffRequestController {
 
         return createSuccessResponse(
             'Time off request rejected successfully',
+            timeOffRequest,
+        );
+    }
+
+    @Patch(':id/withdraw')
+    async withdrawTimeOffRequest(
+        @Param('id') id: string,
+        @Req() req: Request & { workspaceMember: any; workspace: any },
+    ) {
+        const timeOffRequest = await this.timeOffRequestService.withdraw(
+            id,
+            req.workspaceMember.id,
+            req.workspace.id,
+        );
+
+        return createSuccessResponse(
+            'Time off request withdrawn successfully',
             timeOffRequest,
         );
     }

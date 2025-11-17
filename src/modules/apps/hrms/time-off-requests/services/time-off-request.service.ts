@@ -202,4 +202,28 @@ export class TimeOffRequestService {
 
     await this.timeOffRequestRepository.remove(timeOffRequest);
   }
+
+  async withdraw(
+    id: string,
+    memberId: string,
+    workspaceId: string,
+  ): Promise<TimeOffRequest> {
+    const timeOffRequest = await this.findOne(id, workspaceId);
+
+    if (timeOffRequest.memberId !== memberId) {
+      throw new ForbiddenException(
+        'You can only withdraw your own time off requests',
+      );
+    }
+
+    if (timeOffRequest.status !== TimeOffStatus.PENDING) {
+      throw new ForbiddenException(
+        'You can only withdraw pending time off requests',
+      );
+    }
+
+    timeOffRequest.status = TimeOffStatus.WITHDRAWN;
+
+    return await this.timeOffRequestRepository.save(timeOffRequest);
+  }
 }

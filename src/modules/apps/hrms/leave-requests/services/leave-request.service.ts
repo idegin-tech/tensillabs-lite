@@ -240,4 +240,28 @@ export class LeaveRequestService {
 
     return await this.leaveRequestRepository.save(leaveRequest);
   }
+
+  async withdraw(
+    id: string,
+    memberId: string,
+    workspaceId: string,
+  ): Promise<LeaveRequest> {
+    const leaveRequest = await this.findOne(id, workspaceId);
+
+    if (leaveRequest.memberId !== memberId) {
+      throw new ForbiddenException(
+        'You can only withdraw your own leave requests',
+      );
+    }
+
+    if (leaveRequest.status !== LeaveStatus.PENDING) {
+      throw new ForbiddenException(
+        'You can only withdraw pending leave requests',
+      );
+    }
+
+    leaveRequest.status = LeaveStatus.WITHDRAWN;
+
+    return await this.leaveRequestRepository.save(leaveRequest);
+  }
 }

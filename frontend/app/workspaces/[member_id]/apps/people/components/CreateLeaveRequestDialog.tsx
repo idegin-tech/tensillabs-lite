@@ -117,7 +117,7 @@ export default function CreateLeaveRequestDialog({
                 formData.append('files', file)
             })
 
-            const response = await api.post('/leave-requests', formData, {
+            const response = await api.post('/hrms/leave-requests', formData, {
                 headers: {
                     'x-member-id': member_id,
                     'Content-Type': 'multipart/form-data',

@@ -26,6 +26,7 @@ export enum LeaveStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
+  WITHDRAWN = 'withdrawn',
 }
 
 @Entity('leave_requests')

@@ -53,7 +53,7 @@ interface UploadedFile {
     size: number;
 }
 
-@Controller('leave-requests')
+@Controller('hrms/leave-requests')
 @UseGuards(AuthGuard, WorkspaceMemberGuard)
 export class LeaveRequestController {
     constructor(
@@ -277,6 +277,23 @@ export class LeaveRequestController {
 
         return createSuccessResponse(
             'Leave request rejected successfully',
+            leaveRequest,
+        );
+    }
+
+    @Patch(':id/withdraw')
+    async withdrawLeaveRequest(
+        @Param('id') id: string,
+        @Req() req: Request & { workspaceMember: any; workspace: any },
+    ) {
+        const leaveRequest = await this.leaveRequestService.withdraw(
+            id,
+            req.workspaceMember.id,
+            req.workspace.id,
+        );
+
+        return createSuccessResponse(
+            'Leave request withdrawn successfully',
             leaveRequest,
         );
     }

@@ -27,6 +27,7 @@ export enum TimeOffStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
+  WITHDRAWN = 'withdrawn',
 }
 
 @Entity('time_off_requests')
