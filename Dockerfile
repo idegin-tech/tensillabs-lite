@@ -7,14 +7,12 @@ WORKDIR /app
 COPY package*.json ./
 
 # Copy backend package.json and install dependencies
-COPY apps/backend/package*.json ./apps/backend/
-WORKDIR /app/apps/backend
+COPY apps/backend/package*.json ./
 RUN npm install
-WORKDIR /app
 
 # Copy frontend package.json and install dependencies
-COPY apps/frontend/package*.json ./apps/frontend/
-WORKDIR /app/apps/frontend
+COPY apps/frontend/package*.json ./frontend/
+WORKDIR /app/frontend
 RUN npm install
 WORKDIR /app
 
@@ -22,18 +20,18 @@ WORKDIR /app
 COPY .env* ./
 
 # Copy backend source code and configs
-COPY apps/backend/tsconfig*.json apps/backend/nest-cli.json ./apps/backend/
-COPY apps/backend/src/ ./apps/backend/src/
+COPY apps/backend/tsconfig*.json apps/backend/nest-cli.json ./
+COPY apps/backend/src/ ./src/
 
 # Copy frontend source code and configs
-COPY apps/frontend/ ./apps/frontend/
+COPY apps/frontend/ ./frontend/
 
 # Build frontend first (creates .next directory)
-WORKDIR /app/apps/frontend
+WORKDIR /app/frontend
 RUN npm run build
 
 # Build backend
-WORKDIR /app/apps/backend
+WORKDIR /app
 RUN npm run build
 
 FROM node:18-slim as runtime
@@ -64,13 +62,13 @@ COPY apps/backend/package*.json ./
 RUN npm ci --only=production
 
 # Copy built backend
-COPY --from=build /app/apps/backend/dist ./dist
+COPY --from=build /app/dist ./dist
 
 # Copy built frontend (.next directory)
-COPY --from=build /app/apps/frontend/.next ./frontend/.next
-COPY --from=build /app/apps/frontend/package.json ./frontend/package.json
-COPY --from=build /app/apps/frontend/next.config.ts ./frontend/next.config.ts
-COPY --from=build /app/apps/frontend/public ./frontend/public
+COPY --from=build /app/frontend/.next ./frontend/.next
+COPY --from=build /app/frontend/package.json ./frontend/package.json
+COPY --from=build /app/frontend/next.config.ts ./frontend/next.config.ts
+COPY --from=build /app/frontend/public ./frontend/public
 
 # Copy environment file
 COPY --from=build /app/.env ./

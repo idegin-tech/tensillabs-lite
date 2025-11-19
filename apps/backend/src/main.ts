@@ -144,18 +144,22 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = process.env.PORT || 8987;
+
   await app.listen(port, '0.0.0.0');
 
+  // Add Next.js handler AFTER NestJS has started and set up all routes
   if (handle) {
-    expressApp.use((req, res, next) => {
-      if (req.url.startsWith('/api/v1/') || req.url.startsWith('/api/')) {
+    expressApp.use('*', (req, res, next) => {
+      // Skip API routes - let NestJS handle them
+      if (req.path.startsWith('/api/v1/') || req.path.startsWith('/api/')) {
         return next();
       }
       
+      // Handle Next.js routes
       const parsedUrl = parse(req.url, true);
       return handle(req, res, parsedUrl);
     });
-    console.log('Next.js route handler installed');
+    console.log('Next.js route handler installed for all non-API routes');
   }
 
   console.log(`Application is running on: http://0.0.0.0:${port}`);
