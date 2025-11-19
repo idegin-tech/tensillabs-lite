@@ -1,0 +1,26 @@
+{
+  "name": "@repo/common",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./types": "./src/types/index.ts",
+    "./scripts/generate-app-key": "./src/scripts/generate-app-key.ts"
+  },
+  "scripts": {
+    "generate:app-key": "tsx src/scripts/generate-app-key.ts",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^22.15.30",
+    "eslint": "^9.39.1",
+    "tsx": "^4.19.2",
+    "typescript": "5.9.2"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  }
+}

@@ -12,6 +12,7 @@ COPY apps/frontend/package*.json ./apps/frontend/
 COPY packages/eslint-config/package*.json ./packages/eslint-config/
 COPY packages/typescript-config/package*.json ./packages/typescript-config/
 COPY packages/ui/package*.json ./packages/ui/
+COPY packages/common/package*.json ./packages/common/
 
 # Install all dependencies using npm workspaces
 RUN npm install
@@ -22,6 +23,7 @@ COPY apps/ ./apps/
 COPY packages/eslint-config/ ./packages/eslint-config/
 COPY packages/typescript-config/ ./packages/typescript-config/
 COPY packages/ui/ ./packages/ui/
+COPY packages/common/ ./packages/common/
 
 # Build using Turbo (builds both frontend and backend)
 RUN npm run build
