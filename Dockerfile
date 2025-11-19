@@ -1,6 +1,6 @@
 FROM node:18-alpine as build
 
-# Build cache buster - update this comment to force rebuild: v1.0.3
+# Build cache buster - fixed .next directory issue: v1.0.4
 WORKDIR /app
 
 # Copy root package.json first (if exists for turbo/workspace setup)
