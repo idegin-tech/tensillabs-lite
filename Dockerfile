@@ -9,7 +9,9 @@ COPY package*.json turbo.json ./
 # Copy all package.json files for workspace dependencies
 COPY apps/backend/package*.json ./apps/backend/
 COPY apps/frontend/package*.json ./apps/frontend/
-COPY packages/*/package*.json ./packages/*/
+COPY packages/eslint-config/package*.json ./packages/eslint-config/
+COPY packages/typescript-config/package*.json ./packages/typescript-config/
+COPY packages/ui/package*.json ./packages/ui/
 
 # Install all dependencies using npm workspaces
 RUN npm install
@@ -17,7 +19,9 @@ RUN npm install
 # Copy all source files
 COPY .env* ./
 COPY apps/ ./apps/
-COPY packages/ ./packages/
+COPY packages/eslint-config/ ./packages/eslint-config/
+COPY packages/typescript-config/ ./packages/typescript-config/
+COPY packages/ui/ ./packages/ui/
 
 # Build using Turbo (builds both frontend and backend)
 RUN npm run build
