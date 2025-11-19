@@ -3,10 +3,12 @@ import withPWA from "@ducanh2912/next-pwa";
 import { config } from 'dotenv';
 import { join } from 'path';
 
-config({ path: join(__dirname, '..', '.env') });
+config({ path: join(__dirname, '..', '..', '.env') });
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  output: "export",
+  distDir: "out",
+  trailingSlash: true,
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,

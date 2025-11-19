@@ -1,5 +1,4 @@
 import { useTheme } from 'next-themes'
-import Image from 'next/image'
 import React from 'react'
 
 type Props = {
@@ -10,7 +9,7 @@ export default function AppLogo({ size }: Props) {
     const { theme } = useTheme();
     return (
         <>
-            <Image
+            <img
                 src={theme == 'light' ? '/brand/logo-dark.svg' : '/brand/logo-light.png'}
                 width={size || 200}
                 height={50}

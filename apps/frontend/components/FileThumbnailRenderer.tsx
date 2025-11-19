@@ -1,5 +1,4 @@
 
-import Image from 'next/image'
 import React from 'react'
 import { cn } from '@/lib/utils'
 
@@ -96,7 +95,7 @@ export default function FileThumbnailRenderer({ fileType, mimeType, preview, siz
     return (
         <div className={cn('rounded-md overflow-hidden flex items-center justify-center relative flex-shrink-0', sizeClasses[size])}>
             {isImage && preview ? (
-                <Image
+                <img
                     src={preview}
                     alt="File preview"
                     width={imageSizes[size]}
@@ -104,7 +103,7 @@ export default function FileThumbnailRenderer({ fileType, mimeType, preview, siz
                     className="object-cover w-full h-full"
                 />
             ) : (
-                <Image
+                <img
                     src={iconSrc}
                     alt="File thumbnail"
                     width={imageSizes[size]}

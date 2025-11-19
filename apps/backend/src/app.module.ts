@@ -21,7 +21,7 @@ import { SeederModule } from './database/seeds/seeder.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: '../../.env',
     }),
     DatabaseModule,
     SeederModule,
@@ -35,20 +35,12 @@ import { SeederModule } from './database/seeds/seeder.module';
     FilesModule,
     CommentsModule,
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'frontend', '.next', 'static'),
-      exclude: ['/api/v1*'],
-      serveRoot: '/_next/static',
-      serveStaticOptions: {
-        maxAge: 31536000,
-        immutable: true,
-      },
-    }),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'frontend', 'public'),
+      rootPath: join(__dirname, '..', 'frontend', 'out'),
       exclude: ['/api/v1*'],
       serveRoot: '/',
       serveStaticOptions: {
-        fallthrough: true,
+        fallthrough: false,
+        index: 'index.html',
       },
     }),
   ],
