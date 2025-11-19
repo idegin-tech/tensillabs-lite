@@ -1,6 +1,6 @@
 FROM node:18-alpine as build
 
-# Build cache buster - update this comment to force rebuild: v1.0.2
+# Build cache buster - update this comment to force rebuild: v1.0.3
 WORKDIR /app
 
 # Copy root package.json first (if exists for turbo/workspace setup)
@@ -28,7 +28,7 @@ COPY apps/backend/src/ ./apps/backend/src/
 # Copy frontend source code and configs
 COPY apps/frontend/ ./apps/frontend/
 
-# Build frontend first (creates 'out' directory)
+# Build frontend first (creates .next directory)
 WORKDIR /app/apps/frontend
 RUN npm run build
 
@@ -43,12 +43,19 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     netcat-openbsd \
     curl \
+    postgresql \
+    postgresql-contrib \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | apt-key add -
-RUN echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+# Create postgres user and set up PostgreSQL
+RUN useradd -m postgres || true
+RUN mkdir -p /var/lib/postgresql/data
+RUN chown -R postgres:postgres /var/lib/postgresql/data
+RUN chmod 700 /var/lib/postgresql/data
 
-RUN apt-get update && apt-get install -y mongodb-org && rm -rf /var/lib/apt/lists/*
+# Allow postgres user to run initdb without password
+RUN echo "postgres ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 WORKDIR /app
 
@@ -59,15 +66,16 @@ RUN npm ci --only=production
 # Copy built backend
 COPY --from=build /app/apps/backend/dist ./dist
 
-# Copy built frontend (static export in 'out' directory)
-COPY --from=build /app/apps/frontend/out ./frontend/out
+# Copy built frontend (.next directory)
+COPY --from=build /app/apps/frontend/.next ./frontend/.next
+COPY --from=build /app/apps/frontend/package.json ./frontend/package.json
+COPY --from=build /app/apps/frontend/next.config.ts ./frontend/next.config.ts
+COPY --from=build /app/apps/frontend/public ./frontend/public
 
 # Copy environment file
 COPY --from=build /app/.env ./
 
-RUN mkdir -p /data/db
-
-EXPOSE 3000
+EXPOSE 8080
 
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh

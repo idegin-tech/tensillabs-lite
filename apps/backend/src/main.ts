@@ -15,16 +15,39 @@ import { join } from 'path';
 
 async function bootstrap() {
   const dev = process.env.NODE_ENV !== 'production';
-  const nextjsApp = next({ 
-    dev: false, 
-    dir: join(__dirname, '..', 'frontend'),
-    conf: {
-      distDir: '.next'
-    }
-  });
-  const handle = nextjsApp.getRequestHandler();
+  const frontendDir = join(__dirname, '..', '..', 'frontend');
+  
+  console.log('Starting backend server...');
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Frontend directory:', frontendDir);
 
-  await nextjsApp.prepare();
+  let nextjsApp;
+  let handle;
+
+  // Initialize Next.js in development or if frontend build exists in production
+  try {
+    const fs = require('fs');
+    const nextBuildExists = fs.existsSync(join(frontendDir, '.next'));
+    
+    if (dev || nextBuildExists) {
+      console.log('Next.js initializing...');
+      nextjsApp = next({ 
+        dev, 
+        dir: frontendDir,
+        conf: {
+          distDir: '.next'
+        }
+      });
+      handle = nextjsApp.getRequestHandler();
+      await nextjsApp.prepare();
+      console.log('Next.js initialized successfully');
+    } else {
+      console.warn('Next.js build not found, running without frontend serving');
+    }
+  } catch (error) {
+    console.error('Failed to prepare Next.js app:', error);
+    console.warn('Continuing without Next.js...');
+  }
 
   const app = await NestFactory.create(AppModule, {
     logger:
@@ -116,18 +139,24 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api-v1');
-
-  // Handle all other routes with Next.js
-  expressApp.get('*', (req, res) => {
-    const parsedUrl = parse(req.url, true);
-    return handle(req, res, parsedUrl);
-  });
+  app.setGlobalPrefix('api/v1');
 
   app.enableShutdownHooks();
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT || 8987;
   await app.listen(port, '0.0.0.0');
+
+  if (handle) {
+    expressApp.use((req, res, next) => {
+      if (req.url.startsWith('/api/v1/') || req.url.startsWith('/api/')) {
+        return next();
+      }
+      
+      const parsedUrl = parse(req.url, true);
+      return handle(req, res, parsedUrl);
+    });
+    console.log('Next.js route handler installed');
+  }
 
   console.log(`Application is running on: http://0.0.0.0:${port}`);
 

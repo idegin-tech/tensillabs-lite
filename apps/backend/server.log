@@ -1,0 +1,4 @@
+
+> tensillabs-lite@0.0.1 start:prod
+> node dist/main
+
