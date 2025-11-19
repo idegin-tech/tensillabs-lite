@@ -1,37 +1,36 @@
+# MAJOR CACHE BUSTER - FORCE FRESH BUILD FOR .NEXT FIX - v2.0.0
 FROM node:18-alpine as build
 
-# Build cache buster - fixed .next directory issue: v1.0.4
 WORKDIR /app
 
-# Copy root package.json first (if exists for turbo/workspace setup)
+# Install dependencies first for better caching
 COPY package*.json ./
+COPY apps/backend/package*.json ./apps/backend/
+COPY apps/frontend/package*.json ./apps/frontend/
 
-# Copy backend package.json and install dependencies
-COPY apps/backend/package*.json ./
-RUN npm install
+# Install backend dependencies
+WORKDIR /app/apps/backend
+RUN npm ci --only=production && npm install --save-dev typescript @nestjs/cli
 
-# Copy frontend package.json and install dependencies
-COPY apps/frontend/package*.json ./frontend/
-WORKDIR /app/frontend
-RUN npm install
+# Install frontend dependencies  
+WORKDIR /app/apps/frontend
+RUN npm ci
+
+# Return to root
 WORKDIR /app
 
-# Copy environment and config files
+# Copy environment and source files
 COPY .env* ./
+COPY apps/backend/tsconfig*.json apps/backend/nest-cli.json ./apps/backend/
+COPY apps/backend/src/ ./apps/backend/src/
+COPY apps/frontend/ ./apps/frontend/
 
-# Copy backend source code and configs
-COPY apps/backend/tsconfig*.json apps/backend/nest-cli.json ./
-COPY apps/backend/src/ ./src/
-
-# Copy frontend source code and configs
-COPY apps/frontend/ ./frontend/
-
-# Build frontend first (creates .next directory)
-WORKDIR /app/frontend
+# Build frontend (creates .next directory)
+WORKDIR /app/apps/frontend
 RUN npm run build
 
 # Build backend
-WORKDIR /app
+WORKDIR /app/apps/backend
 RUN npm run build
 
 FROM node:18-slim as runtime
@@ -61,14 +60,14 @@ WORKDIR /app
 COPY apps/backend/package*.json ./
 RUN npm ci --only=production
 
-# Copy built backend
-COPY --from=build /app/dist ./dist
+# Copy built backend from correct path
+COPY --from=build /app/apps/backend/dist ./dist
 
-# Copy built frontend (.next directory)
-COPY --from=build /app/frontend/.next ./frontend/.next
-COPY --from=build /app/frontend/package.json ./frontend/package.json
-COPY --from=build /app/frontend/next.config.ts ./frontend/next.config.ts
-COPY --from=build /app/frontend/public ./frontend/public
+# Copy built frontend (.next directory) - NOT dist!
+COPY --from=build /app/apps/frontend/.next ./frontend/.next
+COPY --from=build /app/apps/frontend/package.json ./frontend/package.json
+COPY --from=build /app/apps/frontend/next.config.ts ./frontend/next.config.ts
+COPY --from=build /app/apps/frontend/public ./frontend/public
 
 # Copy environment file
 COPY --from=build /app/.env ./
