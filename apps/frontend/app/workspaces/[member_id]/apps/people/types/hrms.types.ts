@@ -32,6 +32,7 @@ export interface Attendance {
     clockOut: string | null
     status: AttendanceStatus
     totalHours: number | null
+    remarks?: string
     createdAt: string
     updatedAt: string
 }

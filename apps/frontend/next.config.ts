@@ -1,12 +1,11 @@
-import type { NextConfig } from "next";
 import withPWA from "@ducanh2912/next-pwa";
 import { config } from 'dotenv';
 import { join } from 'path';
 
 config({ path: join(__dirname, '..', '..', '.env') });
 
-const nextConfig: NextConfig = {
-  output: "export",
+const nextConfig = {
+  output: "export" as const,
   distDir: "out",
   trailingSlash: true,
   env: {
@@ -17,7 +16,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
+        protocol: 'https' as const,
         hostname: 'res.cloudinary.com',
         pathname: '/**',
       },
@@ -44,7 +43,7 @@ export default withPWA({
     runtimeCaching: [
       {
         urlPattern: /^https?.*/,
-        handler: 'NetworkFirst',
+        handler: 'NetworkFirst' as const,
         options: {
           cacheName: 'offlineCache',
           expiration: {
@@ -56,7 +55,7 @@ export default withPWA({
       },
       {
         urlPattern: /\/api\/.*/,
-        handler: 'NetworkFirst',
+        handler: 'NetworkFirst' as const,
         options: {
           cacheName: 'api-cache',
           expiration: {
@@ -68,7 +67,7 @@ export default withPWA({
       },
       {
         urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
-        handler: 'CacheFirst',
+        handler: 'CacheFirst' as const,
         options: {
           cacheName: 'images',
           expiration: {
@@ -79,7 +78,7 @@ export default withPWA({
       },
       {
         urlPattern: /\.(?:js|css|woff|woff2|ttf|eot)$/,
-        handler: 'CacheFirst',
+        handler: 'CacheFirst' as const,
         options: {
           cacheName: 'static-resources',
           expiration: {
@@ -90,14 +89,14 @@ export default withPWA({
       },
       {
         urlPattern: /^https:\/\/fonts\.googleapis\.com/,
-        handler: 'StaleWhileRevalidate',
+        handler: 'StaleWhileRevalidate' as const,
         options: {
           cacheName: 'google-fonts-stylesheets',
         },
       },
       {
         urlPattern: /^https:\/\/fonts\.gstatic\.com/,
-        handler: 'CacheFirst',
+        handler: 'CacheFirst' as const,
         options: {
           cacheName: 'google-fonts-webfonts',
           expiration: {

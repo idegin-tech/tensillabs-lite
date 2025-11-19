@@ -63,17 +63,15 @@ export function useApiMutation<TData, TVariables = any>(
 ) {
   const queryClient = useQueryClient()
   
+  const defaultOnError = (error: ApiError) => {
+    if (error.status === 401) {
+      queryClient.clear()
+    }
+  }
+  
   return useMutation<TData, ApiError, TVariables>({
     mutationFn,
-    onSuccess: (data, variables, context) => {
-      options?.onSuccess?.(data, variables, context)
-    },
-    onError: (error, variables, context) => {
-      if (error.status === 401) {
-        queryClient.clear()
-      }
-      options?.onError?.(error, variables, context)
-    },
+    onError: options?.onError || defaultOnError,
     ...options,
   })
 }

@@ -29,6 +29,8 @@ Once the organization’s license has expired the workspace admin is prompted to
 [] Auth context should render the login page if no user is logged in.
 [] Update all routes that use the /workspaces & /workspace/:member_id to only use /apps.
 [] The backend cors allowed origin should come from the parsed APP_KEY.
+[] Delete the create workspace backend endpoint.
+[] Add backend env validation to also check for APP_KEY.
 
 # New route structure
 `/apps/home`: For the organization's intranet.

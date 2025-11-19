@@ -42,8 +42,8 @@ export function useGetListsBySpace(spaceId: string, enabled = true) {
 export function useUpdateList() {
   const { member_id } = useCommon()
 
-  return useApiMutation<UpdateListResponse, { listId: string; data: UpdateListData }>({
-    mutationFn: async ({ listId, data }) => {
+  return useApiMutation<UpdateListResponse, { listId: string; data: UpdateListData }>(
+    async ({ listId, data }) => {
       if (data.tags) {
         const response = await api.put<UpdateListResponse>(
           `/lists/${listId}/tags`,
@@ -67,9 +67,6 @@ export function useUpdateList() {
         }
       )
       return response
-    },
-    invalidateKeys: (variables) => [
-      ['list-details', variables?.listId, member_id]
-    ],
-  })
+    }
+  )
 }
