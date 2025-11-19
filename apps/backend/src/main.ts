@@ -116,7 +116,7 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api-v1');
 
   // Handle all other routes with Next.js
   expressApp.get('*', (req, res) => {
