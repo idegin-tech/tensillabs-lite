@@ -9,8 +9,23 @@ import * as connectPgSimple from 'connect-pg-simple';
 import * as express from 'express';
 import { Pool } from 'pg';
 import { TransformIdInterceptor } from './lib/interceptors/transform-id.interceptor';
+const next = require('next');
+import { parse } from 'url';
+import { join } from 'path';
 
 async function bootstrap() {
+  const dev = process.env.NODE_ENV !== 'production';
+  const nextjsApp = next({ 
+    dev: false, 
+    dir: join(__dirname, '..', 'frontend'),
+    conf: {
+      distDir: '.next'
+    }
+  });
+  const handle = nextjsApp.getRequestHandler();
+
+  await nextjsApp.prepare();
+
   const app = await NestFactory.create(AppModule, {
     logger:
       process.env.NODE_ENV === 'production'
@@ -102,6 +117,12 @@ async function bootstrap() {
   );
 
   app.setGlobalPrefix('api/v1');
+
+  // Handle all other routes with Next.js
+  expressApp.get('*', (req, res) => {
+    const parsedUrl = parse(req.url, true);
+    return handle(req, res, parsedUrl);
+  });
 
   app.enableShutdownHooks();
 

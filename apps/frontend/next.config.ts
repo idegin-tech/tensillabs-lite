@@ -5,9 +5,6 @@ import { join } from 'path';
 config({ path: join(__dirname, '..', '..', '.env') });
 
 const nextConfig = {
-  output: "export" as const,
-  distDir: "out",
-  trailingSlash: true,
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
