@@ -1,5 +1,5 @@
 # MAJOR CACHE BUSTER - FORCE FRESH BUILD FOR .NEXT FIX - v2.0.0
-FROM node:18-alpine as build
+FROM node:20-alpine as build
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY apps/frontend/package*.json ./apps/frontend/
 COPY packages/*/package*.json ./packages/*/
 
 # Install all dependencies using npm workspaces
-RUN npm ci
+RUN npm install
 
 # Copy all source files
 COPY .env* ./
@@ -22,7 +22,7 @@ COPY packages/ ./packages/
 # Build using Turbo (builds both frontend and backend)
 RUN npm run build
 
-FROM node:18-slim as runtime
+FROM node:20-slim as runtime
 
 RUN apt-get update && apt-get install -y \
     wget \
@@ -48,7 +48,7 @@ WORKDIR /app
 # Copy backend package.json and install production dependencies
 COPY apps/backend/package*.json ./apps/backend/
 COPY package*.json ./
-RUN npm ci --only=production --workspace=apps/backend
+RUN npm install --only=production --workspace=apps/backend
 
 # Copy built backend from correct path
 COPY --from=build /app/apps/backend/dist ./apps/backend/dist
