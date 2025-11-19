@@ -38,4 +38,4 @@ export DATABASE_PASSWORD=tensillabs_password
 
 echo "Starting the application..."
 # Start the app
-node dist/main
+node apps/backend/dist/main

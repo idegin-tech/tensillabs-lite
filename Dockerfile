@@ -3,34 +3,23 @@ FROM node:18-alpine as build
 
 WORKDIR /app
 
-# Install dependencies first for better caching
-COPY package*.json ./
+# Copy root package.json and turbo.json first for better caching
+COPY package*.json turbo.json ./
+
+# Copy all package.json files for workspace dependencies
 COPY apps/backend/package*.json ./apps/backend/
 COPY apps/frontend/package*.json ./apps/frontend/
+COPY packages/*/package*.json ./packages/*/
 
-# Install backend dependencies
-WORKDIR /app/apps/backend
-RUN npm ci --only=production && npm install --save-dev typescript @nestjs/cli
-
-# Install frontend dependencies  
-WORKDIR /app/apps/frontend
+# Install all dependencies using npm workspaces
 RUN npm ci
 
-# Return to root
-WORKDIR /app
-
-# Copy environment and source files
+# Copy all source files
 COPY .env* ./
-COPY apps/backend/tsconfig*.json apps/backend/nest-cli.json ./apps/backend/
-COPY apps/backend/src/ ./apps/backend/src/
-COPY apps/frontend/ ./apps/frontend/
+COPY apps/ ./apps/
+COPY packages/ ./packages/
 
-# Build frontend (creates .next directory)
-WORKDIR /app/apps/frontend
-RUN npm run build
-
-# Build backend
-WORKDIR /app/apps/backend
+# Build using Turbo (builds both frontend and backend)
 RUN npm run build
 
 FROM node:18-slim as runtime
@@ -57,17 +46,18 @@ RUN echo "postgres ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 WORKDIR /app
 
 # Copy backend package.json and install production dependencies
-COPY apps/backend/package*.json ./
-RUN npm ci --only=production
+COPY apps/backend/package*.json ./apps/backend/
+COPY package*.json ./
+RUN npm ci --only=production --workspace=apps/backend
 
 # Copy built backend from correct path
-COPY --from=build /app/apps/backend/dist ./dist
+COPY --from=build /app/apps/backend/dist ./apps/backend/dist
 
 # Copy built frontend (.next directory) - NOT dist!
-COPY --from=build /app/apps/frontend/.next ./frontend/.next
-COPY --from=build /app/apps/frontend/package.json ./frontend/package.json
-COPY --from=build /app/apps/frontend/next.config.ts ./frontend/next.config.ts
-COPY --from=build /app/apps/frontend/public ./frontend/public
+COPY --from=build /app/apps/frontend/.next ./apps/frontend/.next
+COPY --from=build /app/apps/frontend/package.json ./apps/frontend/package.json
+COPY --from=build /app/apps/frontend/next.config.ts ./apps/frontend/next.config.ts
+COPY --from=build /app/apps/frontend/public ./apps/frontend/public
 
 # Copy environment file
 COPY --from=build /app/.env ./
