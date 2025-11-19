@@ -6,24 +6,34 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 import {
   WorkspaceMember,
   MemberStatus,
 } from '../schemas/workspace-member.schema';
+import { WorkspaceMemberSecrets } from '../schemas/workspace-member-secrets.schema';
 import { InviteMemberDto } from '../dto/workspace-member.dto';
 import { PaginationDto, extractPaginationOptions } from '../dto/pagination.dto';
 import { workspaceInvitationEmail } from '../workspace-member.email';
 import { useCTAMail } from '../../../lib/emil.lib';
 import { APP_CONFIG } from '../../../config/app.config';
 import { Workspace } from '../../workspaces/schemas/workspace.schema';
+import { User } from '../../users/schemas/user.schema';
+import { UserSecrets } from '../../users/schemas/user-secrets.schema';
 
 @Injectable()
 export class WorkspaceMemberService {
   constructor(
     @InjectRepository(WorkspaceMember)
     private workspaceMemberRepository: Repository<WorkspaceMember>,
+    @InjectRepository(WorkspaceMemberSecrets)
+    private workspaceMemberSecretsRepository: Repository<WorkspaceMemberSecrets>,
     @InjectRepository(Workspace)
     private workspaceRepository: Repository<Workspace>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(UserSecrets)
+    private userSecretsRepository: Repository<UserSecrets>,
   ) {}
 
   async initializeWorkspaceOwner(
@@ -369,6 +379,16 @@ export class WorkspaceMemberService {
     };
   }
 
+  private generateTemporaryPassword(): string {
+    // Generate a random 8-character password with uppercase, lowercase, and numbers
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
+
   async inviteMember(
     inviteMemberDto: InviteMemberDto,
     workspaceId: string,
@@ -387,45 +407,97 @@ export class WorkspaceMemberService {
       );
     }
 
+    // Generate temporary password
+    const tempPassword = this.generateTemporaryPassword();
+
+    // Check if user already exists, if not create one
+    let user = await this.userRepository.findOne({
+      where: { email: inviteMemberDto.primaryEmail },
+    });
+
+    if (!user) {
+      // Create new user
+      user = this.userRepository.create({
+        email: inviteMemberDto.primaryEmail,
+        timezone: 'UTC',
+        isEmailVerified: false,
+      });
+      user = await this.userRepository.save(user);
+
+      // Create user secrets with temporary password
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(tempPassword, salt);
+
+      const userSecrets = this.userSecretsRepository.create({
+        userId: user.id,
+        passwordHash,
+        passwordSalt: salt,
+      });
+      await this.userSecretsRepository.save(userSecrets);
+    } else {
+      // Update existing user's password with temporary password
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(tempPassword, salt);
+
+      await this.userSecretsRepository.update(
+        { userId: user.id },
+        { passwordHash, passwordSalt: salt }
+      );
+    }
+
+    // Create workspace member
     const workspaceMember = this.workspaceMemberRepository.create({
+      userId: user.id,
       workspaceId,
       firstName: inviteMemberDto.firstName,
       lastName: inviteMemberDto.lastName,
       middleName: inviteMemberDto.middleName || null,
       primaryEmail: inviteMemberDto.primaryEmail,
-      status: MemberStatus.PENDING,
+      status: MemberStatus.ACTIVE, // Set to active since we're providing login details
       workPhone: inviteMemberDto.workPhone || null,
       primaryRoleId: inviteMemberDto.primaryRole || null,
       primaryTeamId: inviteMemberDto.primaryTeam || null,
       invitedById: invitingMember.userId,
+      avatarURL: { sm: '', original: '' },
     });
 
-    await this.workspaceMemberRepository.save(workspaceMember);
+    const savedWorkspaceMember = await this.workspaceMemberRepository.save(workspaceMember);
 
+    // Create workspace member secrets with the same password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(tempPassword, salt);
+
+    const memberSecrets = this.workspaceMemberSecretsRepository.create({
+      workspaceMemberId: savedWorkspaceMember.id,
+      passwordHash,
+      passwordSalt: salt,
+      passwordChangedAt: new Date(),
+    });
+    await this.workspaceMemberSecretsRepository.save(memberSecrets);
+
+    // Get workspace info for email
     const workspace = await this.workspaceRepository.findOne({
       where: { id: workspaceId },
     });
 
     try {
-      const { heading, body, ctaText, ctaUrl } = workspaceInvitationEmail({
-        firstName: inviteMemberDto.firstName,
-        workspaceName: workspace?.name || 'Workspace',
-      });
-
+      // Send login details email instead of invitation
+      const loginUrl = `${APP_CONFIG.app_url}/login`;
+      
       await useCTAMail({
         to: inviteMemberDto.primaryEmail,
-        heading,
-        body,
-        ctaText,
-        ctaUrl,
+        heading: `Welcome to ${workspace?.name || 'TensilLabs'}!`,
+        body: `Hi ${inviteMemberDto.firstName},\n\nYou have been added to ${workspace?.name || 'the workspace'}. Here are your login details:\n\nEmail: ${inviteMemberDto.primaryEmail}\nTemporary Password: ${tempPassword}\n\nPlease log in and change your password as soon as possible.`,
+        ctaText: 'Login to Workspace',
+        ctaUrl: loginUrl,
         firstName: inviteMemberDto.firstName,
         lastName: inviteMemberDto.lastName,
       });
     } catch (error) {
-      console.error('Failed to send invitation email:', error);
+      console.error('Failed to send login details email:', error);
     }
 
-    return workspaceMember;
+    return savedWorkspaceMember;
   }
 
   async acceptInvitation(

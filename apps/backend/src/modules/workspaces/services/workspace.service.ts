@@ -2,51 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workspace } from '../schemas/workspace.schema';
-import { CreateWorkspaceDto } from '../dto/workspace.dto';
-import { WorkspaceMemberService } from 'src/modules/workspace-members/services/workspace-member.service';
-import { WorkspaceMember } from 'src/modules/workspace-members/schemas/workspace-member.schema';
-import { WalletService } from 'src/modules/billing/wallets/services/wallet.service';
-import { User } from 'src/modules/users/schemas/user.schema';
 
 @Injectable()
 export class WorkspaceService {
   constructor(
     @InjectRepository(Workspace)
     private workspaceRepository: Repository<Workspace>,
-    private workspaceMemberService: WorkspaceMemberService,
-    private walletService: WalletService,
   ) {}
 
-  async createWorkspace(
-    createWorkspaceDto: CreateWorkspaceDto,
-    user: User,
-  ): Promise<{
-    workspace: Workspace;
-    member: WorkspaceMember;
-  }> {
-    const workspace = this.workspaceRepository.create({
-      ...createWorkspaceDto,
-      createdById: user.id,
-    });
-
-    const savedWorkspace = await this.workspaceRepository.save(workspace);
-
-    const workspaceMember =
-      await this.workspaceMemberService.initializeWorkspaceOwner(
-        user.id,
-        savedWorkspace.id,
-        user.email,
-        'Admin',
-        savedWorkspace.name,
-      );
-
-    await this.walletService.initializeWallet(savedWorkspace.id);
-
-    return {
-      workspace: savedWorkspace,
-      member: workspaceMember,
-    };
-  }
+  // Workspace creation removed - workspaces are now created only via APP_KEY seeding
 
   async findWorkspaceById(workspaceId: string): Promise<Workspace | null> {
     try {

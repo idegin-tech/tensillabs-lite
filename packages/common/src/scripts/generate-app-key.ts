@@ -5,10 +5,10 @@ import { AppKeyData } from '../types/app-key';
 
 const SECRET_KEY = process.env.APP_KEY_SECRET || 'your-secret-key-change-in-production';
 
-function generateMockAppKey(): AppKeyData {
+function generateMockAppKey(): AppKeyData  {
     const now = new Date().toISOString();
     const expiryDate = new Date();
-    expiryDate.setFullYear(expiryDate.getFullYear() + 1); // 1 year from now
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
     return {
         organization: {
@@ -22,14 +22,22 @@ function generateMockAppKey(): AppKeyData {
         workspace: {
             id: 'ws_' + Math.random().toString(36).substr(2, 9),
             name: 'Main Workspace',
-            slug: 'main-workspace'
+            slug: 'main-workspace',
+            defaultMember: {
+                firstName: 'Admin',
+                lastName: 'User',
+                email: 'admin@tensillabs.com',
+                password: 'admin123',
+                phone: '+1234567890',
+                bio: 'Default workspace administrator'
+            }
         },
         license: {
-            expiresAt: expiryDate.toISOString(),
-            numberOfSeats: 100
+            expiresAt: expiryDate,
+            numberOfSeats: 2
         },
         billing: {
-            amount: 9999,
+            amount: 500,
             paymentFrequency: 'monthly',
             gateway: 'paystack'
         },
@@ -48,7 +56,7 @@ function generateAppKeyJWT(data: AppKeyData): string {
         { data },
         SECRET_KEY,
         {
-            expiresIn: '1y',
+            expiresIn: '10y',
             issuer: 'tensillabs',
             audience: 'tensillabs-app'
         }
@@ -56,6 +64,7 @@ function generateAppKeyJWT(data: AppKeyData): string {
 }
 
 function main() {
+    if(process.env.NODE_ENV !== 'development') return;
     console.log('🔑 Generating APP_KEY...');
     console.log('');
 

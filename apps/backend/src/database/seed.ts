@@ -7,21 +7,10 @@ async function bootstrap() {
 
     const seederService = app.get(SeederService);
 
-    const environment = (process.argv[2] || 'development') as
-        | 'development'
-        | 'production';
-
-    if (!['development', 'production'].includes(environment)) {
-        console.error(
-            'Invalid environment. Use "development" or "production" (default: development)',
-        );
-        process.exit(1);
-    }
-
-    console.log(`\n🌱 Running ${environment} seeds...\n`);
+    console.log('\n🌱 Running APP_KEY-based seeds...\n');
 
     try {
-        await seederService.seed(environment);
+        await seederService.seedFromAppKey();
         console.log('\n✅ Seeding completed successfully!\n');
         process.exit(0);
     } catch (error) {

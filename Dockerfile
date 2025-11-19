@@ -18,7 +18,6 @@ COPY packages/common/package*.json ./packages/common/
 RUN npm install
 
 # Copy all source files
-COPY .env* ./
 COPY apps/ ./apps/
 COPY packages/eslint-config/ ./packages/eslint-config/
 COPY packages/typescript-config/ ./packages/typescript-config/
@@ -65,8 +64,8 @@ COPY --from=build /app/apps/frontend/package.json ./apps/frontend/package.json
 COPY --from=build /app/apps/frontend/next.config.ts ./apps/frontend/next.config.ts
 COPY --from=build /app/apps/frontend/public ./apps/frontend/public
 
-# Copy environment file
-COPY --from=build /app/.env ./
+# Copy environment file if it exists (optional for local development)
+# In production, environment variables come from Fly.io secrets
 
 EXPOSE 8080
 

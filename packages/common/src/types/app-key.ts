@@ -1,36 +1,34 @@
+export interface DefaultWorkspaceMember {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone?: string;
+  bio?: string;
+}
+
 export interface WorkspaceInfo {
   id: string;
   name: string;
   slug: string;
-  ownerId: string;
-  createdAt: string;
-  updatedAt: string;
+  defaultMember: DefaultWorkspaceMember;
 }
 
 export interface LicenseInfo {
-  type: 'trial' | 'basic' | 'pro' | 'enterprise';
-  expiresAt: string;
-  features: string[];
-  maxUsers?: number;
-  maxWorkspaces?: number;
+  expiresAt: Date;
+  numberOfSeats: number;
 }
 
 export interface BillingInfo {
-  customerId?: string;
-  subscriptionId?: string;
-  planId?: string;
-  status: 'active' | 'inactive' | 'past_due' | 'canceled' | 'trialing';
-  currentPeriodStart?: string;
-  currentPeriodEnd?: string;
-  cancelAtPeriodEnd?: boolean;
+  amount: number;
+  paymentFrequency: 'monthly' | 'yearly';
+  gateway: 'paystack' | 'stripe';
 }
 
 export interface DeploymentInfo {
-  flyApiKey?: string;
-  appName?: string;
-  region?: string;
-  domains: string[];
-  corsOrigins: string[];
+  flyApiKey: string;
+  appName: string;
+  domain: string;
 }
 
 export interface OrganizationInfo {

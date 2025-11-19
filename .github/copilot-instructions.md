@@ -10,6 +10,12 @@ Don't add code comments.
 - Don't create any .md files unless I asked you to.
 - For new components, make sure they depend on props a lot.
 
+
+# About TensilLabs
+TensilLabs is an all-in-one intranet platform designed to streamline organizational operations by integrating various applications such as HRMS, project management, communication tools, and administrative controls into a single, cohesive system. It aims to enhance productivity, improve communication, and simplify management tasks within organizations of all sizes.
+We set it up for organizations on their own domains using fly.io for deployment.
+
+
 # Restructure plan
 This is a turbo repo where the app are frontend, backend and control panel (TensilLabs Admin).
 The frontend & backend will share the same fly deployment and root .env file.

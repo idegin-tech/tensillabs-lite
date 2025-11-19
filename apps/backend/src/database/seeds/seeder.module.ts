@@ -4,15 +4,11 @@ import { User } from '../../modules/users/schemas/user.schema';
 import { UserSecrets } from '../../modules/users/schemas/user-secrets.schema';
 import { Workspace } from '../../modules/workspaces/schemas/workspace.schema';
 import { WorkspaceMember } from '../../modules/workspace-members/schemas/workspace-member.schema';
+import { WorkspaceMemberSecrets } from '../../modules/workspace-members/schemas/workspace-member-secrets.schema';
 import { Role } from '../../modules/options/roles/schemas/role.schema';
 import { Team } from '../../modules/options/teams/schemas/team.schema';
 import { Office } from '../../modules/options/offices/schemas/office.schema';
 import { Client } from '../../modules/options/clients/schemas/client.schema';
-import { Space } from '../../modules/apps/spaces/schemas/space.schema';
-import { List } from '../../modules/apps/spaces/lists/schemas/list.schema';
-import { SpaceParticipant } from '../../modules/apps/spaces/space-participants/schemas/space-participant.schema';
-import { Task } from '../../modules/apps/spaces/tasks/schemas/task.schema';
-import { Checklist } from '../../modules/checklists/schemas/checklist.schema';
 import { SeederService } from './seeder.service';
 
 @Module({
@@ -22,15 +18,11 @@ import { SeederService } from './seeder.service';
             UserSecrets,
             Workspace,
             WorkspaceMember,
+            WorkspaceMemberSecrets,
             Role,
             Team,
             Office,
             Client,
-            Space,
-            List,
-            SpaceParticipant,
-            Task,
-            Checklist,
         ]),
     ],
     providers: [SeederService],

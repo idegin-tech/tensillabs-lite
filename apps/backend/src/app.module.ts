@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { validateEnvironment } from './config/environment.validation';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
@@ -20,6 +21,7 @@ import { SeederModule } from './database/seeds/seeder.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '../../.env',
+      validate: validateEnvironment,
     }),
     DatabaseModule,
     SeederModule,
