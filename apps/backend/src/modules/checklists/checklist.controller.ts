@@ -1,0 +1,106 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import { Request } from 'express';
+import { ChecklistService } from './services/checklist.service';
+import {
+  createChecklistSchema,
+  CreateChecklistDto,
+  updateChecklistSchema,
+  UpdateChecklistDto,
+  getChecklistsQuerySchema,
+  GetChecklistsQueryDto,
+} from './dto/checklist.dto';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { WorkspaceMemberGuard } from '../workspace-members/guards/workspace-member.guard';
+import { ZodValidationPipe } from 'src/lib/validation.pipe';
+import { createSuccessResponse } from 'src/lib/response.interface';
+
+@Controller('checklists')
+@UseGuards(AuthGuard, WorkspaceMemberGuard)
+export class ChecklistController {
+  constructor(private readonly checklistService: ChecklistService) {}
+
+  @Post()
+  async createChecklist(
+    @Body(new ZodValidationPipe(createChecklistSchema))
+    createChecklistDto: CreateChecklistDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const result = await this.checklistService.createChecklist(
+      createChecklistDto,
+      req.workspace.id,
+      req.workspaceMember.id,
+    );
+
+    return createSuccessResponse('Checklist created successfully', result);
+  }
+
+  @Get()
+  async getAllChecklists(
+    @Query(new ZodValidationPipe(getChecklistsQuerySchema))
+    queryParams: GetChecklistsQueryDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const result = await this.checklistService.getAllChecklists(
+      queryParams,
+      req.workspace.id,
+    );
+
+    return createSuccessResponse('Checklists retrieved successfully', result);
+  }
+
+  @Put(':checklistId')
+  async updateChecklist(
+    @Param('checklistId') checklistId: string,
+    @Body(new ZodValidationPipe(updateChecklistSchema))
+    updateChecklistDto: UpdateChecklistDto,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const result = await this.checklistService.updateChecklist(
+      checklistId,
+      updateChecklistDto,
+      req.workspace.id,
+    );
+
+    return createSuccessResponse('Checklist updated successfully', result);
+  }
+
+  @Delete(':checklistId')
+  async deleteChecklist(
+    @Param('checklistId') checklistId: string,
+    @Req()
+    req: Request & {
+      workspaceMember: any;
+      workspace: any;
+    },
+  ) {
+    const result = await this.checklistService.deleteChecklist(
+      checklistId,
+      req.workspace.id,
+    );
+
+    return createSuccessResponse('Checklist deleted successfully', result);
+  }
+}

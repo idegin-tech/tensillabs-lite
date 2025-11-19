@@ -1,0 +1,762 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In, MoreThanOrEqual } from 'typeorm';
+import { Task, TaskPriority, TaskStatus } from '../schemas/task.schema';
+import { Comment } from '../../../../comments/schemas/comment.schema';
+import { WorkspaceMember } from '../../../../workspace-members/schemas/workspace-member.schema';
+import {
+  UpdateTaskDto,
+  CreateTasksDto,
+  GetTasksByGroupQueryDto,
+  GetTasksByListQueryDto,
+  GetTaskReportsQueryDto,
+} from '../dto/task.dto';
+import { ChecklistService } from 'src/modules/checklists/services/checklist.service';
+import { FileService } from 'src/modules/files/services/file.service';
+
+export interface GroupedTasks {
+  [key: string]: {
+    count: number;
+    tasks: Task[];
+  };
+}
+
+export interface TaskDetailsResponse {
+  task: Task;
+  checklist: any[];
+  files: any[];
+}
+
+@Injectable()
+export class TaskService {
+  constructor(
+    @InjectRepository(Task)
+    private taskRepository: Repository<Task>,
+    @InjectRepository(Comment)
+    private commentRepository: Repository<Comment>,
+    @InjectRepository(WorkspaceMember)
+    private workspaceMemberRepository: Repository<WorkspaceMember>,
+    private checklistService: ChecklistService,
+    private fileService: FileService,
+  ) {}
+
+  private async populateTaskAssignees(task: Task): Promise<any> {
+    const result: any = { ...task };
+
+    if (task.assigneeIds && task.assigneeIds.length > 0) {
+      const assignees = await this.workspaceMemberRepository.find({
+        where: {
+          id: In(task.assigneeIds),
+        },
+      });
+      result.assignee = assignees;
+    } else {
+      result.assignee = [];
+    }
+
+    if (task.blockedReason?.blockedBy) {
+      const blockedByMember = await this.workspaceMemberRepository.findOne({
+        where: {
+          id: task.blockedReason.blockedBy,
+        },
+      });
+      if (blockedByMember) {
+        result.blockedReason = {
+          ...task.blockedReason,
+          blockedByMember,
+        };
+      }
+    }
+
+    return result;
+  }
+
+  private async populateTasksAssignees(tasks: Task[]): Promise<any[]> {
+    if (tasks.length === 0) return [];
+
+    const allAssigneeIds = tasks
+      .flatMap(task => task.assigneeIds || [])
+      .filter((id, index, self) => id && self.indexOf(id) === index);
+
+    const blockedByIds = tasks
+      .map(task => task.blockedReason?.blockedBy)
+      .filter((id, index, self) => id && self.indexOf(id) === index) as string[];
+
+    const allMemberIds = [...new Set([...allAssigneeIds, ...blockedByIds])];
+
+    let memberMap = new Map();
+    if (allMemberIds.length > 0) {
+      const members = await this.workspaceMemberRepository.find({
+        where: {
+          id: In(allMemberIds),
+        },
+      });
+      memberMap = new Map(members.map(m => [m.id, m]));
+    }
+
+    return tasks.map(task => {
+      const result: any = {
+        ...task,
+        assignee: (task.assigneeIds || [])
+          .map(id => memberMap.get(id))
+          .filter(Boolean),
+      };
+
+      if (task.blockedReason?.blockedBy) {
+        const blockedByMember = memberMap.get(task.blockedReason.blockedBy);
+        if (blockedByMember) {
+          result.blockedReason = {
+            ...task.blockedReason,
+            blockedByMember,
+          };
+        }
+      }
+
+      return result;
+    });
+  }
+
+  async createTasks(
+    listId: string,
+    createTasksDto: CreateTasksDto,
+    workspaceId: string,
+    currentMemberId: string,
+    space: string,
+  ): Promise<Task[]> {
+    const createdTasks: Task[] = [];
+
+    for (const taskData of createTasksDto.tasks) {
+      const dueDate = taskData.timeframe?.end ? new Date(taskData.timeframe.end) : null;
+      
+      const newTask = this.taskRepository.create({
+        task_id: `TASK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: taskData.name,
+        description: taskData.description,
+        priority: taskData.priority,
+        status: taskData.status,
+        timeframe: taskData.timeframe,
+        assigneeIds: [],
+        listId,
+        spaceId: space,
+        workspaceId,
+        createdById: currentMemberId,
+        dueDate,
+        estimatedHours: taskData.estimatedHours || null,
+        actualHours: null,
+        startedAt: taskData.status === TaskStatus.IN_PROGRESS ? new Date() : null,
+        statusChangedAt: new Date(),
+        tags: taskData.tags || [],
+        blockedByTaskIds: taskData.blockedByTaskIds || [],
+        blockedReason: null,
+        progress: 0,
+      });
+
+      const savedTask = await this.taskRepository.save(newTask);
+      createdTasks.push(savedTask);
+    }
+
+    return await this.populateTasksAssignees(createdTasks);
+  }
+
+  async updateTask(
+    listId: string,
+    taskId: string,
+    updateTaskDto: UpdateTaskDto,
+    workspaceId: string,
+    currentMemberId?: string,
+  ): Promise<Task> {
+    const task = await this.taskRepository.findOne({
+      where: {
+        id: taskId,
+        listId,
+        workspaceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const oldStatus = task.status;
+
+    if (updateTaskDto.name !== undefined) {
+      task.name = updateTaskDto.name;
+    }
+
+    if (updateTaskDto.description !== undefined) {
+      task.description = updateTaskDto.description;
+    }
+
+    if (updateTaskDto.status !== undefined) {
+      task.status = updateTaskDto.status;
+      task.statusChangedAt = new Date();
+      
+      if (updateTaskDto.status === TaskStatus.IN_PROGRESS && oldStatus !== TaskStatus.IN_PROGRESS) {
+        task.startedAt = new Date();
+      }
+      
+      if (updateTaskDto.status === TaskStatus.COMPLETED) {
+        task.completedAt = new Date();
+        
+        const checklists = await this.checklistService.getChecklistsByTask(
+          taskId,
+          workspaceId,
+        );
+        
+        if (checklists.length === 0) {
+          task.progress = 100;
+        }
+      } else {
+        task.completedAt = null;
+      }
+    }
+
+    if (updateTaskDto.priority !== undefined) {
+      task.priority = updateTaskDto.priority;
+    }
+
+    if (updateTaskDto.timeframe !== undefined) {
+      task.timeframe = updateTaskDto.timeframe;
+      task.dueDate = updateTaskDto.timeframe?.end || null;
+    }
+
+    if (updateTaskDto.assignee !== undefined) {
+      task.assigneeIds = updateTaskDto.assignee;
+    }
+
+    if (updateTaskDto.estimatedHours !== undefined) {
+      task.estimatedHours = updateTaskDto.estimatedHours;
+    }
+
+    if (updateTaskDto.actualHours !== undefined) {
+      task.actualHours = updateTaskDto.actualHours;
+    }
+
+    if (updateTaskDto.blockedReason !== undefined) {
+      if (updateTaskDto.blockedReason === null) {
+        task.blockedReason = null;
+      } else {
+        task.blockedReason = {
+          ...updateTaskDto.blockedReason,
+          blockedAt: new Date(),
+          blockedBy: currentMemberId,
+        };
+      }
+    }
+
+    if (updateTaskDto.blockedByTaskIds !== undefined) {
+      task.blockedByTaskIds = updateTaskDto.blockedByTaskIds;
+    }
+
+    if (updateTaskDto.tags !== undefined) {
+      task.tags = updateTaskDto.tags;
+    }
+
+    const savedTask = await this.taskRepository.save(task);
+    return await this.populateTaskAssignees(savedTask);
+  }
+
+  async getAllTasksByGroup(
+    listId: string,
+    workspaceId: string,
+    queryParams: GetTasksByGroupQueryDto,
+    currentMemberId?: string,
+  ): Promise<{ tasks: Task[]; totalCount: number; hasMore: boolean }> {
+    const queryBuilder = this.taskRepository
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.createdBy', 'createdBy')
+      .where('task.listId = :listId', { listId })
+      .andWhere('task.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('task.isDeleted = :isDeleted', { isDeleted: false });
+
+    if (queryParams.meMode && currentMemberId) {
+      queryBuilder.andWhere(':memberId = ANY(task.assigneeIds)', { memberId: currentMemberId });
+    }
+
+    if (queryParams.assignee_id) {
+      if (queryParams.assignee_id === 'unassigned') {
+        queryBuilder.andWhere('(task.assigneeIds IS NULL OR task.assigneeIds = ARRAY[]::text[] OR cardinality(task.assigneeIds) = 0)');
+      } else {
+        queryBuilder.andWhere(':assigneeId = ANY(task.assigneeIds)', { assigneeId: queryParams.assignee_id });
+      }
+    }
+
+    if (queryParams.status) {
+      queryBuilder.andWhere('task.status = :status', { status: queryParams.status });
+    }
+
+    if (queryParams.priority) {
+      if (queryParams.priority === 'none') {
+        queryBuilder.andWhere('task.priority IS NULL');
+      } else {
+        queryBuilder.andWhere('task.priority = :priority', { priority: queryParams.priority });
+      }
+    }
+
+    if (queryParams.due_status) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const endOfWeek = new Date(today);
+      endOfWeek.setDate(today.getDate() + (6 - today.getDay()));
+
+      switch (queryParams.due_status) {
+        case 'overdue':
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp < :today", { today });
+          break;
+        case 'today':
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp >= :today AND (task.timeframe->>'end')::timestamp < :tomorrow", { today, tomorrow });
+          break;
+        case 'tomorrow':
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp >= :tomorrow AND (task.timeframe->>'end')::timestamp < :dayAfterTomorrow", { 
+            tomorrow, 
+            dayAfterTomorrow: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000) 
+          });
+          break;
+        case 'this_week':
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp >= :dayAfterTomorrow AND (task.timeframe->>'end')::timestamp <= :endOfWeek", { 
+            dayAfterTomorrow: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000),
+            endOfWeek 
+          });
+          break;
+        case 'later':
+          queryBuilder.andWhere("(task.timeframe->>'end')::timestamp > :endOfWeek", { endOfWeek });
+          break;
+        case 'none':
+          queryBuilder.andWhere("(task.timeframe->>'end' IS NULL OR task.timeframe IS NULL)");
+          break;
+      }
+    }
+
+    const skip = (queryParams.page - 1) * queryParams.limit;
+    const totalCount = await queryBuilder.getCount();
+
+    const tasks = await queryBuilder
+      .orderBy('task.createdAt', 'DESC')
+      .skip(skip)
+      .take(queryParams.limit)
+      .getMany();
+
+    const hasMore = skip + tasks.length < totalCount;
+
+    const populatedTasks = await this.populateTasksAssignees(tasks);
+
+    return {
+      tasks: populatedTasks,
+      totalCount,
+      hasMore,
+    };
+  }
+
+  async getTasksGroupedByPriority(
+    listId: string,
+    workspaceId: string,
+    queryParams: GetTasksByListQueryDto,
+    currentMemberId?: string,
+  ): Promise<GroupedTasks> {
+    const grouped: GroupedTasks = {};
+    const priorities = [...Object.values(TaskPriority), 'unassigned'];
+
+    for (const priority of priorities) {
+      const queryBuilder = this.taskRepository
+        .createQueryBuilder('task')
+        .leftJoinAndSelect('task.createdBy', 'createdBy')
+        .where('task.listId = :listId', { listId })
+        .andWhere('task.workspaceId = :workspaceId', { workspaceId })
+        .andWhere('task.isDeleted = :isDeleted', { isDeleted: false });
+
+      if (queryParams.meMode && currentMemberId) {
+        queryBuilder.andWhere(':memberId = ANY(task.assigneeIds)', { memberId: currentMemberId });
+      }
+
+      if (queryParams.dueDate) {
+        const startOfDay = new Date(queryParams.dueDate.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(queryParams.dueDate.setHours(23, 59, 59, 999));
+        queryBuilder.andWhere("(task.timeframe->>'end')::timestamp >= :startOfDay AND (task.timeframe->>'end')::timestamp < :endOfDay", { 
+          startOfDay, 
+          endOfDay 
+        });
+      }
+
+      if (priority === 'unassigned') {
+        queryBuilder.andWhere('task.priority IS NULL');
+      } else {
+        queryBuilder.andWhere('task.priority = :priority', { priority });
+      }
+
+      const tasks = await queryBuilder
+        .orderBy('task.createdAt', 'DESC')
+        .limit(50)
+        .getMany();
+
+      const populatedTasks = await this.populateTasksAssignees(tasks);
+
+      grouped[priority] = {
+        count: populatedTasks.length,
+        tasks: populatedTasks,
+      };
+    }
+
+    return grouped;
+  }
+
+  async searchTasks(
+    workspaceId: string,
+    queryParams: {
+      search?: string;
+      listId?: string;
+      spaceId?: string;
+      limit: number;
+    },
+  ): Promise<Task[]> {
+    const queryBuilder = this.taskRepository
+      .createQueryBuilder('task')
+      .where('task.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('task.isDeleted = :isDeleted', { isDeleted: false });
+
+    if (queryParams.search) {
+      queryBuilder.andWhere(
+        '(LOWER(task.name) LIKE LOWER(:search) OR LOWER(task.description) LIKE LOWER(:search))',
+        { search: `%${queryParams.search}%` },
+      );
+    }
+
+    if (queryParams.listId) {
+      queryBuilder.andWhere('task.listId = :listId', {
+        listId: queryParams.listId,
+      });
+    }
+
+    if (queryParams.spaceId) {
+      queryBuilder.andWhere('task.spaceId = :spaceId', {
+        spaceId: queryParams.spaceId,
+      });
+    }
+
+    const tasks = await queryBuilder
+      .orderBy('task.createdAt', 'DESC')
+      .limit(queryParams.limit)
+      .getMany();
+
+    return this.populateTasksAssignees(tasks);
+  }
+
+  async getTasksGroupedByDueDate(
+    listId: string,
+    workspaceId: string,
+    queryParams: GetTasksByListQueryDto,
+    currentMemberId?: string,
+  ): Promise<GroupedTasks> {
+    const grouped: GroupedTasks = {};
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() + (6 - today.getDay()));
+
+    const dueStatusConfigs = [
+      { status: 'overdue', where: "(task.timeframe->>'end')::timestamp < :today", params: { today } },
+      { status: 'today', where: "(task.timeframe->>'end')::timestamp >= :today AND (task.timeframe->>'end')::timestamp < :tomorrow", params: { today, tomorrow } },
+      { status: 'tomorrow', where: "(task.timeframe->>'end')::timestamp >= :tomorrow AND (task.timeframe->>'end')::timestamp < :dayAfterTomorrow", params: { tomorrow, dayAfterTomorrow: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000) } },
+      { status: 'this_week', where: "(task.timeframe->>'end')::timestamp >= :dayAfterTomorrow AND (task.timeframe->>'end')::timestamp <= :endOfWeek", params: { dayAfterTomorrow: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000), endOfWeek } },
+      { status: 'later', where: "(task.timeframe->>'end')::timestamp > :endOfWeek", params: { endOfWeek } },
+      { status: 'none', where: "(task.timeframe->>'end' IS NULL OR task.timeframe IS NULL)", params: {} },
+    ];
+
+    for (const config of dueStatusConfigs) {
+      const queryBuilder = this.taskRepository
+        .createQueryBuilder('task')
+        .leftJoinAndSelect('task.createdBy', 'createdBy')
+        .where('task.listId = :listId', { listId })
+        .andWhere('task.workspaceId = :workspaceId', { workspaceId })
+        .andWhere('task.isDeleted = :isDeleted', { isDeleted: false })
+        .andWhere(config.where, config.params);
+
+      if (queryParams.meMode && currentMemberId) {
+        queryBuilder.andWhere(':memberId = ANY(task.assigneeIds)', { memberId: currentMemberId });
+      }
+
+      const tasks = await queryBuilder
+        .orderBy("(task.timeframe->>'end')::timestamp", 'ASC')
+        .addOrderBy('task.createdAt', 'DESC')
+        .limit(50)
+        .getMany();
+
+      const populatedTasks = await this.populateTasksAssignees(tasks);
+
+      grouped[config.status] = {
+        count: populatedTasks.length,
+        tasks: populatedTasks,
+      };
+    }
+
+    return grouped;
+  }
+
+  async deleteTask(
+    listId: string,
+    taskId: string,
+    workspaceId: string,
+  ): Promise<Task> {
+    const task = await this.taskRepository.findOne({
+      where: {
+        id: taskId,
+        listId,
+        workspaceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    task.isDeleted = true;
+    const deletedTask = await this.taskRepository.save(task);
+    return await this.populateTaskAssignees(deletedTask);
+  }
+
+  async getTaskDetails(
+    listId: string,
+    taskId: string,
+    workspaceId: string,
+  ): Promise<TaskDetailsResponse> {
+    const task = await this.taskRepository.findOne({
+      where: {
+        id: taskId,
+        listId,
+        workspaceId,
+        isDeleted: false,
+      },
+      relations: ['createdBy'],
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const checklist = await this.checklistService.getChecklistsByTask(
+      taskId,
+      workspaceId,
+    );
+
+    const files = await this.fileService.findByTask(taskId, workspaceId);
+
+    const populatedTask = await this.populateTaskAssignees(task);
+
+    return {
+      task: populatedTask,
+      checklist,
+      files,
+    };
+  }
+
+  async getTaskComments(
+    taskId: string,
+    workspaceId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ comments: Comment[]; totalCount: number; hasMore: boolean }> {
+    const skip = (page - 1) * limit;
+
+    const [comments, totalCount] = await this.commentRepository.findAndCount({
+      where: {
+        taskId,
+        workspaceId,
+        isDeleted: false,
+      },
+      relations: ['createdBy', 'parentComment'],
+      order: {
+        createdAt: 'ASC',
+      },
+      skip,
+      take: limit,
+    });
+
+    const hasMore = skip + comments.length < totalCount;
+
+    return {
+      comments,
+      totalCount,
+      hasMore,
+    };
+  }
+
+  async updateTaskProgress(taskId: string, workspaceId: string): Promise<void> {
+    const checklists = await this.checklistService.getChecklistsByTask(
+      taskId,
+      workspaceId,
+    );
+
+    if (checklists.length === 0) {
+      await this.taskRepository.update(
+        { id: taskId, workspaceId },
+        { progress: 0 }
+      );
+      return;
+    }
+
+    const completedCount = checklists.filter(item => item.isDone).length;
+    const progress = (completedCount / checklists.length) * 100;
+
+    await this.taskRepository.update(
+      { id: taskId, workspaceId },
+      { progress: Math.round(progress) }
+    );
+  }
+
+  async getTaskReports(
+    listId: string,
+    workspaceId: string,
+    queryParams: GetTaskReportsQueryDto,
+  ): Promise<any> {
+    const { timeRange } = queryParams;
+
+    let dateFilter: Date | undefined;
+    if (timeRange !== 'all') {
+      const days = parseInt(timeRange);
+      dateFilter = new Date();
+      dateFilter.setDate(dateFilter.getDate() - days);
+    }
+
+    const whereClause: any = {
+      listId,
+      workspaceId,
+      isDeleted: false,
+    };
+
+    if (dateFilter) {
+      whereClause.createdAt = MoreThanOrEqual(dateFilter);
+    }
+
+    const tasks = await this.taskRepository.find({
+      where: whereClause,
+    });
+
+    const now = new Date();
+    const overdueTasks = tasks.filter(
+      task => task.dueDate && new Date(task.dueDate) < now && task.status !== TaskStatus.COMPLETED
+    );
+
+    const statusDistribution = {
+      todo: tasks.filter(t => t.status === TaskStatus.TODO).length,
+      in_progress: tasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
+      in_review: tasks.filter(t => t.status === TaskStatus.IN_REVIEW).length,
+      completed: tasks.filter(t => t.status === TaskStatus.COMPLETED).length,
+      canceled: tasks.filter(t => t.status === TaskStatus.CANCELED).length,
+    };
+
+    const priorityBreakdown = {
+      urgent: tasks.filter(t => t.priority === TaskPriority.URGENT).length,
+      high: tasks.filter(t => t.priority === TaskPriority.HIGH).length,
+      normal: tasks.filter(t => t.priority === TaskPriority.NORMAL).length,
+      low: tasks.filter(t => t.priority === TaskPriority.LOW).length,
+      none: tasks.filter(t => !t.priority).length,
+    };
+
+    const assigneeIds = [...new Set(tasks.flatMap(t => t.assigneeIds || []))];
+    const workloadMap = new Map<string, number>();
+    
+    tasks.forEach(task => {
+      if (task.assigneeIds && task.assigneeIds.length > 0) {
+        task.assigneeIds.forEach(assigneeId => {
+          workloadMap.set(assigneeId, (workloadMap.get(assigneeId) || 0) + 1);
+        });
+      }
+    });
+
+    const unassignedCount = tasks.filter(t => !t.assigneeIds || t.assigneeIds.length === 0).length;
+
+    let members = [];
+    if (assigneeIds.length > 0) {
+      members = await this.workspaceMemberRepository.find({
+        where: {
+          id: In(assigneeIds),
+        },
+      });
+    }
+
+    const workloadDistribution = members.map(member => ({
+      memberId: member.id,
+      name: `${member.firstName} ${member.lastName}`,
+      avatar: member.avatar,
+      taskCount: workloadMap.get(member.id) || 0,
+    }));
+
+    if (unassignedCount > 0) {
+      workloadDistribution.push({
+        memberId: 'unassigned',
+        name: 'Unassigned',
+        avatar: null,
+        taskCount: unassignedCount,
+      });
+    }
+
+    const tasksWithEstimates = tasks.filter(t => t.estimatedHours && t.estimatedHours > 0);
+    const tasksWithActual = tasksWithEstimates.filter(t => t.actualHours && t.actualHours > 0);
+    
+    const totalEstimated = tasksWithEstimates.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
+    const totalActual = tasksWithActual.reduce((sum, t) => sum + (t.actualHours || 0), 0);
+    
+    const accuracy = totalEstimated > 0 ? Math.round((1 - Math.abs(totalEstimated - totalActual) / totalEstimated) * 100) : 0;
+
+    const timeEstimateAccuracy = {
+      accuracy,
+      totalEstimated: Math.round(totalEstimated * 10) / 10,
+      totalActual: Math.round(totalActual * 10) / 10,
+      tasksWithEstimates: tasksWithEstimates.length,
+    };
+
+    const sortedTasks = [...tasks].sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    const completionTrend = [];
+    const daysToShow = timeRange === 'all' ? 30 : Math.min(parseInt(timeRange), 30);
+    
+    for (let i = daysToShow - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const createdByDate = sortedTasks.filter(t => new Date(t.createdAt) <= endOfDay).length;
+      const completedByDate = sortedTasks.filter(t => 
+        t.status === TaskStatus.COMPLETED && 
+        t.statusChangedAt && 
+        new Date(t.statusChangedAt) <= endOfDay
+      ).length;
+
+      completionTrend.push({
+        date: date.toISOString().split('T')[0],
+        created: createdByDate,
+        completed: completedByDate,
+      });
+    }
+
+    const totalTasks = tasks.length;
+    const completedTasks = statusDistribution.completed;
+    const inProgressTasks = statusDistribution.in_progress;
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    return {
+      overview: {
+        total: totalTasks,
+        completed: completedTasks,
+        completionRate,
+        inProgress: inProgressTasks,
+        overdue: overdueTasks.length,
+      },
+      statusDistribution,
+      priorityBreakdown,
+      workloadDistribution,
+      timeEstimateAccuracy,
+      completionTrend,
+    };
+  }
+}

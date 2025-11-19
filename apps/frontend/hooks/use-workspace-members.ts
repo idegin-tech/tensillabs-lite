@@ -1,0 +1,111 @@
+'use client'
+
+import { useMemo } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api, ApiError } from '@/lib/api'
+import { PaginatedWorkspaceMembers, WorkspaceMember } from '@/types/workspace.types'
+import useCommon from './use-common'
+
+interface UseWorkspaceMembersParams {
+  page?: number
+  limit?: number
+  search?: string
+  status?: string
+  permission?: string
+}
+
+interface InviteMemberData {
+  primaryEmail: string
+  firstName: string
+  lastName: string
+  middleName?: string
+  workPhone?: string
+  primaryRole?: string
+  primaryTeam?: string
+}
+
+export function useWorkspaceMembers(params: UseWorkspaceMembersParams = {}) {
+  const { member_id } = useCommon()
+  const { page = 1, limit = 10, search = '', status, permission } = params
+    const buildEndpoint = () => {
+    const searchParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    })    
+    if (search) searchParams.append('search', search)
+    if (status && status !== 'all') searchParams.append('status', status)
+    if (permission && permission !== 'all') searchParams.append('permission', permission)
+    
+    return `/workspace-members/workspace/all?${searchParams.toString()}`
+  }
+  
+  const query = useQuery<{ success: boolean; payload: PaginatedWorkspaceMembers }, ApiError>({
+    queryKey: ['workspace-members', member_id || '', page.toString(), limit.toString(), search, status || '', permission || ''],
+    queryFn: () => api.get<{ success: boolean; payload: PaginatedWorkspaceMembers }>(buildEndpoint(), {
+      headers: {
+        'x-member-id': member_id
+      }
+    }),
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    enabled: !!member_id,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
+
+  const members = useMemo(() => {
+    return query.data?.payload?.docs || []
+  }, [query.data])
+
+  const pagination = useMemo(() => {
+    if (!query.data?.payload) return null
+    
+    const payload = query.data.payload
+    return {
+      currentPage: payload.page,
+      totalPages: payload.totalPages,
+      totalItems: payload.totalDocs,
+      hasNextPage: payload.hasNextPage,
+      hasPrevPage: payload.hasPrevPage,
+      itemsPerPage: payload.limit,
+    }
+  }, [query.data])
+
+  return {
+    members,
+    pagination,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  }
+}
+
+export function useInviteMember() {
+  const { member_id } = useCommon()
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: WorkspaceMember }, ApiError, InviteMemberData>({
+    mutationFn: (data: InviteMemberData) =>
+      api.post<{ success: boolean; payload: WorkspaceMember }>('/workspace-members/invite', data, {
+        headers: {
+          'x-member-id': member_id
+        }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace-members'] })
+    },
+  })
+}
+
+export function useAcceptInvitation() {
+  const queryClient = useQueryClient()
+
+  return useMutation<{ success: boolean; payload: WorkspaceMember }, ApiError, { memberId: string }>({
+    mutationFn: (data: { memberId: string }) =>
+      api.post<{ success: boolean; payload: WorkspaceMember }>('/workspace-members/accept-invitation', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace-memberships'] })
+    },
+  })
+}

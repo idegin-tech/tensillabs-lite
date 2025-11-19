@@ -2,9 +2,10 @@ app = 'tensillabs-lite'
 primary_region = 'iad'
 
 [build]
+  dockerfile = "Dockerfile"
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -12,13 +13,14 @@ primary_region = 'iad'
   processes = ['app']
 
 [[vm]]
-  memory = '256mb'
+  memory = '512mb'
   cpu_kind = 'shared'
   cpus = 1
 
 [[mounts]]
-  source = "mongo_data"
-  destination = "/data/db"
+  source = "postgres_data"
+  destination = "/var/lib/postgresql/data"
 
 [env]
   NODE_ENV = 'production'
+  PORT = '8080'
