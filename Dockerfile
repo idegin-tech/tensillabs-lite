@@ -36,16 +36,19 @@ RUN apt-get update && apt-get install -y \
     curl \
     postgresql \
     postgresql-contrib \
+    postgresql-client \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Create postgres user and set up PostgreSQL
-RUN useradd -m postgres || true
-RUN mkdir -p /var/lib/postgresql/data
-RUN chown -R postgres:postgres /var/lib/postgresql/data
-RUN chmod 700 /var/lib/postgresql/data
+# Create postgres user if it doesn't exist
+RUN id -u postgres &>/dev/null || useradd -m -s /bin/bash postgres
 
-# Allow postgres user to run initdb without password
+# Set up PostgreSQL directories with proper permissions
+RUN mkdir -p /var/lib/postgresql/data /var/run/postgresql /var/log/postgresql && \
+    chown -R postgres:postgres /var/lib/postgresql /var/run/postgresql /var/log/postgresql && \
+    chmod 700 /var/lib/postgresql/data
+
+# Allow postgres user to run commands without password
 RUN echo "postgres ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 WORKDIR /app

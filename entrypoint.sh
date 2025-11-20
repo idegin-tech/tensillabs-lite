@@ -5,10 +5,13 @@ echo "=== TensilLabs Startup Script ==="
 echo "Environment: ${NODE_ENV:-not set}"
 echo "Port: ${PORT:-not set}"
 
+# Set PostgreSQL environment for the postgres user
+export PGDATA=/var/lib/postgresql/data
+
 # Initialize PostgreSQL if not already initialized
 if [ ! -f "/var/lib/postgresql/data/PG_VERSION" ]; then
     echo "Initializing PostgreSQL database..."
-    sudo -u postgres initdb -D /var/lib/postgresql/data
+    sudo -u postgres /usr/lib/postgresql/*/bin/initdb -D /var/lib/postgresql/data
     
     echo "Configuring PostgreSQL..."
     echo "host all all 0.0.0.0/0 md5" >> /var/lib/postgresql/data/pg_hba.conf
@@ -16,13 +19,17 @@ if [ ! -f "/var/lib/postgresql/data/PG_VERSION" ]; then
     echo "port = 5432" >> /var/lib/postgresql/data/postgresql.conf
     echo "max_connections = 100" >> /var/lib/postgresql/data/postgresql.conf
     echo "shared_buffers = 128MB" >> /var/lib/postgresql/data/postgresql.conf
+    echo "unix_socket_directories = '/var/run/postgresql'" >> /var/lib/postgresql/data/postgresql.conf
 else
     echo "PostgreSQL data directory already initialized"
 fi
 
+# Ensure proper ownership
+chown -R postgres:postgres /var/lib/postgresql/data /var/run/postgresql
+
 # Start PostgreSQL
 echo "Starting PostgreSQL..."
-sudo -u postgres pg_ctl -D /var/lib/postgresql/data -l /var/lib/postgresql/data/logfile start
+sudo -u postgres /usr/lib/postgresql/*/bin/pg_ctl -D /var/lib/postgresql/data -l /var/lib/postgresql/data/logfile start
 
 # Wait for PostgreSQL with timeout
 echo "Waiting for PostgreSQL to be ready..."
@@ -33,7 +40,9 @@ while ! nc -z localhost 5432; do
     if [ $TRIES -ge $MAX_TRIES ]; then
         echo "ERROR: PostgreSQL failed to start after $MAX_TRIES attempts"
         echo "=== PostgreSQL Log ==="
-        cat /var/lib/postgresql/data/logfile || echo "No log file found"
+        cat /var/lib/postgresql/data/logfile 2>/dev/null || echo "No log file found"
+        echo "=== PostgreSQL Status ==="
+        sudo -u postgres /usr/lib/postgresql/*/bin/pg_ctl -D /var/lib/postgresql/data status || true
         exit 1
     fi
     echo "PostgreSQL is starting - attempt $TRIES/$MAX_TRIES"
