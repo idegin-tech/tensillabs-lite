@@ -8,9 +8,26 @@ echo "Port: ${PORT:-not set}"
 # Set PostgreSQL environment for the postgres user
 export PGDATA=/var/lib/postgresql/data
 
-# Initialize PostgreSQL if not already initialized
-if [ ! -f "/var/lib/postgresql/data/PG_VERSION" ]; then
+# Check if PostgreSQL is already initialized and valid
+if [ -f "/var/lib/postgresql/data/PG_VERSION" ]; then
+    echo "PostgreSQL data directory already initialized (found PG_VERSION)"
+    PG_VERSION=$(cat /var/lib/postgresql/data/PG_VERSION)
+    echo "PostgreSQL version: $PG_VERSION"
+else
+    # Directory might exist but be empty or corrupt
     echo "Initializing PostgreSQL database..."
+    
+    # Clean up any existing files if directory is not empty but not initialized
+    if [ "$(ls -A /var/lib/postgresql/data 2>/dev/null)" ]; then
+        echo "WARNING: Found files in data directory but no valid PostgreSQL installation"
+        echo "Cleaning up data directory..."
+        rm -rf /var/lib/postgresql/data/*
+        rm -rf /var/lib/postgresql/data/.[!.]*
+    fi
+    
+    # Ensure proper ownership before init
+    chown -R postgres:postgres /var/lib/postgresql/data
+    
     sudo -u postgres /usr/lib/postgresql/*/bin/initdb -D /var/lib/postgresql/data
     
     echo "Configuring PostgreSQL..."
@@ -20,8 +37,6 @@ if [ ! -f "/var/lib/postgresql/data/PG_VERSION" ]; then
     echo "max_connections = 100" >> /var/lib/postgresql/data/postgresql.conf
     echo "shared_buffers = 128MB" >> /var/lib/postgresql/data/postgresql.conf
     echo "unix_socket_directories = '/var/run/postgresql'" >> /var/lib/postgresql/data/postgresql.conf
-else
-    echo "PostgreSQL data directory already initialized"
 fi
 
 # Ensure proper ownership
@@ -83,7 +98,7 @@ echo "Database setup complete!"
 
 # Verify connection
 echo "Testing database connection..."
-if sudo -u postgres psql -h localhost -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
+if PGPASSWORD="$DB_PASSWORD" psql -h localhost -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
     echo "Database connection successful!"
 else
     echo "WARNING: Database connection test failed, but continuing..."
