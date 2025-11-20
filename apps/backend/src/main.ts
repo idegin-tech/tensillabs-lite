@@ -9,9 +9,10 @@ import * as connectPgSimple from 'connect-pg-simple';
 import * as express from 'express';
 import { Pool } from 'pg';
 import { TransformIdInterceptor } from './lib/interceptors/transform-id.interceptor';
-const next = require('next');
 import { parse } from 'url';
 import { join } from 'path';
+import { existsSync } from 'fs';
+import next from 'next';
 
 async function bootstrap() {
   const dev = process.env.NODE_ENV !== 'production';
@@ -26,8 +27,7 @@ async function bootstrap() {
 
   // Initialize Next.js in development or if frontend build exists in production
   try {
-    const fs = require('fs');
-    const nextBuildExists = fs.existsSync(join(frontendDir, '.next'));
+    const nextBuildExists = existsSync(join(frontendDir, '.next'));
     
     if (dev || nextBuildExists) {
       console.log('Next.js initializing...');
@@ -151,7 +151,7 @@ async function bootstrap() {
   if (handle) {
     expressApp.use((req, res, next) => {
       // Skip API routes - let NestJS handle them
-      if (req.path.startsWith('/api/v1/') || req.path.startsWith('/api/')) {
+      if (req.path.startsWith('/api-v1/') || req.path.startsWith('/api/')) {
         return next();
       }
       

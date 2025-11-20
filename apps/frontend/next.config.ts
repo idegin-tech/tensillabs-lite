@@ -5,8 +5,9 @@ import { join } from 'path';
 config({ path: join(__dirname, '..', '..', '.env') });
 
 const nextConfig = {
+  output: 'standalone' as const,
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:3000/api/v1'),
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '/api-v1' : 'http://localhost:3000/api-v1'),
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_NODE_ENV: process.env.NEXT_PUBLIC_NODE_ENV,
   },
