@@ -53,10 +53,13 @@ RUN echo "postgres ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 WORKDIR /app
 
-# Copy backend package.json and install production dependencies
+# Copy package files
 COPY apps/backend/package*.json ./apps/backend/
+COPY apps/frontend/package*.json ./apps/frontend/
 COPY package*.json ./
-RUN npm install --only=production --workspace=apps/backend
+
+# Install ALL dependencies for both backend and frontend (including devDeps for Next.js)
+RUN npm install --workspace=apps/backend --workspace=apps/frontend
 
 # Copy built backend from correct path
 COPY --from=build /app/apps/backend/dist ./apps/backend/dist

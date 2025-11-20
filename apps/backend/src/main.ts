@@ -149,7 +149,7 @@ async function bootstrap() {
 
   // Add Next.js handler AFTER NestJS has started and set up all routes
   if (handle) {
-    expressApp.use('*', (req, res, next) => {
+    expressApp.use((req, res, next) => {
       // Skip API routes - let NestJS handle them
       if (req.path.startsWith('/api/v1/') || req.path.startsWith('/api/')) {
         return next();
